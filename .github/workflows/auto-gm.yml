@@ -1,53 +1,33 @@
-import json
-import os
-from datetime import datetime, timezone
-from yahoo_oauth import OAuth2
-import yahoo_fantasy_api as yfa
+name: Update Yahoo Fantasy Scores
 
-# --- LOAD OAUTH FROM GITHUB SECRET ---
-oauth_data = json.loads(os.environ["YAHOO_OAUTH_JSON"])
-with open("oauth2.json", "w") as f:
-    json.dump(oauth_data, f)
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
 
-oauth = OAuth2(None, None, from_file="oauth2.json")
+jobs:
+  update:
+    runs-on: ubuntu-latest
 
-# --- YAHOO SETUP ---
-game = yfa.Game(oauth, "nhl")
-league_id = "465.l.33140"
-league = game.to_league(league_id)
+    steps:
+      - uses: actions/checkout@v4
 
-team_key = league.team_key()
-team = league.to_team(team_key)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-current_week = league.current_week()
-matchup = team.matchup(week=current_week)
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-teams = matchup["teams"]
-my_team = next(t for t in teams if t["team_key"] == team_key)
-opp_team = next(t for t in teams if t["team_key"] != team_key)
+      - name: Run score fetch
+        env:
+          YAHOO_OAUTH_JSON: ${{ secrets.YAHOO_OAUTH_JSON }}
+        run: python fetch_scores.py
 
-my_score = float(my_team["team_points"]["total"])
-opp_score = float(opp_team["team_points"]["total"])
-
-status = matchup.get("status", "UNKNOWN").upper()
-
-payload = {
-    "league": league.settings()["name"],
-    "week": current_week,
-    "status": status,
-    "myTeam": {
-        "name": my_team["name"],
-        "score": my_score
-    },
-    "opponent": {
-        "name": opp_team["name"],
-        "score": opp_score
-    },
-    "lastUpdated": datetime.now(timezone.utc).isoformat()
-}
-
-os.makedirs("docs", exist_ok=True)
-with open("docs/scores.json", "w") as f:
-    json.dump(payload, f, indent=2)
-
-print("scores.json updated")
+      - name: Commit updated JSON
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add docs/scores.json
+          git commit -m "Update scores" || echo "No changes"
+          git push
