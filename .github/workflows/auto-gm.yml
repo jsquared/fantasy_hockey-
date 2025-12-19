@@ -1,29 +1,53 @@
-name: Fantasy GM
+import json
+import os
+from datetime import datetime, timezone
+from yahoo_oauth import OAuth2
+import yahoo_fantasy_api as yfa
 
-on:
-  schedule:
-    - cron: "0 12 * * *"   # run daily at 12:00 UTC
-  workflow_dispatch:       # allow manual run
+# --- LOAD OAUTH FROM GITHUB SECRET ---
+oauth_data = json.loads(os.environ["YAHOO_OAUTH_JSON"])
+with open("oauth2.json", "w") as f:
+    json.dump(oauth_data, f)
 
-jobs:
-  run-gm:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+oauth = OAuth2(None, None, from_file="oauth2.json")
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
+# --- YAHOO SETUP ---
+game = yfa.Game(oauth, "nhl")
+league_id = "465.l.33140"
+league = game.to_league(league_id)
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+team_key = league.team_key()
+team = league.to_team(team_key)
 
-      - name: Create oauth2.json
-        run: echo "${{ secrets.OAUTH_JSON }}" > oauth2.json
+current_week = league.current_week()
+matchup = team.matchup(week=current_week)
 
-      - name: Run GM Script
-        run: python main.py
-        env:
-          EMAIL_USER: ${{ secrets.EMAIL_USER }}
-          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+teams = matchup["teams"]
+my_team = next(t for t in teams if t["team_key"] == team_key)
+opp_team = next(t for t in teams if t["team_key"] != team_key)
+
+my_score = float(my_team["team_points"]["total"])
+opp_score = float(opp_team["team_points"]["total"])
+
+status = matchup.get("status", "UNKNOWN").upper()
+
+payload = {
+    "league": league.settings()["name"],
+    "week": current_week,
+    "status": status,
+    "myTeam": {
+        "name": my_team["name"],
+        "score": my_score
+    },
+    "opponent": {
+        "name": opp_team["name"],
+        "score": opp_score
+    },
+    "lastUpdated": datetime.now(timezone.utc).isoformat()
+}
+
+os.makedirs("docs", exist_ok=True)
+with open("docs/scores.json", "w") as f:
+    json.dump(payload, f, indent=2)
+
+print("scores.json updated")
