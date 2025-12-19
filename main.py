@@ -1,57 +1,53 @@
+import json
+import os
+from datetime import datetime, timezone
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
-from datetime import datetime
-import smtplib
-from email.mime.text import MIMEText
 
-# --- AUTH ---
+# --- LOAD OAUTH FROM GITHUB SECRET ---
+oauth_data = json.loads(os.environ["YAHOO_OAUTH_JSON"])
+with open("oauth2.json", "w") as f:
+    json.dump(oauth_data, f)
+
 oauth = OAuth2(None, None, from_file="oauth2.json")
+
+# --- YAHOO SETUP ---
 game = yfa.Game(oauth, "nhl")
 league_id = "465.l.33140"
 league = game.to_league(league_id)
 
-# --- TEAM INFO ---
 team_key = league.team_key()
 team = league.to_team(team_key)
-today = datetime.now().strftime("%Y-%m-%d")
 
-# --- FETCH ROSTER ---
-roster = team.roster()
+current_week = league.current_week()
+matchup = team.matchup(week=current_week)
 
-# --- SIMPLE LINEUP LOGIC ---
-# (placeholder: bench inactive players, start active ones)
-starters, bench = [], []
-for p in roster:
-    if p["status"] == "A":  # active today
-        starters.append(p["name"])
-    else:
-        bench.append(p["name"])
+teams = matchup["teams"]
+my_team = next(t for t in teams if t["team_key"] == team_key)
+opp_team = next(t for t in teams if t["team_key"] != team_key)
 
-# --- UPDATE LINEUP (write action) ---
-# This depends on league settings - yahoo_fantasy_api supports edit_roster
-# Example call:
-# team.edit_roster(date=today, players=[list_of_player_keys])
+my_score = float(my_team["team_points"]["total"])
+opp_score = float(opp_team["team_points"]["total"])
 
-# --- REPORT ---
-report = f"""
-Auto-GM Report - {today}
+status = matchup.get("status", "UNKNOWN").upper()
 
-Starters set:
-{starters}
+payload = {
+    "league": league.settings()["name"],
+    "week": current_week,
+    "status": status,
+    "myTeam": {
+        "name": my_team["name"],
+        "score": my_score
+    },
+    "opponent": {
+        "name": opp_team["name"],
+        "score": opp_score
+    },
+    "lastUpdated": datetime.now(timezone.utc).isoformat()
+}
 
-Benched:
-{bench}
-"""
+os.makedirs("docs", exist_ok=True)
+with open("docs/scores.json", "w") as f:
+    json.dump(payload, f, indent=2)
 
-# --- SEND EMAIL ---
-msg = MIMEText(report)
-msg["Subject"] = f"Fantasy GM Lineup - {today}"
-msg["From"] = "yourbot@email.com"
-msg["To"] = "jknutson103@gmail.com"
-
-with smtplib.SMTP("smtp.gmail.com", 587) as server:
-    server.starttls()
-    server.login("yourbot@email.com", "APP_PASSWORD")
-    server.send_message(msg)
-
-print("Lineup set + email sent!")
+print("scores.json updated")
