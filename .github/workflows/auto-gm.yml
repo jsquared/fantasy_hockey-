@@ -1,5 +1,9 @@
 name: Update Yahoo Fantasy Scores
 
+# Ensure GitHub Actions has write permissions
+permissions:
+  contents: write
+
 on:
   schedule:
     - cron: "*/10 * * * *"  # every 10 minutes
@@ -31,12 +35,14 @@ jobs:
         run: python fetch_scores.py
 
       # 5️⃣ Commit updated JSON using GITHUB_TOKEN
-      - name: Commit scores.json
+      - name: Commit and push scores.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add docs/scores.json
+          # Only commit if there are changes
           git diff --cached --quiet || git commit -m "Update scores.json"
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
+          # Push using the token automatically
+          git push origin HEAD
