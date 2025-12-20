@@ -20,16 +20,16 @@ league = game.to_league("465.l.33140")
 
 team_key = league.team_key()
 
-# --- SCOREBOARD (SAFE API) ---
+# --- FETCH MATCHUPS (CORRECT API) ---
 current_week = league.current_week()
-scoreboard = league.scoreboard(week=current_week)
+matchups = league.matchups(week=current_week)
 
-if not scoreboard:
-    raise RuntimeError("No scoreboard data returned")
+if not matchups:
+    raise RuntimeError("No matchups returned")
 
-# Find the matchup that includes your team
+# Find the matchup containing your team
 matchup = None
-for m in scoreboard:
+for m in matchups:
     teams = m.get("teams", [])
     if any(t["team_key"] == team_key for t in teams):
         matchup = m
@@ -43,6 +43,7 @@ teams = matchup["teams"]
 my_team = next(t for t in teams if t["team_key"] == team_key)
 opp_team = next(t for t in teams if t["team_key"] != team_key)
 
+# --- SCORES ---
 my_score = float(my_team["team_points"]["total"])
 opp_score = float(opp_team["team_points"]["total"])
 
