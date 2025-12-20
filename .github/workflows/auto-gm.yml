@@ -25,10 +25,10 @@ jobs:
           python -m pip install yahoo-oauth yahoo-fantasy-api requests
 
       # 4️⃣ Run your score fetch script
-      - name: Run getscores.py
+      - name: Run fetch_scores.py
         env:
           YAHOO_OAUTH_JSON: ${{ secrets.YAHOO_OAUTH_JSON }}
-        run: python getscores.py
+        run: python fetch_scores.py
 
       # 5️⃣ Commit updated JSON using GITHUB_TOKEN
       - name: Commit scores.json
