@@ -19,30 +19,24 @@ game = yfa.Game(oauth, "nhl")
 league = game.to_league("465.l.33140")
 
 team_key = league.team_key()
-team = league.to_team(team_key)
 
-# --- FETCH MATCHUP ---
+# --- SCOREBOARD (SAFE API) ---
 current_week = league.current_week()
-raw_matchups = team.matchup(week=current_week)
+scoreboard = league.scoreboard(week=current_week)
 
-# yahoo_fantasy_api sometimes returns raw JSON text
-if isinstance(raw_matchups, str):
-    raw_matchups = json.loads(raw_matchups)
+if not scoreboard:
+    raise RuntimeError("No scoreboard data returned")
 
-# Navigate Yahoo fantasy_content structure
-fantasy_content = raw_matchups["fantasy_content"]
-team_data = fantasy_content["team"][1]
-matchups_data = team_data["matchups"]
-
+# Find the matchup that includes your team
 matchup = None
-for key, value in matchups_data.items():
-    if key == "count":
-        continue
-    matchup = value["matchup"]
-    break
+for m in scoreboard:
+    teams = m.get("teams", [])
+    if any(t["team_key"] == team_key for t in teams):
+        matchup = m
+        break
 
 if not matchup:
-    raise RuntimeError("No matchup found")
+    raise RuntimeError("Could not find matchup for your team")
 
 teams = matchup["teams"]
 
