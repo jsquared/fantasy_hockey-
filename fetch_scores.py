@@ -20,18 +20,20 @@ league = game.to_league("465.l.33140")
 
 team_key = league.team_key()
 
-# --- FETCH MATCHUPS (CORRECT API) ---
+# --- FETCH MATCHUPS ---
 current_week = league.current_week()
 matchups = league.matchups(week=current_week)
 
 if not matchups:
     raise RuntimeError("No matchups returned")
 
-# Find the matchup containing your team
 matchup = None
 for m in matchups:
+    if not isinstance(m, dict):
+        continue
+
     teams = m.get("teams", [])
-    if any(t["team_key"] == team_key for t in teams):
+    if any(t.get("team_key") == team_key for t in teams):
         matchup = m
         break
 
@@ -70,3 +72,4 @@ with open("docs/scores.json", "w") as f:
     json.dump(payload, f, indent=2)
 
 print("scores.json updated successfully")
+
