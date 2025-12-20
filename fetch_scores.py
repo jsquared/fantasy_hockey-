@@ -5,7 +5,12 @@ from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
 # --- LOAD OAUTH FROM GITHUB SECRET ---
-oauth_data = json.loads(os.environ["YAHOO_OAUTH_JSON"])
+raw_oauth = os.environ.get("YAHOO_OAUTH_JSON")
+if not raw_oauth:
+    raise RuntimeError("YAHOO_OAUTH_JSON secret is missing or empty")
+
+oauth_data = json.loads(raw_oauth)
+
 with open("oauth2.json", "w") as f:
     json.dump(oauth_data, f)
 
@@ -19,18 +24,32 @@ league = game.to_league(league_id)
 team_key = league.team_key()
 team = league.to_team(team_key)
 
+# --- FETCH CURRENT MATCHUP ---
 current_week = league.current_week()
-matchup = team.matchup(week=current_week)
+matchups = team.matchup(week=current_week)
 
-teams = matchup["teams"]
+if not matchups:
+    raise RuntimeError("No matchup data returned from Yahoo")
+
+# Yahoo always returns a list
+matchup = matchups[0].get("matchup")
+if not matchup:
+    raise RuntimeError("Unexpected matchup structure")
+
+teams = matchup.get("teams", [])
+if len(teams) != 2:
+    raise RuntimeError(f"Expected 2 teams in matchup, got {len(teams)}")
+
 my_team = next(t for t in teams if t["team_key"] == team_key)
 opp_team = next(t for t in teams if t["team_key"] != team_key)
 
+# --- SCORES ---
 my_score = float(my_team["team_points"]["total"])
 opp_score = float(opp_team["team_points"]["total"])
 
 status = matchup.get("status", "UNKNOWN").upper()
 
+# --- OUTPUT PAYLOAD ---
 payload = {
     "league": league.settings()["name"],
     "week": current_week,
@@ -46,8 +65,9 @@ payload = {
     "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
+# --- WRITE FILE ---
 os.makedirs("docs", exist_ok=True)
 with open("docs/scores.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("scores.json updated")
+print("scores.json updated successfully")
