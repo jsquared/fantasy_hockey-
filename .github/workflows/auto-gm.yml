@@ -1,33 +1,42 @@
 name: Update Yahoo Fantasy Scores
 
 on:
-  #schedule:
-  #  - cron: "*/10 * * * *"
-  workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *"  # every 10 minutes
+  workflow_dispatch:        # allows manual run
 
 jobs:
   update:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout the repo
       - uses: actions/checkout@v4
 
+      # 2️⃣ Setup Python
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
+      # 3️⃣ Install dependencies
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install yahoo-oauth yahoo-fantasy-api requests
 
-      - name: Run score fetch
+      # 4️⃣ Run your score fetch script
+      - name: Run getscores.py
         env:
           YAHOO_OAUTH_JSON: ${{ secrets.YAHOO_OAUTH_JSON }}
-        run: python fetch_scores.py
+        run: python getscores.py
 
-      - name: Commit updated JSON
+      # 5️⃣ Commit updated JSON using GITHUB_TOKEN
+      - name: Commit scores.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add docs/scores.json
-          git commit -m "Update scores" || echo "No changes"
-          git push
+          git diff --cached --quiet || git commit -m "Update scores.json"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
