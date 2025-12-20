@@ -23,7 +23,6 @@ current_week = league.current_week()
 
 # ---------- Raw scoreboard ----------
 raw = league.yhandler.get_scoreboard_raw(league.league_id, current_week)
-
 league_data = raw["fantasy_content"]["league"][1]
 matchups = league_data["scoreboard"]["0"]["matchups"]
 
@@ -54,10 +53,17 @@ for k, v in matchups.items():
         name = meta[2]["name"]
         score = float(stats["team_points"]["total"])
 
+        # Safely extract logo if exists
+        try:
+            logo = meta[5]["team_logos"][0]["team_logo"]["url"]
+        except (IndexError, KeyError):
+            logo = None
+
         extracted.append({
             "team_key": tkey,
             "name": name,
-            "score": score
+            "score": score,
+            "team_logo": logo
         })
 
     if any(t["team_key"] == team_key for t in extracted):
