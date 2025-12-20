@@ -1,0 +1,16 @@
+{
+  "league": "The Liberties Invitational",
+  "week": 11,
+  "status": "MIDEVENT",
+  "myTeam": {
+    "team_key": "465.l.33140.t.13",
+    "name": "Strange Brew",
+    "score": 8.0
+  },
+  "opponent": {
+    "team_key": "465.l.33140.t.7",
+    "name": "Post and Out",
+    "score": 6.0
+  },
+  "lastUpdated": "2025-12-20T20:29:21.919607+00:00"
+}
