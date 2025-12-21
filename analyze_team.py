@@ -21,78 +21,76 @@ league = game.to_league(LEAGUE_ID)
 team_key = league.team_key()
 current_week = league.current_week()
 
-# ---------- Fetch matchup scoreboard ----------
+# ---------- Fetch latest scoreboard ----------
 raw = league.yhandler.get_scoreboard_raw(league.league_id, current_week)
-matchups = raw["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
 
-my_team_stats = None
+# Extract league block safely
+league_data = raw.get("fantasy_content", {}).get("league", [None, {}])[1]
+matchups = league_data.get("scoreboard", {}).get("0", {}).get("matchups", {})
 
+# Find my matchup
+my_team_data = None
 for k, v in matchups.items():
     if k == "count":
         continue
-    teams = v["matchup"]["0"]["teams"]
+    matchup = v.get("matchup", {})
+    teams = matchup.get("0", {}).get("teams", {})
     for tk, tv in teams.items():
         if tk == "count":
             continue
-        team_block = tv["team"]
-        meta = team_block[0]
-        stats = team_block[1]
-        tkey = meta[0]["team_key"]
+        tmeta = tv["team"][0]
+        stats = tv["team"][1]
+        tkey = tmeta[0]["team_key"]
+        name = tmeta[2]["name"]
+        score = float(stats["team_points"]["total"])
         if tkey == team_key:
-            # Use the stats array safely
-            my_team_stats = {}
-            for s in stats.get("team_stats", {}).get("stats", []):
-                stat_id = s["stat"].get("stat_id")
-                value = float(s["stat"].get("value", 0))
-                if stat_id:
-                    my_team_stats[stat_id] = value
+            my_team_data = {"team_key": tkey, "name": name, "score": score, "stats": stats.get("team_stats", {})}
             break
-    if my_team_stats:
+    if my_team_data:
         break
 
-if not my_team_stats:
-    raise RuntimeError("Could not find your team stats")
+if not my_team_data:
+    raise RuntimeError("Could not find your team in the matchup")
 
-# ---------- Stat ID -> Human Name Map ----------
-STAT_MAP = {
-    "1": "Goals",
-    "2": "Assists",
-    "4": "Penalty Minutes",
-    "5": "Power Play Points",
-    "8": "Shots on Goal",
-    "11": "Hits",
-    "12": "Blocks",
-    "14": "Faceoff Wins",
-    "16": "Plus/Minus",
-    "19": "Short-Handed Points",
-    "22": "Giveaways",
-    "23": "Takeaways",
-    "24": "Wins",
-    "25": "Saves",
-    "26": "Save %",
-    "27": "Goals Against",
-    "31": "Goals For",
-    "32": "Shots For"
-}
+# ---------- Translate stat IDs to names ----------
+stat_categories = {}
+try:
+    league_settings = league.settings()
+    for s in league_settings.get("stat_categories", []):
+        sid = s.get("stat_id")
+        sname = s.get("name")
+        if sid and sname:
+            stat_categories[sid] = sname
+except Exception:
+    # fallback: use raw stat IDs
+    stat_categories = {}
 
-# ---------- Separate strengths and weaknesses ----------
-strengths = [
-    {"stat_id": k, "name": STAT_MAP.get(k, k), "value": v}
-    for k, v in my_team_stats.items() if v > 0
-]
+# ---------- Build strengths and weaknesses ----------
+strengths = []
+weaknesses = []
 
-weaknesses = [
-    {"stat_id": k, "name": STAT_MAP.get(k, k), "value": v}
-    for k, v in my_team_stats.items() if v <= 0
-]
+team_stats = my_team_data.get("stats", {}).get("stats", [])
 
-# ---------- Output ----------
+for s in team_stats:
+    try:
+        sid = str(s["stat"]["stat_id"])
+        val = float(s["stat"]["value"])
+        name = stat_categories.get(sid, f"Stat {sid}")
+        entry = {"stat_id": sid, "name": name, "value": val}
+        if val > 0:
+            strengths.append(entry)
+        else:
+            weaknesses.append(entry)
+    except Exception:
+        continue
+
+# ---------- Output JSON ----------
 payload = {
-    "league": league.settings()["name"],
+    "league": league.settings().get("name", "Unknown League"),
     "team_key": team_key,
     "week": current_week,
-    "strengths": sorted(strengths, key=lambda x: x["value"], reverse=True),
-    "weaknesses": sorted(weaknesses, key=lambda x: x["value"]),
+    "strengths": strengths,
+    "weaknesses": weaknesses,
     "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
@@ -100,4 +98,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/analyzed_team.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("analyzed_team.json updated")
+print("docs/analyzed_team.json updated")
