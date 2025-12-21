@@ -21,11 +21,11 @@ league = game.to_league(LEAGUE_ID)
 team_key = league.team_key()
 current_week = league.current_week()
 
-# ---------- Fetch team stats ----------
+# ---------- Fetch matchup scoreboard ----------
 raw = league.yhandler.get_scoreboard_raw(league.league_id, current_week)
 matchups = raw["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
 
-my_team = None
+my_team_stats = None
 
 for k, v in matchups.items():
     if k == "count":
@@ -39,18 +39,15 @@ for k, v in matchups.items():
         stats = team_block[1]
         tkey = meta[0]["team_key"]
         if tkey == team_key:
-            my_team = {
-                "team_key": tkey,
-                "stats": {s["stat"]["stat_id"]: float(s["stat"]["value"]) for s in stats["team_stats"]["stats"]}
-            }
+            my_team_stats = {s["stat"]["stat_id"]: float(s["stat"]["value"]) for s in stats["team_stats"]["stats"]}
             break
-    if my_team:
+    if my_team_stats:
         break
 
-if not my_team:
+if not my_team_stats:
     raise RuntimeError("Could not find your team stats")
 
-# ---------- Map stat IDs to human-readable names ----------
+# ---------- Stat ID -> Human Name Map ----------
 STAT_MAP = {
     "1": "Goals",
     "2": "Assists",
@@ -72,14 +69,15 @@ STAT_MAP = {
     "32": "Shots For"
 }
 
-# Separate strengths and weaknesses
+# ---------- Separate strengths and weaknesses ----------
 strengths = [
     {"stat_id": k, "name": STAT_MAP.get(k, k), "value": v}
-    for k, v in my_team["stats"].items() if v > 0
+    for k, v in my_team_stats.items() if v > 0
 ]
+
 weaknesses = [
     {"stat_id": k, "name": STAT_MAP.get(k, k), "value": v}
-    for k, v in my_team["stats"].items() if v <= 0
+    for k, v in my_team_stats.items() if v <= 0
 ]
 
 # ---------- Output ----------
