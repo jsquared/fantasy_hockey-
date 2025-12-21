@@ -20,19 +20,19 @@ league = game.to_league(LEAGUE_ID)
 team_key = league.team_key()
 current_week = league.current_week()
 
-# ---------- Helper ----------
+# ---------- Helpers ----------
 def unwrap(x):
     return x[0] if isinstance(x, list) else x
 
-# ---------- Get team weekly stats ----------
-raw_team = league.yhandler.get_team_stats_raw(team_key, current_week)
+# ---------- Get raw team data (WITH STATS) ----------
+raw_team = league.yhandler.get_team_raw(team_key, stats=current_week)
 team_block = unwrap(raw_team["fantasy_content"]["team"])
 
-stats_list = team_block["team_stats"]["stats"]
+stats_block = team_block["team_stats"]["stats"]
 
 team_stats = {}
 
-for entry in stats_list:
+for entry in stats_block:
     stat = entry.get("stat")
     if not stat:
         continue
@@ -46,10 +46,10 @@ for entry in stats_list:
         if "value" in item:
             value = item["value"]
 
-    if stat_id and value is not None:
+    if stat_id is not None and value is not None:
         team_stats[stat_id] = value
 
-# ---------- Strengths & weaknesses ----------
+# ---------- Simple strength / weakness detection ----------
 strengths = {}
 weaknesses = {}
 
