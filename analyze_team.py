@@ -24,11 +24,24 @@ current_week = league.current_week()
 def unwrap(x):
     return x[0] if isinstance(x, list) else x
 
-# ---------- Get stat categories (SAFE SOURCE) ----------
-raw_league = league.yhandler.get_league_raw(league.league_id)
+# ---------- Get league settings safely ----------
+raw_leagues = league.yhandler.get_leagues_raw("nhl")
 
-league_block = unwrap(raw_league["fantasy_content"]["league"])
+leagues_block = raw_leagues["fantasy_content"]["games"][0]["game"][1]["leagues"]
 
+league_block = None
+
+for k, v in leagues_block.items():
+    if k == "count":
+        continue
+    if v["league"][0]["league_key"] == LEAGUE_ID:
+        league_block = unwrap(v["league"])
+        break
+
+if not league_block:
+    raise RuntimeError("League not found")
+
+# ---------- Stat categories ----------
 settings_block = unwrap(league_block["settings"])
 stat_categories_block = unwrap(settings_block["stat_categories"])
 stats_list = stat_categories_block["stats"]
@@ -54,13 +67,13 @@ for entry in stats_list:
 
 # ---------- Get team stats ----------
 raw_team = league.yhandler.get_team_stats_raw(team_key, current_week)
-
 team_block = unwrap(raw_team["fantasy_content"]["team"])
-team_stats_list = team_block["team_stats"]["stats"]
+
+stats_list = team_block["team_stats"]["stats"]
 
 team_stats = {}
 
-for entry in team_stats_list:
+for entry in stats_list:
     stat = entry.get("stat")
     if not stat:
         continue
@@ -78,7 +91,7 @@ for entry in team_stats_list:
         name = stat_categories.get(stat_id, stat_id)
         team_stats[name] = value
 
-# ---------- Classify strengths / weaknesses ----------
+# ---------- Strengths & weaknesses ----------
 strengths = {}
 weaknesses = {}
 
