@@ -22,16 +22,6 @@ if "YAHOO_OAUTH_JSON" in os.environ:
 oauth = OAuth2(None, None, from_file="oauth2.json")
 
 # =========================
-# Helpers
-# =========================
-def unwrap(block):
-    if isinstance(block, list):
-        for item in block:
-            if isinstance(item, dict):
-                return item
-    return block
-
-# =========================
 # Yahoo Objects
 # =========================
 game = yfa.Game(oauth, GAME_CODE)
@@ -45,39 +35,41 @@ current_week = league.current_week()
 # =========================
 stat_map = {}
 
-# Try league.settings() first (MOST RELIABLE)
 try:
     settings = league.settings()
     for s in settings.get("stat_categories", []):
         stat_map[str(s["stat_id"])] = s["name"]
 except Exception:
-    pass  # Yahoo sometimes omits this entirely
+    pass  # Yahoo sometimes omits this
 
 # =========================
-# FETCH WEEKLY TEAM STATS
+# FETCH SCOREBOARD (KNOWN-GOOD PATH)
 # =========================
-raw_scoreboard = league.yhandler.get_scoreboard_raw(
+raw = league.yhandler.get_scoreboard_raw(
     league.league_id, current_week
 )
 
-league_block = unwrap(raw_scoreboard["fantasy_content"]["league"])
-scoreboard = unwrap(league_block["scoreboard"])
+league_data = raw["fantasy_content"]["league"][1]
+scoreboard = league_data["scoreboard"]["0"]
 matchups = scoreboard["matchups"]
 
+# =========================
+# FIND MY TEAM STATS
+# =========================
 my_stats = None
 
-for _, m in matchups.items():
-    if not isinstance(m, dict):
+for k, v in matchups.items():
+    if k == "count":
         continue
 
-    matchup = m["matchup"]
+    matchup = v["matchup"]
     teams = matchup["0"]["teams"]
 
-    for _, t in teams.items():
-        if not isinstance(t, dict):
+    for tk, tv in teams.items():
+        if tk == "count":
             continue
 
-        team_block = t["team"]
+        team_block = tv["team"]
         meta = team_block[0]
 
         if meta[0]["team_key"] != team_key:
