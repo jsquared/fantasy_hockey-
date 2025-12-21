@@ -40,14 +40,25 @@ for k, v in matchups.items():
             continue
         team_block = tv["team"]
         meta = team_block[0]
-        stats = team_block[1]
+
+        # Extract stats safely
+        stats_dict = {}
+        if len(team_block) > 1 and "team_stats" in team_block[1]:
+            stats_list = team_block[1]["team_stats"]["stats"]
+            for s in stats_list:
+                stat = s.get("stat")
+                if stat and "value" in stat:
+                    try:
+                        stats_dict[stat["stat_id"]] = float(stat["value"])
+                    except ValueError:
+                        stats_dict[stat["stat_id"]] = 0.0
 
         tkey = meta[0]["team_key"]
         if tkey == team_key:
             my_team_data = {
                 "team_key": tkey,
                 "name": meta[2]["name"],
-                "stats": {s["stat"]["stat_id"]: s["stat"]["value"] for s in stats["stats"]}
+                "stats": stats_dict
             }
             break
     if my_team_data:
@@ -58,21 +69,13 @@ if not my_team_data:
 
 # ---------- Identify strengths and weaknesses ----------
 strengths = sorted(
-    [
-        {"stat_id": k, "name": k, "value": float(v)}
-        for k, v in my_team_data["stats"].items()
-        if float(v) > 0
-    ],
+    [{"stat_id": k, "name": k, "value": v} for k, v in my_team_data["stats"].items() if v > 0],
     key=lambda x: x["value"],
     reverse=True
 )
 
 weaknesses = sorted(
-    [
-        {"stat_id": k, "name": k, "value": float(v)}
-        for k, v in my_team_data["stats"].items()
-        if float(v) <= 0
-    ],
+    [{"stat_id": k, "name": k, "value": v} for k, v in my_team_data["stats"].items() if v <= 0],
     key=lambda x: x["value"]
 )
 
