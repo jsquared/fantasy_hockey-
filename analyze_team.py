@@ -37,10 +37,18 @@ def normalize_stat(stat):
 
     return None, None
 
-# ---------- Stat ID → Name ----------
+# ---------- Stat ID → Name (SAFE) ----------
 stat_map = {}
-for s in league.settings()["stat_categories"]:
-    stat_map[s["stat_id"]] = s["name"]
+
+settings = league.settings()
+
+if "stat_categories" in settings:
+    cats = settings["stat_categories"]
+    if isinstance(cats, dict) and "stats" in cats:
+        cats = cats["stats"]
+
+    for s in cats:
+        stat_map[str(s["stat_id"])] = s["name"]
 
 # ---------- Scoreboard ----------
 raw = league.yhandler.get_scoreboard_raw(league.league_id, current_week)
@@ -69,7 +77,7 @@ for k, v in matchups.items():
         for entry in stats["team_stats"]["stats"]:
             stat_id, value = normalize_stat(entry["stat"])
             if stat_id and value is not None:
-                my_stats[stat_id] = float(value)
+                my_stats[str(stat_id)] = float(value)
 
 # ---------- Rank Strengths / Weaknesses ----------
 named = []
