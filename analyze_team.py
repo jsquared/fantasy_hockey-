@@ -13,7 +13,7 @@ if "YAHOO_OAUTH_JSON" in os.environ:
 
 oauth = OAuth2(None, None, from_file="oauth2.json")
 
-# ---------- Yahoo objects ----------
+# ---------- Yahoo ----------
 game = yfa.Game(oauth, "nhl")
 league = game.to_league(LEAGUE_ID)
 
@@ -24,36 +24,60 @@ current_week = league.current_week()
 def unwrap(x):
     return x[0] if isinstance(x, list) else x
 
-# ---------- Get raw team data (WITH STATS) ----------
-raw_team = league.yhandler.get_team_raw(team_key, stats=current_week)
-team_block = unwrap(raw_team["fantasy_content"]["team"])
+# ---------- Get scoreboard (same source as fetch_scores.py) ----------
+raw = league.yhandler.get_scoreboard_raw(league.league_id, current_week)
+league_data = raw["fantasy_content"]["league"][1]
+matchups = league_data["scoreboard"]["0"]["matchups"]
 
-stats_block = team_block["team_stats"]["stats"]
+my_stats = {}
 
-team_stats = {}
-
-for entry in stats_block:
-    stat = entry.get("stat")
-    if not stat:
+# ---------- Find my matchup & stats ----------
+for k, v in matchups.items():
+    if k == "count":
         continue
 
-    stat_id = None
-    value = None
+    matchup = v["matchup"]
+    teams = matchup["0"]["teams"]
 
-    for item in stat:
-        if "stat_id" in item:
-            stat_id = item["stat_id"]
-        if "value" in item:
-            value = item["value"]
+    for tk, tv in teams.items():
+        if tk == "count":
+            continue
 
-    if stat_id is not None and value is not None:
-        team_stats[stat_id] = value
+        team_block = tv["team"]
+        meta = team_block[0]
+        stats = team_block[1]
 
-# ---------- Simple strength / weakness detection ----------
+        tkey = meta[0]["team_key"]
+
+        if tkey != team_key:
+            continue
+
+        for stat_entry in stats["team_stats"]["stats"]:
+            stat = stat_entry.get("stat")
+            if not stat:
+                continue
+
+            stat_id = None
+            value = None
+
+            for item in stat:
+                if "stat_id" in item:
+                    stat_id = item["stat_id"]
+                if "value" in item:
+                    value = item["value"]
+
+            if stat_id and value is not None:
+                my_stats[stat_id] = value
+
+# ---------- Sanity check ----------
+if not my_stats:
+    raise RuntimeError("Could not extract team stats from scoreboard")
+
+# ---------- Strengths / Weaknesses ----------
 strengths = {}
 weaknesses = {}
 
-for stat_id, value in team_stats.items():
+for stat_id, value in my_stats.items():
     try:
         numeric = float(value)
     except (ValueError, TypeError):
@@ -67,7 +91,7 @@ for stat_id, value in team_stats.items():
 # ---------- Output ----------
 analysis = {
     "league": league.settings()["name"],
-    "team": league.team_name(),
+    "team_key": team_key,
     "week": current_week,
     "strengths": strengths,
     "weaknesses": weaknesses,
