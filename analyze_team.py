@@ -49,9 +49,12 @@ for k, v in matchups.items():
                 stat = s.get("stat")
                 if stat and "value" in stat:
                     try:
-                        stats_dict[stat["stat_id"]] = float(stat["value"])
+                        stats_dict[stat["stat_id"]] = {
+                            "name": stat.get("name", stat["stat_id"]),
+                            "value": float(stat["value"])
+                        }
                     except ValueError:
-                        stats_dict[stat["stat_id"]] = 0.0
+                        stats_dict[stat["stat_id"]] = {"name": stat.get("name", stat["stat_id"]), "value": 0.0}
 
         tkey = meta[0]["team_key"]
         if tkey == team_key:
@@ -69,13 +72,13 @@ if not my_team_data:
 
 # ---------- Identify strengths and weaknesses ----------
 strengths = sorted(
-    [{"stat_id": k, "name": k, "value": v} for k, v in my_team_data["stats"].items() if v > 0],
+    [v for k, v in my_team_data["stats"].items() if v["value"] > 0],
     key=lambda x: x["value"],
     reverse=True
 )
 
 weaknesses = sorted(
-    [{"stat_id": k, "name": k, "value": v} for k, v in my_team_data["stats"].items() if v <= 0],
+    [v for k, v in my_team_data["stats"].items() if v["value"] <= 0],
     key=lambda x: x["value"]
 )
 
