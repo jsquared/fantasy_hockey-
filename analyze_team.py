@@ -21,19 +21,16 @@ team_key = league.team_key()
 current_week = league.current_week()
 
 # ---------- Helper ----------
-def unwrap(obj):
-    """If Yahoo wraps data in a list, unwrap it."""
-    if isinstance(obj, list):
-        return obj[0]
-    return obj
+def unwrap(x):
+    return x[0] if isinstance(x, list) else x
 
-# ---------- Get stat categories ----------
-raw_settings = league.yhandler.get_settings_raw(league.league_id)
+# ---------- Get stat categories (SAFE SOURCE) ----------
+raw_league = league.yhandler.get_league_raw(league.league_id)
 
-league_block = unwrap(raw_settings["fantasy_content"]["league"])
-settings = unwrap(league_block["settings"])
+league_block = unwrap(raw_league["fantasy_content"]["league"])
 
-stat_categories_block = unwrap(settings["stat_categories"])
+settings_block = unwrap(league_block["settings"])
+stat_categories_block = unwrap(settings_block["stat_categories"])
 stats_list = stat_categories_block["stats"]
 
 stat_categories = {}
@@ -44,16 +41,16 @@ for entry in stats_list:
         continue
 
     stat_id = None
-    stat_name = None
+    name = None
 
     for item in stat:
         if "stat_id" in item:
             stat_id = item["stat_id"]
         if "name" in item:
-            stat_name = item["name"]
+            name = item["name"]
 
-    if stat_id and stat_name:
-        stat_categories[stat_id] = stat_name
+    if stat_id and name:
+        stat_categories[stat_id] = name
 
 # ---------- Get team stats ----------
 raw_team = league.yhandler.get_team_stats_raw(team_key, current_week)
