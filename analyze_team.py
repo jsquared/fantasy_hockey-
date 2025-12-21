@@ -25,10 +25,6 @@ oauth = OAuth2(None, None, from_file="oauth2.json")
 # Helpers
 # =========================
 def unwrap(block):
-    """
-    Yahoo often returns lists of dicts.
-    This safely unwraps them.
-    """
     if isinstance(block, list):
         for item in block:
             if isinstance(item, dict):
@@ -49,13 +45,13 @@ current_week = league.current_week()
 # =========================
 stat_map = {}
 
-raw_game = game.yhandler.get_game_raw(GAME_CODE)
-game_block = unwrap(raw_game["fantasy_content"]["game"])
-stat_cats = unwrap(game_block["stat_categories"])
-stats = stat_cats["stats"]
-
-for s in stats:
-    stat_map[str(s["stat_id"])] = s["name"]
+# Try league.settings() first (MOST RELIABLE)
+try:
+    settings = league.settings()
+    for s in settings.get("stat_categories", []):
+        stat_map[str(s["stat_id"])] = s["name"]
+except Exception:
+    pass  # Yahoo sometimes omits this entirely
 
 # =========================
 # FETCH WEEKLY TEAM STATS
@@ -83,11 +79,12 @@ for _, m in matchups.items():
 
         team_block = t["team"]
         meta = team_block[0]
-        stats_block = team_block[1]["team_stats"]["stats"]
 
-        if meta[0]["team_key"] == team_key:
-            my_stats = stats_block
-            break
+        if meta[0]["team_key"] != team_key:
+            continue
+
+        my_stats = team_block[1]["team_stats"]["stats"]
+        break
 
     if my_stats:
         break
@@ -101,8 +98,12 @@ if not my_stats:
 processed = []
 
 for item in my_stats:
-    stat_id = str(item["stat"]["stat_id"])
-    raw_value = item["stat"].get("value")
+    stat = item.get("stat")
+    if not stat:
+        continue
+
+    stat_id = str(stat.get("stat_id"))
+    raw_value = stat.get("value")
 
     try:
         value = float(raw_value)
@@ -124,7 +125,7 @@ weaknesses = list(reversed(processed[-BOTTOM_N:]))
 # OUTPUT
 # =========================
 payload = {
-    "league": league.settings()["name"],
+    "league": league.settings().get("name", "Unknown League"),
     "team_key": team_key,
     "week": current_week,
     "strengths": strengths,
