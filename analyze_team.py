@@ -39,7 +39,13 @@ for k, v in matchups.items():
         stats = team_block[1]
         tkey = meta[0]["team_key"]
         if tkey == team_key:
-            my_team_stats = {s["stat"]["stat_id"]: float(s["stat"]["value"]) for s in stats["team_stats"]["stats"]}
+            # Use the stats array safely
+            my_team_stats = {}
+            for s in stats.get("team_stats", {}).get("stats", []):
+                stat_id = s["stat"].get("stat_id")
+                value = float(s["stat"].get("value", 0))
+                if stat_id:
+                    my_team_stats[stat_id] = value
             break
     if my_team_stats:
         break
@@ -85,8 +91,8 @@ payload = {
     "league": league.settings()["name"],
     "team_key": team_key,
     "week": current_week,
-    "strengths": strengths,
-    "weaknesses": weaknesses,
+    "strengths": sorted(strengths, key=lambda x: x["value"], reverse=True),
+    "weaknesses": sorted(weaknesses, key=lambda x: x["value"]),
     "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
