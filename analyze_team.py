@@ -24,14 +24,32 @@ current_week = league.current_week()
 def unwrap(x):
     return x[0] if isinstance(x, list) else x
 
-# ---------- Get scoreboard (same source as fetch_scores.py) ----------
+def normalize_stat(stat):
+    """Always return (stat_id, value) or (None, None)"""
+    if isinstance(stat, dict):
+        return stat.get("stat_id"), stat.get("value")
+
+    if isinstance(stat, list):
+        stat_id = None
+        value = None
+        for item in stat:
+            if isinstance(item, dict):
+                if "stat_id" in item:
+                    stat_id = item["stat_id"]
+                if "value" in item:
+                    value = item["value"]
+        return stat_id, value
+
+    return None, None
+
+# ---------- Scoreboard (trusted source) ----------
 raw = league.yhandler.get_scoreboard_raw(league.league_id, current_week)
 league_data = raw["fantasy_content"]["league"][1]
 matchups = league_data["scoreboard"]["0"]["matchups"]
 
 my_stats = {}
 
-# ---------- Find my matchup & stats ----------
+# ---------- Extract my team stats ----------
 for k, v in matchups.items():
     if k == "count":
         continue
@@ -45,28 +63,18 @@ for k, v in matchups.items():
 
         team_block = tv["team"]
         meta = team_block[0]
-        stats = team_block[1]
+        stats_block = team_block[1]
 
         tkey = meta[0]["team_key"]
 
         if tkey != team_key:
             continue
 
-        for stat_entry in stats["team_stats"]["stats"]:
+        for stat_entry in stats_block["team_stats"]["stats"]:
             stat = stat_entry.get("stat")
-            if not stat:
-                continue
+            stat_id, value = normalize_stat(stat)
 
-            stat_id = None
-            value = None
-
-            for item in stat:
-                if "stat_id" in item:
-                    stat_id = item["stat_id"]
-                if "value" in item:
-                    value = item["value"]
-
-            if stat_id and value is not None:
+            if stat_id is not None and value is not None:
                 my_stats[stat_id] = value
 
 # ---------- Sanity check ----------
