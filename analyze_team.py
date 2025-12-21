@@ -9,18 +9,31 @@ import yahoo_fantasy_api as yfa
 # =========================
 LEAGUE_ID = "465.l.33140"
 GAME_CODE = "nhl"
-TOP_N = 8        # how many strengths to show
-BOTTOM_N = 5     # how many weaknesses to show
+TOP_N = 8
+BOTTOM_N = 5
 
 # =========================
-# OAuth (GitHub Actions safe)
+# OAuth (GitHub-safe)
 # =========================
 if "YAHOO_OAUTH_JSON" in os.environ:
-    oauth_data = json.loads(os.environ["YAHOO_OAUTH_JSON"])
     with open("oauth2.json", "w") as f:
-        json.dump(oauth_data, f)
+        json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
 
 oauth = OAuth2(None, None, from_file="oauth2.json")
+
+# =========================
+# Helpers
+# =========================
+def unwrap(block):
+    """
+    Yahoo often returns lists of dicts.
+    This safely unwraps them.
+    """
+    if isinstance(block, list):
+        for item in block:
+            if isinstance(item, dict):
+                return item
+    return block
 
 # =========================
 # Yahoo Objects
@@ -32,21 +45,28 @@ team_key = league.team_key()
 current_week = league.current_week()
 
 # =========================
-# GLOBAL STAT MAP (bulletproof)
+# STAT ID → NAME MAP (SAFE)
 # =========================
 stat_map = {}
 
 raw_game = game.yhandler.get_game_raw(GAME_CODE)
-stats = raw_game["fantasy_content"]["game"][1]["stat_categories"]["stats"]
+game_block = unwrap(raw_game["fantasy_content"]["game"])
+stat_cats = unwrap(game_block["stat_categories"])
+stats = stat_cats["stats"]
 
 for s in stats:
     stat_map[str(s["stat_id"])] = s["name"]
 
 # =========================
-# FETCH TEAM STATS (weekly)
+# FETCH WEEKLY TEAM STATS
 # =========================
-raw_scoreboard = league.yhandler.get_scoreboard_raw(league.league_id, current_week)
-matchups = raw_scoreboard["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
+raw_scoreboard = league.yhandler.get_scoreboard_raw(
+    league.league_id, current_week
+)
+
+league_block = unwrap(raw_scoreboard["fantasy_content"]["league"])
+scoreboard = unwrap(league_block["scoreboard"])
+matchups = scoreboard["matchups"]
 
 my_stats = None
 
@@ -54,15 +74,16 @@ for _, m in matchups.items():
     if not isinstance(m, dict):
         continue
 
-    teams = m["matchup"]["0"]["teams"]
+    matchup = m["matchup"]
+    teams = matchup["0"]["teams"]
 
     for _, t in teams.items():
         if not isinstance(t, dict):
             continue
 
-        team = t["team"]
-        meta = team[0]
-        stats_block = team[1]["team_stats"]["stats"]
+        team_block = t["team"]
+        meta = team_block[0]
+        stats_block = team_block[1]["team_stats"]["stats"]
 
         if meta[0]["team_key"] == team_key:
             my_stats = stats_block
@@ -94,7 +115,6 @@ for item in my_stats:
         "value": value
     })
 
-# Sort by value
 processed.sort(key=lambda x: x["value"], reverse=True)
 
 strengths = processed[:TOP_N]
@@ -116,4 +136,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/team_analysis.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("team_analysis.json updated successfully")
+print("team_analysis.json updated")
