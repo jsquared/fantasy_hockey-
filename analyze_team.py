@@ -21,71 +21,71 @@ league = game.to_league(LEAGUE_ID)
 team_key = league.team_key()
 current_week = league.current_week()
 
-# ---------- Raw scoreboard ----------
+# ---------- Fetch team stats ----------
 raw = league.yhandler.get_scoreboard_raw(league.league_id, current_week)
-league_data = raw["fantasy_content"]["league"][1]
-matchups = league_data["scoreboard"]["0"]["matchups"]
+matchups = raw["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
 
-# ---------- Find my matchup ----------
-my_team_data = None
+my_team = None
+
 for k, v in matchups.items():
     if k == "count":
         continue
-
-    matchup = v["matchup"]
-    teams = matchup["0"]["teams"]
-
+    teams = v["matchup"]["0"]["teams"]
     for tk, tv in teams.items():
         if tk == "count":
             continue
         team_block = tv["team"]
         meta = team_block[0]
-
-        # Extract stats safely
-        stats_dict = {}
-        if len(team_block) > 1 and "team_stats" in team_block[1]:
-            stats_list = team_block[1]["team_stats"]["stats"]
-            for s in stats_list:
-                stat = s.get("stat")
-                if stat and "value" in stat:
-                    try:
-                        stats_dict[stat["stat_id"]] = {
-                            "name": stat.get("name", stat["stat_id"]),
-                            "value": float(stat["value"])
-                        }
-                    except ValueError:
-                        stats_dict[stat["stat_id"]] = {"name": stat.get("name", stat["stat_id"]), "value": 0.0}
-
+        stats = team_block[1]
         tkey = meta[0]["team_key"]
         if tkey == team_key:
-            my_team_data = {
+            my_team = {
                 "team_key": tkey,
-                "name": meta[2]["name"],
-                "stats": stats_dict
+                "stats": {s["stat"]["stat_id"]: float(s["stat"]["value"]) for s in stats["team_stats"]["stats"]}
             }
             break
-    if my_team_data:
+    if my_team:
         break
 
-if not my_team_data:
-    raise RuntimeError("Could not find your team in this week's matchup")
+if not my_team:
+    raise RuntimeError("Could not find your team stats")
 
-# ---------- Identify strengths and weaknesses ----------
-strengths = sorted(
-    [v for k, v in my_team_data["stats"].items() if v["value"] > 0],
-    key=lambda x: x["value"],
-    reverse=True
-)
+# ---------- Map stat IDs to human-readable names ----------
+STAT_MAP = {
+    "1": "Goals",
+    "2": "Assists",
+    "4": "Penalty Minutes",
+    "5": "Power Play Points",
+    "8": "Shots on Goal",
+    "11": "Hits",
+    "12": "Blocks",
+    "14": "Faceoff Wins",
+    "16": "Plus/Minus",
+    "19": "Short-Handed Points",
+    "22": "Giveaways",
+    "23": "Takeaways",
+    "24": "Wins",
+    "25": "Saves",
+    "26": "Save %",
+    "27": "Goals Against",
+    "31": "Goals For",
+    "32": "Shots For"
+}
 
-weaknesses = sorted(
-    [v for k, v in my_team_data["stats"].items() if v["value"] <= 0],
-    key=lambda x: x["value"]
-)
+# Separate strengths and weaknesses
+strengths = [
+    {"stat_id": k, "name": STAT_MAP.get(k, k), "value": v}
+    for k, v in my_team["stats"].items() if v > 0
+]
+weaknesses = [
+    {"stat_id": k, "name": STAT_MAP.get(k, k), "value": v}
+    for k, v in my_team["stats"].items() if v <= 0
+]
 
 # ---------- Output ----------
 payload = {
     "league": league.settings()["name"],
-    "team_key": my_team_data["team_key"],
+    "team_key": team_key,
     "week": current_week,
     "strengths": strengths,
     "weaknesses": weaknesses,
@@ -93,7 +93,7 @@ payload = {
 }
 
 os.makedirs("docs", exist_ok=True)
-with open("docs/team_analysis.json", "w") as f:
+with open("docs/analyzed_team.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("team_analysis.json updated")
+print("analyzed_team.json updated")
