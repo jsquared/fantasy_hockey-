@@ -1,0 +1,38 @@
+name: Analyze Fantasy Team
+
+permissions:
+  contents: write
+
+on:
+  schedule:
+    - cron: "0 9 * * *"   # once per day (9am UTC)
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install yahoo-oauth yahoo-fantasy-api requests pandas
+
+      - name: Run analyze_team.py
+        env:
+          YAHOO_OAUTH_JSON: ${{ secrets.YAHOO_OAUTH_JSON }}
+        run: python analyze_team.py
+
+      - name: Commit and push analysis.json
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add docs/analysis.json
+          git diff --cached --quiet || git commit -m "Update team analysis"
+          git push
