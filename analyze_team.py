@@ -21,11 +21,7 @@ team_key = league.team_key()
 current_week = league.current_week()
 
 # ---------- Helpers ----------
-def unwrap(x):
-    return x[0] if isinstance(x, list) else x
-
 def normalize_stat(stat):
-    """Always return (stat_id, value) or (None, None)"""
     if isinstance(stat, dict):
         return stat.get("stat_id"), stat.get("value")
 
@@ -33,68 +29,67 @@ def normalize_stat(stat):
         stat_id = None
         value = None
         for item in stat:
-            if isinstance(item, dict):
-                if "stat_id" in item:
-                    stat_id = item["stat_id"]
-                if "value" in item:
-                    value = item["value"]
+            if "stat_id" in item:
+                stat_id = item["stat_id"]
+            if "value" in item:
+                value = item["value"]
         return stat_id, value
 
     return None, None
 
-# ---------- Scoreboard (trusted source) ----------
+# ---------- Stat ID → Name ----------
+stat_map = {}
+for s in league.settings()["stat_categories"]:
+    stat_map[s["stat_id"]] = s["name"]
+
+# ---------- Scoreboard ----------
 raw = league.yhandler.get_scoreboard_raw(league.league_id, current_week)
 league_data = raw["fantasy_content"]["league"][1]
 matchups = league_data["scoreboard"]["0"]["matchups"]
 
 my_stats = {}
 
-# ---------- Extract my team stats ----------
 for k, v in matchups.items():
     if k == "count":
         continue
 
-    matchup = v["matchup"]
-    teams = matchup["0"]["teams"]
+    teams = v["matchup"]["0"]["teams"]
 
     for tk, tv in teams.items():
         if tk == "count":
             continue
 
-        team_block = tv["team"]
-        meta = team_block[0]
-        stats_block = team_block[1]
+        team = tv["team"]
+        meta = team[0]
+        stats = team[1]
 
-        tkey = meta[0]["team_key"]
-
-        if tkey != team_key:
+        if meta[0]["team_key"] != team_key:
             continue
 
-        for stat_entry in stats_block["team_stats"]["stats"]:
-            stat = stat_entry.get("stat")
-            stat_id, value = normalize_stat(stat)
+        for entry in stats["team_stats"]["stats"]:
+            stat_id, value = normalize_stat(entry["stat"])
+            if stat_id and value is not None:
+                my_stats[stat_id] = float(value)
 
-            if stat_id is not None and value is not None:
-                my_stats[stat_id] = value
-
-# ---------- Sanity check ----------
-if not my_stats:
-    raise RuntimeError("Could not extract team stats from scoreboard")
-
-# ---------- Strengths / Weaknesses ----------
-strengths = {}
-weaknesses = {}
-
+# ---------- Rank Strengths / Weaknesses ----------
+named = []
 for stat_id, value in my_stats.items():
-    try:
-        numeric = float(value)
-    except (ValueError, TypeError):
-        continue
+    named.append({
+        "stat_id": stat_id,
+        "name": stat_map.get(stat_id, f"Stat {stat_id}"),
+        "value": value
+    })
 
-    if numeric > 0:
-        strengths[stat_id] = numeric
-    else:
-        weaknesses[stat_id] = numeric
+strengths = sorted(
+    [s for s in named if s["value"] > 0],
+    key=lambda x: x["value"],
+    reverse=True
+)
+
+weaknesses = sorted(
+    [s for s in named if s["value"] <= 0],
+    key=lambda x: x["value"]
+)
 
 # ---------- Output ----------
 analysis = {
