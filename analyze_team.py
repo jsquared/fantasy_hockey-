@@ -1,155 +1,155 @@
 import json
-import os
-from datetime import datetime, timezone
-
+from datetime import datetime
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
 
-# ---------------- CONFIG ----------------
-LEAGUE_ID = "465.l.33140"
-OUTPUT_PATH = "docs/analysis.json"
-# ---------------------------------------
+# =========================
+# Helpers
+# =========================
+
+def unwrap(node):
+    """
+    Yahoo API returns dicts and lists inconsistently.
+    This safely unwraps both.
+    """
+    if isinstance(node, list):
+        for item in node:
+            if isinstance(item, dict):
+                return item
+    return node
 
 
-# -------------------------------------------------
-# 1️⃣ OAuth (GitHub Actions safe)
-# -------------------------------------------------
-if "YAHOO_OAUTH_JSON" not in os.environ:
-    raise RuntimeError("YAHOO_OAUTH_JSON secret not set")
-
-with open("oauth2.json", "w") as f:
-    f.write(os.environ["YAHOO_OAUTH_JSON"])
+# =========================
+# Authenticate
+# =========================
 
 print("🔑 Authenticating with Yahoo...")
+
 oauth = OAuth2(None, None, from_file="oauth2.json")
 
+gm = yfa.Game(oauth, "nhl")
+league = gm.to_league("465.l.33140")
 
-# -------------------------------------------------
-# 2️⃣ Load League
-# -------------------------------------------------
-game = yfa.Game(oauth, "nhl")
-league = game.to_league(LEAGUE_ID)
+print(f"🏒 League: {league.settings()['name']}")
 
-league_name = league.settings()["name"]
-current_week = int(league.current_week())
+# =========================
+# Build stat_id → stat_name
+# =========================
 
-print(f"🏒 League: {league_name}")
-print(f"📅 Analyzing weeks 1 → {current_week}")
-
-
-# -------------------------------------------------
-# 3️⃣ Build STAT ID → NAME map
-# -------------------------------------------------
 print("🗂️ Loading stat categories...")
+
 stat_id_to_name = {}
 
-for stat in league.stat_categories():
-    stat_id = str(stat.get("stat_id"))
-    name = (
-        stat.get("display_name")
-        or stat.get("name")
-        or f"Stat {stat_id}"
-    )
-    stat_id_to_name[stat_id] = name
+settings_raw = league.yhandler.get_settings_raw(league.league_key)
+settings = unwrap(settings_raw["fantasy_content"]["league"])
 
+stat_cats = unwrap(settings["settings"])["stat_categories"]["stats"]
 
-# -------------------------------------------------
-# 4️⃣ Identify YOUR team (FIXED)
-# -------------------------------------------------
+for s in stat_cats:
+    stat = unwrap(s)["stat"]
+    stat_id_to_name[str(stat["stat_id"])] = stat["name"]
+
+# =========================
+# Resolve your team
+# =========================
+
 print("👥 Resolving your team...")
 
 my_team = None
-teams = league.teams()
+teams_raw = league.teams()
 
-for key, entry in teams.items():
-    if key == "count":
+for _, team_wrapper in teams_raw.items():
+    if not isinstance(team_wrapper, dict):
         continue
 
-    team_data = entry.get("team", {})
-    meta = team_data[0]
-    team_key = meta[0]["team_key"]
+    team_block = team_wrapper.get("team")
+    if not team_block:
+        continue
 
-    if team_key.endswith(".t.13"):  # <-- your team number
-        my_team = yfa.Team(oauth, team_key)
-        break
+    team_block = unwrap(team_block)
+
+    if isinstance(team_block, dict):
+        team_key = team_block.get("team_key")
+        if team_key and team_key.endswith(".t.13"):
+            my_team = yfa.Team(oauth, team_key)
+            break
 
 if not my_team:
-    raise RuntimeError("Could not find your team")
+    raise RuntimeError("❌ Could not find your team")
 
 print(f"✅ Found team: {my_team.team_key}")
 
+# =========================
+# Analyze all weeks
+# =========================
 
-# -------------------------------------------------
-# 5️⃣ Aggregate stats across ALL weeks
-# -------------------------------------------------
-stat_totals = {}
-stat_weeks = {}
+current_week = int(league.current_week())
+print(f"📅 Analyzing weeks 1 → {current_week}")
+
+historical_totals = {}
 
 for week in range(1, current_week + 1):
-    print(f"📈 Week {week}")
-    weekly = my_team.stats(week)
+    stats_raw = my_team.yhandler.get_team_stats_raw(
+        my_team.team_key, week
+    )
 
-    for stat in weekly.get("stats", []):
-        stat_id = str(stat.get("stat_id"))
-        value = stat.get("value")
+    team_stats = (
+        stats_raw["fantasy_content"]["team"][1]
+        ["team_stats"]["stats"]
+    )
 
-        try:
-            value = float(value)
-        except (TypeError, ValueError):
-            continue
+    for item in team_stats:
+        stat = unwrap(item)["stat"]
+        stat_id = str(stat["stat_id"])
+        value = float(stat["value"])
 
-        stat_totals[stat_id] = stat_totals.get(stat_id, 0) + value
-        stat_weeks[stat_id] = stat_weeks.get(stat_id, 0) + 1
+        historical_totals.setdefault(stat_id, []).append(value)
 
+# =========================
+# Compute averages
+# =========================
 
-# -------------------------------------------------
-# 6️⃣ Compute averages
-# -------------------------------------------------
 averages = {
-    stat_id: stat_totals[stat_id] / stat_weeks[stat_id]
-    for stat_id in stat_totals
+    stat_id: sum(vals) / len(vals)
+    for stat_id, vals in historical_totals.items()
 }
 
+# =========================
+# Strengths & Weaknesses
+# =========================
 
-# -------------------------------------------------
-# 7️⃣ Split strengths / weaknesses
-# -------------------------------------------------
-strengths = []
-weaknesses = []
+sorted_stats = sorted(
+    averages.items(), key=lambda x: x[1], reverse=True
+)
 
-for stat_id, avg in averages.items():
-    name = stat_id_to_name.get(stat_id, f"Stat {stat_id}")
+strengths = sorted_stats[:8]
+weaknesses = sorted_stats[-4:]
 
-    entry = {
-        "stat_id": stat_id,
-        "name": name,
-        "average": round(avg, 3)
-    }
+def format_block(items):
+    return [
+        {
+            "stat_id": stat_id,
+            "name": stat_id_to_name.get(stat_id, "Unknown"),
+            "value": round(value, 3),
+        }
+        for stat_id, value in items
+    ]
 
-    if avg > 0:
-        strengths.append(entry)
-    else:
-        weaknesses.append(entry)
+# =========================
+# Output
+# =========================
 
-strengths.sort(key=lambda x: x["average"], reverse=True)
-weaknesses.sort(key=lambda x: x["average"])
-
-
-# -------------------------------------------------
-# 8️⃣ Write output
-# -------------------------------------------------
 output = {
-    "league": league_name,
+    "league": league.settings()["name"],
     "team_key": my_team.team_key,
     "weeks_analyzed": current_week,
-    "strengths": strengths,
-    "weaknesses": weaknesses,
-    "lastUpdated": datetime.now(timezone.utc).isoformat()
+    "strengths": format_block(strengths),
+    "weaknesses": format_block(weaknesses),
+    "lastUpdated": datetime.utcnow().isoformat() + "Z",
 }
 
-os.makedirs("docs", exist_ok=True)
-with open(OUTPUT_PATH, "w") as f:
+with open("analysis.json", "w") as f:
     json.dump(output, f, indent=2)
 
-print("✅ docs/analysis.json updated successfully")
+print("✅ analysis.json updated successfully")
