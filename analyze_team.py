@@ -22,21 +22,27 @@ gm = yfa.Game(oauth, "nhl")
 league = gm.to_league(LEAGUE_ID)
 
 current_week = league.current_week()
-league_name = league.settings().get("name", "Unknown League")
+league_settings = league.settings()
+league_name = league_settings.get("name", "Unknown League")
 
 # ---------- Get stat categories safely ----------
-stat_categories = league.settings().get("stat_categories", {}).get("stats", [])
+stat_categories = league_settings.get("stat_categories", {}).get("stats", [])
 stat_id_to_name = {
     str(stat.get("stat_id")): stat.get("name", f"Stat {stat.get('stat_id')}")
     for stat in stat_categories
 }
 
-# ---------- Aggregate weekly stats ----------
-team = league.teams()[0]  # your team (adjust if needed)
-team_key = team["team_key"]
+# ---------- Resolve your team ----------
+teams = league.teams()  # returns dict keyed by team_key
+if not teams:
+    raise RuntimeError("No teams found in the league!")
 
+team_key, team = next(iter(teams.items()))  # pick first team
 print(f"🏒 League: {league_name}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
+print(f"👥 Team key: {team_key}")
+
+# ---------- Aggregate weekly stats ----------
 team_stats = {}
 
 for week in range(1, current_week + 1):
