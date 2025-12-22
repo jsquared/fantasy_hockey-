@@ -12,6 +12,7 @@ OUTPUT_FILE = "docs/analysis.json"
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
         json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
+    print("🔐 oauth2.json created from environment variable")
 
 print("🔑 Authenticating with Yahoo...")
 oauth = OAuth2(None, None, from_file="oauth2.json")
@@ -32,8 +33,8 @@ stat_id_to_name = {
 }
 
 # ---------- Resolve YOUR team ----------
-teams = league.teams()
-team = next(iter(teams.values()))
+teams = league.teams()              # dict
+team = next(iter(teams.values()))   # first team object
 team_key = team["team_key"]
 
 print(f"🏒 League: {league_name}")
@@ -46,10 +47,8 @@ team_totals = {}
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week} stats...")
 
-    raw = league.yhandler.get_scoreboard_raw(
-        league_key=LEAGUE_KEY,
-        week=week
-    )
+    # ✅ POSITIONAL ARGS — THIS IS THE FIX
+    raw = league.yhandler.get_scoreboard_raw(LEAGUE_KEY, week)
 
     matchups = (
         raw.get("fantasy_content", {})
@@ -62,8 +61,8 @@ for week in range(1, current_week + 1):
         if not isinstance(matchup, dict):
             continue
 
-        teams = matchup.get("teams", {})
-        for t in teams.values():
+        teams_block = matchup.get("teams", {})
+        for t in teams_block.values():
             if not isinstance(t, dict):
                 continue
 
@@ -103,7 +102,7 @@ for sid, val in team_totals.items():
     else:
         weaknesses.append(entry)
 
-# ---------- Output ----------
+# ---------- Write output ----------
 payload = {
     "league": league_name,
     "team_key": team_key,
