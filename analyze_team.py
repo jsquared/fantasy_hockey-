@@ -12,9 +12,7 @@ import yahoo_fantasy_api as yfa
 if not os.path.exists("oauth2.json"):
     oauth_env = os.environ.get("YAHOO_OAUTH_JSON")
     if not oauth_env:
-        raise RuntimeError(
-            "❌ Missing oauth2.json and YAHOO_OAUTH_JSON env var"
-        )
+        raise RuntimeError("❌ Missing oauth2.json and YAHOO_OAUTH_JSON env var")
 
     with open("oauth2.json", "w") as f:
         f.write(oauth_env)
@@ -56,9 +54,10 @@ print("🗂️ Loading stat categories...")
 
 stat_id_to_name = {}
 
-settings_raw = league.yhandler.get_settings_raw(league.league_key)
-settings = unwrap(settings_raw["fantasy_content"]["league"])
-stat_cats = unwrap(settings["settings"])["stat_categories"]["stats"]
+settings_raw = league.yhandler.get_settings_raw(league.league_id)
+league_block = unwrap(settings_raw["fantasy_content"]["league"])
+settings = unwrap(league_block["settings"])
+stat_cats = settings["stat_categories"]["stats"]
 
 for s in stat_cats:
     stat = unwrap(s)["stat"]
@@ -71,18 +70,18 @@ for s in stat_cats:
 
 print("👥 Resolving your team...")
 
+MY_TEAM_SUFFIX = ".t.13"
 my_team = None
+
 teams_raw = league.teams()
 
-for _, team_wrapper in teams_raw.items():
-    team = unwrap(team_wrapper.get("team"))
-    if not isinstance(team, dict):
-        continue
-
-    team_key = team.get("team_key")
-    if team_key and team_key.endswith(".t.13"):
-        my_team = yfa.Team(oauth, team_key)
-        break
+for _, wrapper in teams_raw.items():
+    team = unwrap(wrapper.get("team"))
+    if isinstance(team, dict):
+        team_key = team.get("team_key")
+        if team_key and team_key.endswith(MY_TEAM_SUFFIX):
+            my_team = yfa.Team(oauth, team_key)
+            break
 
 if not my_team:
     raise RuntimeError("❌ Could not find your team")
