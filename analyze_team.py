@@ -39,30 +39,45 @@ print(f"📅 Analyzing weeks 1 → {current_week}")
 
 
 # -------------------------------------------------
-# 3️⃣ Build STAT ID → NAME map (SAFE)
+# 3️⃣ Build STAT ID → NAME map
 # -------------------------------------------------
 print("🗂️ Loading stat categories...")
 stat_id_to_name = {}
 
 for stat in league.stat_categories():
     stat_id = str(stat.get("stat_id"))
-
     name = (
         stat.get("display_name")
         or stat.get("name")
         or f"Stat {stat_id}"
     )
-
     stat_id_to_name[stat_id] = name
 
 
 # -------------------------------------------------
-# 4️⃣ Identify your team
+# 4️⃣ Identify YOUR team (FIXED)
 # -------------------------------------------------
-my_team = league.teams()[0]
-team_key = my_team.team_key
+print("👥 Resolving your team...")
 
-print(f"👥 Team key: {team_key}")
+my_team = None
+teams = league.teams()
+
+for key, entry in teams.items():
+    if key == "count":
+        continue
+
+    team_data = entry.get("team", {})
+    meta = team_data[0]
+    team_key = meta[0]["team_key"]
+
+    if team_key.endswith(".t.13"):  # <-- your team number
+        my_team = yfa.Team(oauth, team_key)
+        break
+
+if not my_team:
+    raise RuntimeError("Could not find your team")
+
+print(f"✅ Found team: {my_team.team_key}")
 
 
 # -------------------------------------------------
@@ -91,10 +106,10 @@ for week in range(1, current_week + 1):
 # -------------------------------------------------
 # 6️⃣ Compute averages
 # -------------------------------------------------
-averages = {}
-for stat_id, total in stat_totals.items():
-    weeks = stat_weeks.get(stat_id, 1)
-    averages[stat_id] = total / weeks
+averages = {
+    stat_id: stat_totals[stat_id] / stat_weeks[stat_id]
+    for stat_id in stat_totals
+}
 
 
 # -------------------------------------------------
@@ -126,7 +141,7 @@ weaknesses.sort(key=lambda x: x["average"])
 # -------------------------------------------------
 output = {
     "league": league_name,
-    "team_key": team_key,
+    "team_key": my_team.team_key,
     "weeks_analyzed": current_week,
     "strengths": strengths,
     "weaknesses": weaknesses,
