@@ -1,168 +1,121 @@
-import os
 import json
-from datetime import datetime
+import os
+from datetime import datetime, timezone
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
+# ---------------- CONFIG ----------------
+LEAGUE_ID = "465.l.33140"
+OUTPUT_FILE = "analysis.json"
 
-# =========================
-# Ensure oauth2.json exists
-# =========================
-
-if not os.path.exists("oauth2.json"):
-    oauth_env = os.environ.get("YAHOO_OAUTH_JSON")
-    if not oauth_env:
-        raise RuntimeError("❌ Missing oauth2.json and YAHOO_OAUTH_JSON env var")
-
+# ---------- OAuth ----------
+if "YAHOO_OAUTH_JSON" in os.environ:
+    oauth_data = json.loads(os.environ["YAHOO_OAUTH_JSON"])
     with open("oauth2.json", "w") as f:
-        f.write(oauth_env)
-
+        json.dump(oauth_data, f)
     print("🔐 oauth2.json created from environment variable")
 
-
-# =========================
-# Helpers
-# =========================
-
-def unwrap(node):
-    if isinstance(node, list):
-        for item in node:
-            if isinstance(item, dict):
-                return item
-    return node
-
-
-# =========================
-# Authenticate
-# =========================
-
-print("🔑 Authenticating with Yahoo...")
-
 oauth = OAuth2(None, None, from_file="oauth2.json")
+if not oauth.token_is_valid():
+    print("⚠️ Yahoo OAuth token expired, refreshing...")
+    oauth.refresh_access_token()
 
+# ---------- Yahoo objects ----------
 gm = yfa.Game(oauth, "nhl")
-league = gm.to_league("465.l.33140")
+league = gm.to_league(LEAGUE_ID)
 
-print(f"🏒 League: {league.settings()['name']}")
+# Helper to safely unwrap Yahoo API lists/dicts
+def unwrap(block):
+    if isinstance(block, list):
+        return block[0]
+    return block
 
-
-# =========================
-# Build stat_id → stat_name
-# =========================
-
-print("🗂️ Loading stat categories...")
-
-stat_id_to_name = {}
+# ---------- Load stat categories ----------
+print(f"🏒 League: {league.settings().get('name', LEAGUE_ID)}")
+current_week = league.current_week()
+weeks = list(range(1, current_week + 1))
+print(f"📅 Analyzing weeks 1 → {current_week}")
 
 settings_raw = league.yhandler.get_settings_raw(league.league_id)
-league_block = unwrap(settings_raw["fantasy_content"]["league"])
-settings = unwrap(league_block["settings"])
-stat_cats = settings["stat_categories"]["stats"]
+league_block = settings_raw["fantasy_content"]["league"]
+if isinstance(league_block, list):
+    league_block = league_block[0]
+settings = league_block.get("settings", {})
+if not settings:
+    raise RuntimeError("❌ Could not find 'settings' in league block")
 
-for s in stat_cats:
-    stat = unwrap(s)["stat"]
-    stat_id_to_name[str(stat["stat_id"])] = stat["name"]
+stat_categories = settings.get("stat_categories", {}).get("stats", [])
+stat_id_to_name = {str(stat.get("stat_id")): stat.get("name", f"Stat {stat.get('stat_id')}") for stat in stat_categories}
 
+# ---------- Load my team ----------
+teams_raw = league.yhandler.get_teams_raw(league.league_id)
+teams_block = teams_raw["fantasy_content"]["league"]["0"]["teams"]
+my_team_key = league.team_key()
 
-# =========================
-# Resolve your team
-# =========================
-
-print("👥 Resolving your team...")
-
-MY_TEAM_SUFFIX = ".t.13"
 my_team = None
-
-teams_raw = league.teams()
-
-for _, wrapper in teams_raw.items():
-    team = unwrap(wrapper.get("team"))
-    if isinstance(team, dict):
-        team_key = team.get("team_key")
-        if team_key and team_key.endswith(MY_TEAM_SUFFIX):
-            my_team = yfa.Team(oauth, team_key)
-            break
+for tk, tv in teams_block.items():
+    if tk == "count":
+        continue
+    team_data = unwrap(tv["team"])
+    if team_data[0]["team_key"] == my_team_key:
+        my_team = team_data
+        break
 
 if not my_team:
     raise RuntimeError("❌ Could not find your team")
 
-print(f"✅ Found team: {my_team.team_key}")
+# ---------- Historical stats ----------
+strengths = {}
+weaknesses = {}
 
+for week in weeks:
+    raw_scoreboard = league.yhandler.get_scoreboard_raw(league.league_id, week)
+    matchups = raw_scoreboard["fantasy_content"]["league"]["1"]["scoreboard"]
+    # Find your matchup
+    for k, v in matchups.items():
+        if k == "count":
+            continue
+        matchup = v["matchup"]
+        teams = matchup["0"]["teams"]
+        for tk, tv in teams.items():
+            if tk == "count":
+                continue
+            team_block = unwrap(tv["team"])
+            if team_block[0]["team_key"] == my_team_key:
+                stats_block = team_block[1].get("team_stats", {}).get("stats", [])
+                for s in stats_block:
+                    stat_id = str(s.get("stat", {}).get("stat_id"))
+                    value = s.get("stat", {}).get("value")
+                    if stat_id is None or value is None:
+                        continue
+                    # Aggregate
+                    if value > 0:
+                        strengths[stat_id] = strengths.get(stat_id, 0) + value
+                    else:
+                        weaknesses[stat_id] = weaknesses.get(stat_id, 0) + value
 
-# =========================
-# Analyze all weeks
-# =========================
+# ---------- Convert IDs to names ----------
+strengths_list = [
+    {"stat_id": k, "name": stat_id_to_name.get(k, f"Stat {k}"), "value": v}
+    for k, v in strengths.items()
+]
+weaknesses_list = [
+    {"stat_id": k, "name": stat_id_to_name.get(k, f"Stat {k}"), "value": v}
+    for k, v in weaknesses.items()
+]
 
-current_week = int(league.current_week())
-print(f"📅 Analyzing weeks 1 → {current_week}")
-
-historical_totals = {}
-
-for week in range(1, current_week + 1):
-    raw = my_team.yhandler.get_team_stats_raw(
-        my_team.team_key, week
-    )
-
-    stats = (
-        raw["fantasy_content"]["team"][1]
-        ["team_stats"]["stats"]
-    )
-
-    for s in stats:
-        stat = unwrap(s)["stat"]
-        stat_id = str(stat["stat_id"])
-        value = float(stat["value"])
-
-        historical_totals.setdefault(stat_id, []).append(value)
-
-
-# =========================
-# Compute averages
-# =========================
-
-averages = {
-    stat_id: sum(vals) / len(vals)
-    for stat_id, vals in historical_totals.items()
+# ---------- Output ----------
+payload = {
+    "league": league.settings().get("name", LEAGUE_ID),
+    "team_key": my_team_key,
+    "week": current_week,
+    "strengths": sorted(strengths_list, key=lambda x: -x["value"]),
+    "weaknesses": sorted(weaknesses_list, key=lambda x: x["value"]),
+    "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
+os.makedirs("docs", exist_ok=True)
+with open(os.path.join("docs", OUTPUT_FILE), "w") as f:
+    json.dump(payload, f, indent=2)
 
-# =========================
-# Strengths & Weaknesses
-# =========================
-
-sorted_stats = sorted(
-    averages.items(), key=lambda x: x[1], reverse=True
-)
-
-strengths = sorted_stats[:8]
-weaknesses = sorted_stats[-4:]
-
-
-def format_block(items):
-    return [
-        {
-            "stat_id": stat_id,
-            "name": stat_id_to_name.get(stat_id, "Unknown"),
-            "value": round(value, 3),
-        }
-        for stat_id, value in items
-    ]
-
-
-# =========================
-# Write output
-# =========================
-
-output = {
-    "league": league.settings()["name"],
-    "team_key": my_team.team_key,
-    "weeks_analyzed": current_week,
-    "strengths": format_block(strengths),
-    "weaknesses": format_block(weaknesses),
-    "lastUpdated": datetime.utcnow().isoformat() + "Z",
-}
-
-with open("analysis.json", "w") as f:
-    json.dump(output, f, indent=2)
-
-print("✅ analysis.json updated successfully")
+print(f"✅ {OUTPUT_FILE} updated with historical analysis")
