@@ -2,8 +2,8 @@ name: Dump Fantasy Hockey Data
 
 # Run every 10 minutes or manually
 on:
-  schedule:
-    - cron: "*/10 * * * *"
+ # schedule:
+  #  - cron: "*/10 * * * *"
   workflow_dispatch:
 
 permissions:
