@@ -35,7 +35,6 @@ stat_id_to_name = {
 teams = league.teams()  # dict keyed by team_key
 # Replace this if you know your team key:
 team_key = next(iter(teams.keys()))
-team_obj = league.to_team(team_key)
 
 print(f"🏒 League: {league_name}")
 print(f"👥 Team key: {team_key}")
@@ -46,7 +45,7 @@ team_stats = {}
 
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week} stats...")
-    weekly_stats = team_obj.stats(week)
+    weekly_stats = league.stats(week, team_key)  # <-- FIX: Use league.stats()
     for s in weekly_stats:
         sid = str(s.get("stat_id"))
         val = s.get("value")
