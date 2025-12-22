@@ -1,14 +1,20 @@
-name: Dump Yahoo League Data
+name: Dump Fantasy Hockey Data
 
+# Run every 10 minutes or manually
 on:
-  workflow_dispatch:  # allows manual run
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  dump:
+  dump-league:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout the repo
+      # 1️⃣ Checkout the repository
       - uses: actions/checkout@v4
 
       # 2️⃣ Setup Python
@@ -22,15 +28,15 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install yahoo-oauth yahoo-fantasy-api requests
 
-      # 4️⃣ Run dump script
+      # 4️⃣ Run your dump script
       - name: Run dump_teams.py
         env:
           YAHOO_OAUTH_JSON: ${{ secrets.YAHOO_OAUTH_JSON }}
         run: python dump_teams.py
 
-      # 5️⃣ Upload the JSON output as artifact
-      - name: Upload dump
-        uses: actions/upload-artifact@v3
+      # 5️⃣ Upload the output JSON as an artifact
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
         with:
           name: league-dump
           path: dump_teams.json
