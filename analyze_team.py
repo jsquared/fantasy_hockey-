@@ -23,9 +23,6 @@ league = gm.to_league(LEAGUE_ID)
 
 current_week = league.current_week()
 league_name = league.settings().get("name", "Unknown League")
-team_key = league.team_key()
-print(f"🏒 League: {league_name}")
-print(f"📅 Analyzing weeks 1 → {current_week}")
 
 # ---------- Get stat categories safely ----------
 stat_categories = league.settings().get("stat_categories", {}).get("stats", [])
@@ -35,22 +32,26 @@ stat_id_to_name = {
 }
 
 # ---------- Aggregate weekly stats ----------
+team = league.teams()[0]  # your team (adjust if needed)
+team_key = team["team_key"]
+
+print(f"🏒 League: {league_name}")
+print(f"📅 Analyzing weeks 1 → {current_week}")
 team_stats = {}
+
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week} stats...")
-    scoreboard = league.scoreboard(week)
-    if not scoreboard:
-        continue
-
-    for matchup in scoreboard:
-        for team in matchup:
-            if team["team_key"] == team_key:
-                stats = team.get("team_stats", {}).get("stats", [])
-                for s in stats:
-                    sid = str(s.get("stat", {}).get("stat_id"))
-                    val = s.get("stat", {}).get("value")
-                    if sid and val is not None:
-                        team_stats[sid] = team_stats.get(sid, 0) + float(val)
+    weekly_stats = team.stats(week)
+    for s in weekly_stats:
+        sid = str(s.get("stat_id"))
+        val = s.get("value")
+        if sid and val is not None:
+            # Convert to float safely
+            try:
+                val = float(val)
+                team_stats[sid] = team_stats.get(sid, 0) + val
+            except ValueError:
+                continue
 
 # ---------- Determine strengths and weaknesses ----------
 strengths = []
