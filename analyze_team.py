@@ -8,47 +8,58 @@ import yahoo_fantasy_api as yfa
 
 OUTPUT_PATH = "docs/analysis.json"
 
+# -------------------------------------------------
+# 1️⃣ Ensure oauth2.json exists (GitHub Actions fix)
+# -------------------------------------------------
+if "YAHOO_OAUTH_JSON" not in os.environ:
+    raise RuntimeError("YAHOO_OAUTH_JSON secret not set")
+
+with open("oauth2.json", "w") as f:
+    f.write(os.environ["YAHOO_OAUTH_JSON"])
 
 print("🔑 Authenticating with Yahoo...")
 oauth = OAuth2(None, None, from_file="oauth2.json")
-gm = yfa.Game(oauth, "nhl")
 
-print("🏒 Loading league...")
+# -------------------------------------------------
+# 2️⃣ Load league
+# -------------------------------------------------
+gm = yfa.Game(oauth, "nhl")
 league = gm.league()
+
 league_name = league.settings()["name"]
 current_week = int(league.current_week())
 
-print(f"📊 League: {league_name}")
+print(f"🏒 League: {league_name}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
 
-# -------------------------------------------------------------------
-# 1️⃣ Build STAT ID → NAME map
-# -------------------------------------------------------------------
+# -------------------------------------------------
+# 3️⃣ Build STAT ID → NAME map
+# -------------------------------------------------
 print("🗂️ Loading stat categories...")
 stat_id_to_name = {}
 for stat in league.stat_categories():
     stat_id_to_name[str(stat["stat_id"])] = stat["name"]
 
-# -------------------------------------------------------------------
-# 2️⃣ Get your team
-# -------------------------------------------------------------------
+# -------------------------------------------------
+# 4️⃣ Get your team
+# -------------------------------------------------
 teams = league.teams()
 my_team = teams[0]
 team_key = my_team.team_key
 
 print(f"👥 Team key: {team_key}")
 
-# -------------------------------------------------------------------
-# 3️⃣ Aggregate stats across all weeks
-# -------------------------------------------------------------------
+# -------------------------------------------------
+# 5️⃣ Aggregate stats across all weeks
+# -------------------------------------------------
 stat_totals = {}
 stat_weeks_counted = {}
 
 for week in range(1, current_week + 1):
     print(f"📈 Fetching stats for week {week}...")
-    week_stats = my_team.stats(week)
+    weekly = my_team.stats(week)
 
-    for stat in week_stats["stats"]:
+    for stat in weekly["stats"]:
         stat_id = str(stat["stat_id"])
         value = stat["value"]
 
@@ -60,18 +71,17 @@ for week in range(1, current_week + 1):
         stat_totals[stat_id] = stat_totals.get(stat_id, 0) + value
         stat_weeks_counted[stat_id] = stat_weeks_counted.get(stat_id, 0) + 1
 
-# -------------------------------------------------------------------
-# 4️⃣ Compute averages
-# -------------------------------------------------------------------
+# -------------------------------------------------
+# 6️⃣ Compute averages
+# -------------------------------------------------
 averaged_stats = {}
-
 for stat_id, total in stat_totals.items():
     weeks = stat_weeks_counted.get(stat_id, 1)
     averaged_stats[stat_id] = total / weeks
 
-# -------------------------------------------------------------------
-# 5️⃣ Split strengths & weaknesses
-# -------------------------------------------------------------------
+# -------------------------------------------------
+# 7️⃣ Split strengths & weaknesses
+# -------------------------------------------------
 strengths = []
 weaknesses = []
 
@@ -92,9 +102,9 @@ for stat_id, avg_value in averaged_stats.items():
 strengths.sort(key=lambda x: x["average"], reverse=True)
 weaknesses.sort(key=lambda x: x["average"])
 
-# -------------------------------------------------------------------
-# 6️⃣ Output JSON
-# -------------------------------------------------------------------
+# -------------------------------------------------
+# 8️⃣ Write output
+# -------------------------------------------------
 output = {
     "league": league_name,
     "team_key": team_key,
@@ -111,5 +121,3 @@ with open(OUTPUT_PATH, "w") as f:
 
 print("✅ Historical analysis complete")
 print(f"📄 Written to {OUTPUT_PATH}")
-print(f"📦 Strength stats: {len(strengths)}")
-print(f"📉 Weakness stats: {len(weaknesses)}")
