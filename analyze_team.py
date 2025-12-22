@@ -1,101 +1,115 @@
 import json
 import os
 from datetime import datetime, timezone
+
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
-LEAGUE_ID = "465.l.33140"
 
-# ---------- OAuth ----------
-if "YAHOO_OAUTH_JSON" in os.environ:
-    oauth_data = json.loads(os.environ["YAHOO_OAUTH_JSON"])
-    with open("oauth2.json", "w") as f:
-        json.dump(oauth_data, f)
+OUTPUT_PATH = "docs/analysis.json"
 
+
+print("🔑 Authenticating with Yahoo...")
 oauth = OAuth2(None, None, from_file="oauth2.json")
+gm = yfa.Game(oauth, "nhl")
 
-# ---------- Yahoo objects ----------
-game = yfa.Game(oauth, "nhl")
-league = game.to_league(LEAGUE_ID)
+print("🏒 Loading league...")
+league = gm.league()
+league_name = league.settings()["name"]
+current_week = int(league.current_week())
 
-team_key = league.team_key()
-current_week = league.current_week()
+print(f"📊 League: {league_name}")
+print(f"📅 Analyzing weeks 1 → {current_week}")
 
-# ---------- Fetch latest scoreboard ----------
-raw = league.yhandler.get_scoreboard_raw(league.league_id, current_week)
+# -------------------------------------------------------------------
+# 1️⃣ Build STAT ID → NAME map
+# -------------------------------------------------------------------
+print("🗂️ Loading stat categories...")
+stat_id_to_name = {}
+for stat in league.stat_categories():
+    stat_id_to_name[str(stat["stat_id"])] = stat["name"]
 
-# Extract league block safely
-league_data = raw.get("fantasy_content", {}).get("league", [None, {}])[1]
-matchups = league_data.get("scoreboard", {}).get("0", {}).get("matchups", {})
+# -------------------------------------------------------------------
+# 2️⃣ Get your team
+# -------------------------------------------------------------------
+teams = league.teams()
+my_team = teams[0]
+team_key = my_team.team_key
 
-# Find my matchup
-my_team_data = None
-for k, v in matchups.items():
-    if k == "count":
-        continue
-    matchup = v.get("matchup", {})
-    teams = matchup.get("0", {}).get("teams", {})
-    for tk, tv in teams.items():
-        if tk == "count":
+print(f"👥 Team key: {team_key}")
+
+# -------------------------------------------------------------------
+# 3️⃣ Aggregate stats across all weeks
+# -------------------------------------------------------------------
+stat_totals = {}
+stat_weeks_counted = {}
+
+for week in range(1, current_week + 1):
+    print(f"📈 Fetching stats for week {week}...")
+    week_stats = my_team.stats(week)
+
+    for stat in week_stats["stats"]:
+        stat_id = str(stat["stat_id"])
+        value = stat["value"]
+
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
             continue
-        tmeta = tv["team"][0]
-        stats = tv["team"][1]
-        tkey = tmeta[0]["team_key"]
-        name = tmeta[2]["name"]
-        score = float(stats["team_points"]["total"])
-        if tkey == team_key:
-            my_team_data = {"team_key": tkey, "name": name, "score": score, "stats": stats.get("team_stats", {})}
-            break
-    if my_team_data:
-        break
 
-if not my_team_data:
-    raise RuntimeError("Could not find your team in the matchup")
+        stat_totals[stat_id] = stat_totals.get(stat_id, 0) + value
+        stat_weeks_counted[stat_id] = stat_weeks_counted.get(stat_id, 0) + 1
 
-# ---------- Translate stat IDs to names ----------
-stat_categories = {}
-try:
-    league_settings = league.settings()
-    for s in league_settings.get("stat_categories", []):
-        sid = s.get("stat_id")
-        sname = s.get("name")
-        if sid and sname:
-            stat_categories[sid] = sname
-except Exception:
-    # fallback: use raw stat IDs
-    stat_categories = {}
+# -------------------------------------------------------------------
+# 4️⃣ Compute averages
+# -------------------------------------------------------------------
+averaged_stats = {}
 
-# ---------- Build strengths and weaknesses ----------
+for stat_id, total in stat_totals.items():
+    weeks = stat_weeks_counted.get(stat_id, 1)
+    averaged_stats[stat_id] = total / weeks
+
+# -------------------------------------------------------------------
+# 5️⃣ Split strengths & weaknesses
+# -------------------------------------------------------------------
 strengths = []
 weaknesses = []
 
-team_stats = my_team_data.get("stats", {}).get("stats", [])
+for stat_id, avg_value in averaged_stats.items():
+    name = stat_id_to_name.get(stat_id, f"Stat {stat_id}")
 
-for s in team_stats:
-    try:
-        sid = str(s["stat"]["stat_id"])
-        val = float(s["stat"]["value"])
-        name = stat_categories.get(sid, f"Stat {sid}")
-        entry = {"stat_id": sid, "name": name, "value": val}
-        if val > 0:
-            strengths.append(entry)
-        else:
-            weaknesses.append(entry)
-    except Exception:
-        continue
+    entry = {
+        "stat_id": stat_id,
+        "name": name,
+        "average": round(avg_value, 3)
+    }
 
-# ---------- Output JSON ----------
-payload = {
-    "league": league.settings().get("name", "Unknown League"),
+    if avg_value > 0:
+        strengths.append(entry)
+    else:
+        weaknesses.append(entry)
+
+strengths.sort(key=lambda x: x["average"], reverse=True)
+weaknesses.sort(key=lambda x: x["average"])
+
+# -------------------------------------------------------------------
+# 6️⃣ Output JSON
+# -------------------------------------------------------------------
+output = {
+    "league": league_name,
     "team_key": team_key,
-    "week": current_week,
+    "weeks_analyzed": current_week,
     "strengths": strengths,
     "weaknesses": weaknesses,
     "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
 os.makedirs("docs", exist_ok=True)
-with open("docs/analyzed_team.json", "w") as f:
-    json.dump(payload, f, indent=2)
 
-print("docs/analyzed_team.json updated")
+with open(OUTPUT_PATH, "w") as f:
+    json.dump(output, f, indent=2)
+
+print("✅ Historical analysis complete")
+print(f"📄 Written to {OUTPUT_PATH}")
+print(f"📦 Strength stats: {len(strengths)}")
+print(f"📉 Weakness stats: {len(weaknesses)}")
