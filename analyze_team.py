@@ -6,10 +6,14 @@ from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
 
+# ---------------- CONFIG ----------------
+LEAGUE_ID = "465.l.33140"
 OUTPUT_PATH = "docs/analysis.json"
+# ---------------------------------------
+
 
 # -------------------------------------------------
-# 1️⃣ Ensure oauth2.json exists (GitHub Actions fix)
+# 1️⃣ Ensure oauth2.json exists (GitHub Actions)
 # -------------------------------------------------
 if "YAHOO_OAUTH_JSON" not in os.environ:
     raise RuntimeError("YAHOO_OAUTH_JSON secret not set")
@@ -21,10 +25,10 @@ print("🔑 Authenticating with Yahoo...")
 oauth = OAuth2(None, None, from_file="oauth2.json")
 
 # -------------------------------------------------
-# 2️⃣ Load league
+# 2️⃣ Load league explicitly
 # -------------------------------------------------
-gm = yfa.Game(oauth, "nhl")
-league = gm.league()
+game = yfa.Game(oauth, "nhl")
+league = game.to_league(LEAGUE_ID)
 
 league_name = league.settings()["name"]
 current_week = int(league.current_week())
@@ -41,22 +45,21 @@ for stat in league.stat_categories():
     stat_id_to_name[str(stat["stat_id"])] = stat["name"]
 
 # -------------------------------------------------
-# 4️⃣ Get your team
+# 4️⃣ Get YOUR team
 # -------------------------------------------------
-teams = league.teams()
-my_team = teams[0]
+my_team = league.teams()[0]
 team_key = my_team.team_key
 
 print(f"👥 Team key: {team_key}")
 
 # -------------------------------------------------
-# 5️⃣ Aggregate stats across all weeks
+# 5️⃣ Aggregate stats across ALL weeks
 # -------------------------------------------------
 stat_totals = {}
-stat_weeks_counted = {}
+stat_weeks = {}
 
 for week in range(1, current_week + 1):
-    print(f"📈 Fetching stats for week {week}...")
+    print(f"📈 Week {week}")
     weekly = my_team.stats(week)
 
     for stat in weekly["stats"]:
@@ -69,32 +72,32 @@ for week in range(1, current_week + 1):
             continue
 
         stat_totals[stat_id] = stat_totals.get(stat_id, 0) + value
-        stat_weeks_counted[stat_id] = stat_weeks_counted.get(stat_id, 0) + 1
+        stat_weeks[stat_id] = stat_weeks.get(stat_id, 0) + 1
 
 # -------------------------------------------------
 # 6️⃣ Compute averages
 # -------------------------------------------------
-averaged_stats = {}
+averages = {}
 for stat_id, total in stat_totals.items():
-    weeks = stat_weeks_counted.get(stat_id, 1)
-    averaged_stats[stat_id] = total / weeks
+    weeks = stat_weeks.get(stat_id, 1)
+    averages[stat_id] = total / weeks
 
 # -------------------------------------------------
-# 7️⃣ Split strengths & weaknesses
+# 7️⃣ Split strengths / weaknesses
 # -------------------------------------------------
 strengths = []
 weaknesses = []
 
-for stat_id, avg_value in averaged_stats.items():
+for stat_id, avg in averages.items():
     name = stat_id_to_name.get(stat_id, f"Stat {stat_id}")
 
     entry = {
         "stat_id": stat_id,
         "name": name,
-        "average": round(avg_value, 3)
+        "average": round(avg, 3)
     }
 
-    if avg_value > 0:
+    if avg > 0:
         strengths.append(entry)
     else:
         weaknesses.append(entry)
@@ -115,9 +118,7 @@ output = {
 }
 
 os.makedirs("docs", exist_ok=True)
-
 with open(OUTPUT_PATH, "w") as f:
     json.dump(output, f, indent=2)
 
-print("✅ Historical analysis complete")
-print(f"📄 Written to {OUTPUT_PATH}")
+print("✅ analysis.json updated successfully")
