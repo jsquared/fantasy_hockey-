@@ -1,3 +1,4 @@
+import os
 import json
 from datetime import datetime
 from yahoo_oauth import OAuth2
@@ -5,14 +6,27 @@ import yahoo_fantasy_api as yfa
 
 
 # =========================
+# Ensure oauth2.json exists
+# =========================
+
+if not os.path.exists("oauth2.json"):
+    oauth_env = os.environ.get("YAHOO_OAUTH_JSON")
+    if not oauth_env:
+        raise RuntimeError(
+            "❌ Missing oauth2.json and YAHOO_OAUTH_JSON env var"
+        )
+
+    with open("oauth2.json", "w") as f:
+        f.write(oauth_env)
+
+    print("🔐 oauth2.json created from environment variable")
+
+
+# =========================
 # Helpers
 # =========================
 
 def unwrap(node):
-    """
-    Yahoo API returns dicts and lists inconsistently.
-    This safely unwraps both.
-    """
     if isinstance(node, list):
         for item in node:
             if isinstance(item, dict):
@@ -33,6 +47,7 @@ league = gm.to_league("465.l.33140")
 
 print(f"🏒 League: {league.settings()['name']}")
 
+
 # =========================
 # Build stat_id → stat_name
 # =========================
@@ -43,12 +58,12 @@ stat_id_to_name = {}
 
 settings_raw = league.yhandler.get_settings_raw(league.league_key)
 settings = unwrap(settings_raw["fantasy_content"]["league"])
-
 stat_cats = unwrap(settings["settings"])["stat_categories"]["stats"]
 
 for s in stat_cats:
     stat = unwrap(s)["stat"]
     stat_id_to_name[str(stat["stat_id"])] = stat["name"]
+
 
 # =========================
 # Resolve your team
@@ -60,25 +75,20 @@ my_team = None
 teams_raw = league.teams()
 
 for _, team_wrapper in teams_raw.items():
-    if not isinstance(team_wrapper, dict):
+    team = unwrap(team_wrapper.get("team"))
+    if not isinstance(team, dict):
         continue
 
-    team_block = team_wrapper.get("team")
-    if not team_block:
-        continue
-
-    team_block = unwrap(team_block)
-
-    if isinstance(team_block, dict):
-        team_key = team_block.get("team_key")
-        if team_key and team_key.endswith(".t.13"):
-            my_team = yfa.Team(oauth, team_key)
-            break
+    team_key = team.get("team_key")
+    if team_key and team_key.endswith(".t.13"):
+        my_team = yfa.Team(oauth, team_key)
+        break
 
 if not my_team:
     raise RuntimeError("❌ Could not find your team")
 
 print(f"✅ Found team: {my_team.team_key}")
+
 
 # =========================
 # Analyze all weeks
@@ -90,21 +100,22 @@ print(f"📅 Analyzing weeks 1 → {current_week}")
 historical_totals = {}
 
 for week in range(1, current_week + 1):
-    stats_raw = my_team.yhandler.get_team_stats_raw(
+    raw = my_team.yhandler.get_team_stats_raw(
         my_team.team_key, week
     )
 
-    team_stats = (
-        stats_raw["fantasy_content"]["team"][1]
+    stats = (
+        raw["fantasy_content"]["team"][1]
         ["team_stats"]["stats"]
     )
 
-    for item in team_stats:
-        stat = unwrap(item)["stat"]
+    for s in stats:
+        stat = unwrap(s)["stat"]
         stat_id = str(stat["stat_id"])
         value = float(stat["value"])
 
         historical_totals.setdefault(stat_id, []).append(value)
+
 
 # =========================
 # Compute averages
@@ -114,6 +125,7 @@ averages = {
     stat_id: sum(vals) / len(vals)
     for stat_id, vals in historical_totals.items()
 }
+
 
 # =========================
 # Strengths & Weaknesses
@@ -126,6 +138,7 @@ sorted_stats = sorted(
 strengths = sorted_stats[:8]
 weaknesses = sorted_stats[-4:]
 
+
 def format_block(items):
     return [
         {
@@ -136,8 +149,9 @@ def format_block(items):
         for stat_id, value in items
     ]
 
+
 # =========================
-# Output
+# Write output
 # =========================
 
 output = {
