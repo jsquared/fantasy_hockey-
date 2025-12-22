@@ -1,0 +1,36 @@
+name: Dump Yahoo League Data
+
+on:
+  workflow_dispatch:  # allows manual run
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout the repo
+      - uses: actions/checkout@v4
+
+      # 2️⃣ Setup Python
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # 3️⃣ Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install yahoo-oauth yahoo-fantasy-api requests
+
+      # 4️⃣ Run dump script
+      - name: Run dump_teams.py
+        env:
+          YAHOO_OAUTH_JSON: ${{ secrets.YAHOO_OAUTH_JSON }}
+        run: python dump_teams.py
+
+      # 5️⃣ Upload the JSON output as artifact
+      - name: Upload dump
+        uses: actions/upload-artifact@v3
+        with:
+          name: league-dump
+          path: dump_teams.json
