@@ -21,61 +21,71 @@ oauth = OAuth2(None, None, from_file="oauth2.json")
 gm = yfa.Game(oauth, "nhl")
 league = gm.to_league(LEAGUE_ID)
 
-current_week = league.current_week()
+current_week = int(league.current_week())
 league_settings = league.settings()
 league_name = league_settings.get("name", "Unknown League")
 
-# ---------- Get stat categories ----------
+# ---------- Stat categories ----------
 stat_categories = league_settings.get("stat_categories", {}).get("stats", [])
 stat_id_to_name = {
     str(stat.get("stat_id")): stat.get("name", f"Stat {stat.get('stat_id')}")
     for stat in stat_categories
 }
 
-# ---------- Identify your team ----------
-teams = league.teams()
-if not teams:
-    raise RuntimeError("❌ No teams found in league!")
-team = teams[0]  # change index if needed
+# ---------- Resolve YOUR team (DICT FIX) ----------
+teams_dict = league.teams()
+
+if not isinstance(teams_dict, dict) or not teams_dict:
+    raise RuntimeError("❌ league.teams() did not return a valid dict")
+
+team = list(teams_dict.values())[0]   # ✅ FIX
 team_key = team["team_key"]
 
 print(f"🏒 League: {league_name}")
 print(f"👥 Team key: {team_key}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
 
-# ---------- Aggregate stats over all weeks ----------
+# ---------- Aggregate stats ----------
 team_stats = {}
 
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week} stats...")
     scoreboard = league.scoreboard(week)
-    # scoreboard contains "teams" with their stats
-    my_team_data = next(
-        (t for t in scoreboard["teams"] if t["team_key"] == team_key), None
-    )
-    if not my_team_data:
-        print(f"⚠️ Team not found in week {week}")
+
+    teams = scoreboard.get("teams", [])
+    my_team = next((t for t in teams if t.get("team_key") == team_key), None)
+
+    if not my_team:
+        print(f"⚠️ Team not found for week {week}")
         continue
 
-    # Extract stats safely
-    weekly_stats = my_team_data.get("team_stats", {}).get("stats", [])
+    weekly_stats = my_team.get("team_stats", {}).get("stats", [])
+
     for s in weekly_stats:
-        stat_id = str(s["stat"].get("stat_id"))
-        value = s["stat"].get("value", 0)
+        stat = s.get("stat", {})
+        stat_id = str(stat.get("stat_id"))
+        value = stat.get("value")
+
         try:
             value = float(value)
-        except (ValueError, TypeError):
+        except (TypeError, ValueError):
             continue
+
         team_stats[stat_id] = team_stats.get(stat_id, 0) + value
 
-# ---------- Determine strengths and weaknesses ----------
+# ---------- Strengths & weaknesses ----------
 strengths = []
 weaknesses = []
 
-for sid, val in team_stats.items():
-    name = stat_id_to_name.get(sid, f"Stat {sid}")
-    entry = {"stat_id": sid, "name": name, "value": val}
-    if val > 0:
+for stat_id, value in team_stats.items():
+    name = stat_id_to_name.get(stat_id, f"Stat {stat_id}")
+    entry = {
+        "stat_id": stat_id,
+        "name": name,
+        "value": round(value, 2)
+    }
+
+    if value >= 0:
         strengths.append(entry)
     else:
         weaknesses.append(entry)
@@ -84,7 +94,7 @@ for sid, val in team_stats.items():
 payload = {
     "league": league_name,
     "team_key": team_key,
-    "week": current_week,
+    "weeks_analyzed": current_week,
     "strengths": sorted(strengths, key=lambda x: x["value"], reverse=True),
     "weaknesses": sorted(weaknesses, key=lambda x: x["value"]),
     "lastUpdated": datetime.now(timezone.utc).isoformat()
