@@ -6,7 +6,6 @@ import yahoo_fantasy_api as yfa
 
 # ---------- Configuration ----------
 LEAGUE_KEY = "465.l.33140"
-GAME_KEY = "465"
 OUTPUT_FILE = "docs/analysis.json"
 
 # ---------- OAuth ----------
@@ -29,25 +28,21 @@ current_week = int(settings["current_week"])
 print(f"🏒 League: {league_name}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
 
-# ---------- Load Stat Categories (RAW + SAFE) ----------
-print("🗂️ Loading stat categories (raw API)...")
-
-raw_game = gm.yhandler.get_game_raw(GAME_KEY)
-game_node = raw_game["fantasy_content"]["game"]
-
-# Handle both Yahoo formats
-if isinstance(game_node, list):
-    game_data = next(
-        v for v in game_node
-        if isinstance(v, dict) and "stat_categories" in v
-    )
-elif isinstance(game_node, dict):
-    game_data = game_node
-else:
-    raise RuntimeError("Unknown Yahoo game structure")
+# ---------- Load Stat Categories (SAFE) ----------
+print("🗂️ Loading stat categories from league settings...")
 
 stat_id_to_name = {}
-for s in game_data["stat_categories"]["stats"]:
+
+stat_categories = (
+    settings
+    .get("stat_categories", {})
+    .get("stats", [])
+)
+
+if not stat_categories:
+    raise RuntimeError("❌ No stat categories found in league settings")
+
+for s in stat_categories:
     stat = s["stat"]
     stat_id_to_name[str(stat["stat_id"])] = stat["name"]
 
@@ -55,6 +50,8 @@ print(f"✅ Loaded {len(stat_id_to_name)} stat categories")
 
 # ---------- Resolve Team ----------
 teams = league.teams()
+
+# teams() returns a dict keyed by team_key
 team_key = next(iter(teams))
 team = yfa.Team(oauth, team_key)
 
