@@ -31,7 +31,6 @@ print(f"📅 Analyzing weeks 1 → {current_week}")
 # ---------- Resolve Team ----------
 teams = league.teams()   # dict keyed by team_key
 team_key = next(iter(teams))
-team = yfa.Team(oauth, team_key)
 
 print(f"👥 Team key: {team_key}")
 
@@ -40,11 +39,18 @@ totals = {}
 
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
-    weekly_stats = team.stats(week)
 
-    for s in weekly_stats:
-        sid = str(s["stat_id"])
-        val = s["value"]
+    raw = league.yhandler.get_team_stats_raw(
+        team_key,
+        week=week
+    )
+
+    team_block = raw["fantasy_content"]["team"][1]
+    stats = team_block["team_stats"]["stats"]
+
+    for stat in stats:
+        sid = str(stat["stat_id"])
+        val = stat["value"]
 
         try:
             val = float(val)
@@ -54,7 +60,7 @@ for week in range(1, current_week + 1):
         totals[sid] = totals.get(sid, 0) + val
 
 # ---------- Build Output ----------
-stats = [
+stats_out = [
     {
         "stat_id": sid,
         "value": round(val, 3)
@@ -66,7 +72,7 @@ payload = {
     "league": league_name,
     "team_key": team_key,
     "weeks_analyzed": current_week,
-    "stats": sorted(stats, key=lambda x: x["value"], reverse=True),
+    "stats": sorted(stats_out, key=lambda x: x["value"], reverse=True),
     "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
