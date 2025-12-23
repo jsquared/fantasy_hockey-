@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
-# ---------- Configuration ----------
+# ---------- Config ----------
 LEAGUE_KEY = "465.l.33140"
 OUTPUT_FILE = "docs/analysis.json"
 
@@ -12,84 +12,59 @@ OUTPUT_FILE = "docs/analysis.json"
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
         json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
-    print("🔐 oauth2.json created from environment variable")
 
 print("🔑 Authenticating with Yahoo...")
 oauth = OAuth2(None, None, from_file="oauth2.json")
 
-# ---------- Yahoo objects ----------
+# ---------- Yahoo Objects ----------
 gm = yfa.Game(oauth, "nhl")
 league = gm.to_league(LEAGUE_KEY)
 
 settings = league.settings()
-league_name = settings.get("name", "Unknown League")
-current_week = int(settings.get("current_week", 1))
+league_name = settings["name"]
+current_week = int(settings["current_week"])
 
-# ---------- Stat ID → Name ----------
-stat_categories = settings.get("stat_categories", {}).get("stats", [])
+# ---------- Stat Categories ----------
 stat_id_to_name = {
-    str(s["stat_id"]): s.get("name", f"Stat {s['stat_id']}")
-    for s in stat_categories
+    str(s["stat_id"]): s["name"]
+    for s in settings["stat_categories"]["stats"]
 }
 
-# ---------- Resolve YOUR team ----------
-teams = league.teams()              # dict
-team = next(iter(teams.values()))   # first team
-team_key = team["team_key"]
+# ---------- Resolve YOUR Team ----------
+teams = league.teams()
+team_meta = next(iter(teams.values()))
+team_key = team_meta["team_key"]
+
+team = yfa.Team(oauth, team_key)  # ✅ THIS IS THE KEY FIX
 
 print(f"🏒 League: {league_name}")
 print(f"👥 Team key: {team_key}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
 
-# ---------- Aggregate stats ----------
-team_totals = {}
+# ---------- Aggregate Stats ----------
+totals = {}
 
 for week in range(1, current_week + 1):
-    print(f"🗂️ Week {week} stats...")
+    print(f"🗂️ Week {week}")
 
-    raw = league.yhandler.get_scoreboard_raw(LEAGUE_KEY, week)
+    stats = team.stats(week)  # ✅ WORKS FOR NHL
 
-    matchups = (
-        raw["fantasy_content"]["league"][1]
-        .get("scoreboard", {})
-        .get("matchups", {})
-    )
+    for s in stats:
+        sid = str(s["stat_id"])
+        val = s["value"]
 
-    for matchup in matchups.values():
-        if not isinstance(matchup, dict):
+        try:
+            val = float(val)
+        except (TypeError, ValueError):
             continue
 
-        teams_block = matchup.get("teams", {})
-        for t in teams_block.values():
-            if not isinstance(t, dict):
-                continue
+        totals[sid] = totals.get(sid, 0) + val
 
-            if t.get("team_key") != team_key:
-                continue
-
-            # ✅ FIX: stats is a LIST
-            stats = (
-                t.get("team_stats", {})
-                 .get("stats", [])
-            )
-
-            for s in stats:
-                stat = s.get("stat", {})
-                sid = str(stat.get("stat_id"))
-                val = stat.get("value")
-
-                try:
-                    val = float(val)
-                except (TypeError, ValueError):
-                    continue
-
-                team_totals[sid] = team_totals.get(sid, 0) + val
-
-# ---------- Strengths & weaknesses ----------
+# ---------- Strengths / Weaknesses ----------
 strengths = []
 weaknesses = []
 
-for sid, val in team_totals.items():
+for sid, val in totals.items():
     entry = {
         "stat_id": sid,
         "name": stat_id_to_name.get(sid, f"Stat {sid}"),
@@ -101,7 +76,7 @@ for sid, val in team_totals.items():
     else:
         weaknesses.append(entry)
 
-# ---------- Write output ----------
+# ---------- Output ----------
 payload = {
     "league": league_name,
     "team_key": team_key,
