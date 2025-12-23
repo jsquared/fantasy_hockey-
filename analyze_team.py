@@ -5,7 +5,7 @@ from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
 # ---------- Configuration ----------
-LEAGUE_ID = "465.l.33140"  # your league ID
+LEAGUE_ID = "465.l.33140"
 OUTPUT_FILE = "docs/analysis.json"
 
 # ---------- OAuth ----------
@@ -26,8 +26,15 @@ league_name = league.settings().get("name", "Unknown League")
 
 # ---------- Get stat categories safely ----------
 stat_categories = league.settings().get("stat_categories", {}).get("stats", [])
+
+# Fallback to raw API if settings are empty
 if not stat_categories:
-    raise RuntimeError("❌ No stat categories found in league settings")
+    print("⚠️ Stat categories missing from settings, using raw API fallback")
+    raw_league = gm.yhandler.get_leagues_raw()  # get all leagues for user
+    league_block = next(iter(raw_league.get("fantasy_content", {}).values()), {})
+    stat_categories = league_block.get("stat_categories", {}).get("stats", [])
+    if not stat_categories:
+        raise RuntimeError("❌ No stat categories found in league (even from raw API)")
 
 stat_id_to_name = {
     str(stat.get("stat_id")): stat.get("name", f"Stat {stat.get('stat_id')}")
@@ -51,7 +58,6 @@ team_stats = {}
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
     try:
-        # Use league.stats(week) to get all teams' stats
         all_teams_stats = league.stats(week)
         for t in all_teams_stats:
             if t["team_key"] == team_key:
