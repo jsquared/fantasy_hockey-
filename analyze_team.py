@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
-# ---------- Config ----------
+# ---------- Configuration ----------
 LEAGUE_KEY = "465.l.33140"
 OUTPUT_FILE = "docs/analysis.json"
 
@@ -12,6 +12,7 @@ OUTPUT_FILE = "docs/analysis.json"
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
         json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
+    print("🔐 oauth2.json created from environment variable")
 
 print("🔑 Authenticating with Yahoo...")
 oauth = OAuth2(None, None, from_file="oauth2.json")
@@ -24,27 +25,28 @@ settings = league.settings()
 league_name = settings["name"]
 current_week = int(settings["current_week"])
 
-# ---------- ✅ NHL FIX: Stat categories come from GAME ----------
-print("🗂️ Loading stat categories from game metadata...")
-game_info = gm.game_info()
+print(f"🏒 League: {league_name}")
+print(f"📅 Analyzing weeks 1 → {current_week}")
+
+# ---------- ✅ CORRECT NHL STAT SOURCE ----------
+print("🗂️ Loading stat categories from game settings...")
+game_settings = gm.game_settings()
 
 stat_id_to_name = {
     str(s["stat_id"]): s["name"]
-    for s in game_info["stat_categories"]["stats"]
+    for s in game_settings["stat_categories"]["stats"]
 }
 
-# ---------- Resolve YOUR Team ----------
+# ---------- Resolve Your Team ----------
 teams = league.teams()
-team_meta = next(iter(teams.values()))
-team_key = team_meta["team_key"]
 
+# teams is a dict keyed by team_key
+team_key = next(iter(teams.keys()))
 team = yfa.Team(oauth, team_key)
 
-print(f"🏒 League: {league_name}")
 print(f"👥 Team key: {team_key}")
-print(f"📅 Analyzing weeks 1 → {current_week}")
 
-# ---------- Aggregate Stats ----------
+# ---------- Aggregate Weekly Stats ----------
 totals = {}
 
 for week in range(1, current_week + 1):
@@ -79,7 +81,7 @@ for sid, val in totals.items():
     else:
         weaknesses.append(entry)
 
-# ---------- Output ----------
+# ---------- Write Output ----------
 payload = {
     "league": league_name,
     "team_key": team_key,
