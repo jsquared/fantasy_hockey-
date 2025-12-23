@@ -28,30 +28,8 @@ current_week = int(settings["current_week"])
 print(f"🏒 League: {league_name}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
 
-# ---------- Load Stat Categories (SAFE) ----------
-print("🗂️ Loading stat categories from league settings...")
-
-stat_id_to_name = {}
-
-stat_categories = (
-    settings
-    .get("stat_categories", {})
-    .get("stats", [])
-)
-
-if not stat_categories:
-    raise RuntimeError("❌ No stat categories found in league settings")
-
-for s in stat_categories:
-    stat = s["stat"]
-    stat_id_to_name[str(stat["stat_id"])] = stat["name"]
-
-print(f"✅ Loaded {len(stat_id_to_name)} stat categories")
-
 # ---------- Resolve Team ----------
-teams = league.teams()
-
-# teams() returns a dict keyed by team_key
+teams = league.teams()   # dict keyed by team_key
 team_key = next(iter(teams))
 team = yfa.Team(oauth, team_key)
 
@@ -75,32 +53,24 @@ for week in range(1, current_week + 1):
 
         totals[sid] = totals.get(sid, 0) + val
 
-# ---------- Strengths / Weaknesses ----------
-strengths = []
-weaknesses = []
-
-for sid, val in totals.items():
-    entry = {
+# ---------- Build Output ----------
+stats = [
+    {
         "stat_id": sid,
-        "name": stat_id_to_name.get(sid, f"Stat {sid}"),
         "value": round(val, 3)
     }
+    for sid, val in totals.items()
+]
 
-    if val >= 0:
-        strengths.append(entry)
-    else:
-        weaknesses.append(entry)
-
-# ---------- Write Output ----------
 payload = {
     "league": league_name,
     "team_key": team_key,
     "weeks_analyzed": current_week,
-    "strengths": sorted(strengths, key=lambda x: x["value"], reverse=True),
-    "weaknesses": sorted(weaknesses, key=lambda x: x["value"]),
+    "stats": sorted(stats, key=lambda x: x["value"], reverse=True),
     "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
+# ---------- Write File ----------
 os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
 with open(OUTPUT_FILE, "w") as f:
     json.dump(payload, f, indent=2)
