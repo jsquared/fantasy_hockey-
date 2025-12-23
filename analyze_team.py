@@ -7,6 +7,7 @@ import yahoo_fantasy_api as yfa
 # ---------- Configuration ----------
 LEAGUE_KEY = "465.l.33140"
 OUTPUT_FILE = "docs/analysis.json"
+GAME_KEY = "465"  # NHL 2025 season game key
 
 # ---------- OAuth ----------
 if "YAHOO_OAUTH_JSON" in os.environ:
@@ -28,19 +29,18 @@ current_week = int(settings["current_week"])
 print(f"🏒 League: {league_name}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
 
-# ---------- ✅ CORRECT NHL STAT SOURCE ----------
-print("🗂️ Loading stat categories from game settings...")
-game_settings = gm.game_settings()
+# ---------- ✅ LOAD STAT CATEGORIES (RAW, VERSION SAFE) ----------
+print("🗂️ Loading stat categories (raw API)...")
 
-stat_id_to_name = {
-    str(s["stat_id"]): s["name"]
-    for s in game_settings["stat_categories"]["stats"]
-}
+raw_game = gm.yhandler.get_game_raw(GAME_KEY)
+game_block = raw_game["fantasy_content"]["game"][1]
+
+stat_id_to_name = {}
+for stat in game_block["stat_categories"]["stats"]:
+    stat_id_to_name[str(stat["stat"]["stat_id"])] = stat["stat"]["name"]
 
 # ---------- Resolve Your Team ----------
-teams = league.teams()
-
-# teams is a dict keyed by team_key
+teams = league.teams()  # dict keyed by team_key
 team_key = next(iter(teams.keys()))
 team = yfa.Team(oauth, team_key)
 
@@ -51,7 +51,6 @@ totals = {}
 
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
-
     weekly_stats = team.stats(week)
 
     for s in weekly_stats:
