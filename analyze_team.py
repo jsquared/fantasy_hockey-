@@ -24,27 +24,33 @@ league = gm.to_league(LEAGUE_ID)
 current_week = league.current_week()
 league_name = league.settings().get("name", "Unknown League")
 
-# ---------- Load stat categories from raw league/game data ----------
+# ---------- Load stat categories via get_leagues_raw ----------
 print("🗂️ Loading stat categories from raw API...")
-raw_league = league.yhandler.get_league_raw()
-# Attempt to extract stat categories
+
+all_leagues_raw = league.yhandler.get_leagues_raw()
+# all_leagues_raw is a dict of leagues: {"465.l.33140": {...}, ...}
+
+league_block = all_leagues_raw.get(LEAGUE_ID)
+if not league_block:
+    raise RuntimeError(f"❌ League ID {LEAGUE_ID} not found in raw API")
+
 try:
-    stats_list = raw_league["fantasy_content"]["league"][1]["settings"]["stat_categories"]["stats"]
+    stats_list = league_block["settings"]["stat_categories"]["stats"]
 except (KeyError, TypeError):
-    raise RuntimeError("❌ Could not find stat categories in raw league data")
+    raise RuntimeError("❌ Could not find stat categories in league settings")
 
 stat_id_to_name = {str(s["stat_id"]): s["name"] for s in stats_list}
 
-# ---------- Resolve team safely ----------
+# ---------- Resolve team ----------
 teams = league.teams()
 if not teams:
     raise RuntimeError("❌ No teams found in the league")
 
-if isinstance(teams, dict):
-    team_key, team_obj = next(iter(teams.items()))
-elif isinstance(teams, list):
+if isinstance(teams, list):
     team_obj = teams[0]
     team_key = team_obj["team_key"]
+elif isinstance(teams, dict):
+    team_key, team_obj = next(iter(teams.items()))
 else:
     raise RuntimeError("❌ Unexpected type for league.teams()")
 
@@ -57,16 +63,13 @@ team_stats = {}
 
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week} stats...")
-
-    # Get raw scoreboard for the week
-    raw_scoreboard = league.yhandler.get_scoreboard_raw(week=week)
     try:
+        raw_scoreboard = league.yhandler.get_scoreboard_raw(week=week)
         matchups = raw_scoreboard["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
     except (KeyError, TypeError):
         print(f"⚠️ Could not find matchups for week {week}")
         continue
 
-    # Find this team's stats in matchups
     for matchup in matchups.values():
         teams_block = matchup["matchup"]["teams"]
         for t in teams_block.values():
