@@ -30,9 +30,16 @@ stat_categories = league.settings().get("stat_categories", {}).get("stats", [])
 # Fallback to raw API if settings are empty
 if not stat_categories:
     print("⚠️ Stat categories missing from settings, using raw API fallback")
-    raw_league = gm.yhandler.get_leagues_raw()  # get all leagues for user
-    league_block = next(iter(raw_league.get("fantasy_content", {}).values()), {})
-    stat_categories = league_block.get("stat_categories", {}).get("stats", [])
+    raw_league = gm.yhandler.get_leagues_raw()
+    fc = raw_league.get("fantasy_content", {})
+    # Navigate carefully
+    league_block = None
+    for key, val in fc.items():
+        if key.startswith("465.l."):
+            league_block = val
+            break
+    if league_block and isinstance(league_block, dict):
+        stat_categories = league_block.get("stat_categories", {}).get("stats", [])
     if not stat_categories:
         raise RuntimeError("❌ No stat categories found in league (even from raw API)")
 
