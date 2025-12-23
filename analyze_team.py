@@ -34,7 +34,7 @@ stat_id_to_name = {
 
 # ---------- Resolve YOUR team ----------
 teams = league.teams()              # dict
-team = next(iter(teams.values()))   # first team object
+team = next(iter(teams.values()))   # first team
 team_key = team["team_key"]
 
 print(f"🏒 League: {league_name}")
@@ -47,14 +47,12 @@ team_totals = {}
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week} stats...")
 
-    # ✅ POSITIONAL ARGS — THIS IS THE FIX
     raw = league.yhandler.get_scoreboard_raw(LEAGUE_KEY, week)
 
     matchups = (
-        raw.get("fantasy_content", {})
-           .get("league", [{}])[1]
-           .get("scoreboard", {})
-           .get("matchups", {})
+        raw["fantasy_content"]["league"][1]
+        .get("scoreboard", {})
+        .get("matchups", {})
     )
 
     for matchup in matchups.values():
@@ -69,12 +67,13 @@ for week in range(1, current_week + 1):
             if t.get("team_key") != team_key:
                 continue
 
+            # ✅ FIX: stats is a LIST
             stats = (
                 t.get("team_stats", {})
-                 .get("stats", {})
+                 .get("stats", [])
             )
 
-            for s in stats.values():
+            for s in stats:
                 stat = s.get("stat", {})
                 sid = str(stat.get("stat_id"))
                 val = stat.get("value")
