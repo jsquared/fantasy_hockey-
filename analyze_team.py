@@ -85,4 +85,4 @@ os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
 with open(OUTPUT_FILE, "w") as f:
     json.dump(payload, f, indent=2)
 
-print(f"✅ Analysis written to {OUTPUT_FILE}")g
+print(f"✅ Analysis written to {OUTPUT_FILE}")
