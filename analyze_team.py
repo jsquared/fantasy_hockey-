@@ -24,10 +24,13 @@ settings = league.settings()
 league_name = settings["name"]
 current_week = int(settings["current_week"])
 
-# ---------- Stat Categories ----------
+# ---------- ✅ NHL FIX: Stat categories come from GAME ----------
+print("🗂️ Loading stat categories from game metadata...")
+game_info = gm.game_info()
+
 stat_id_to_name = {
     str(s["stat_id"]): s["name"]
-    for s in settings["stat_categories"]["stats"]
+    for s in game_info["stat_categories"]["stats"]
 }
 
 # ---------- Resolve YOUR Team ----------
@@ -35,7 +38,7 @@ teams = league.teams()
 team_meta = next(iter(teams.values()))
 team_key = team_meta["team_key"]
 
-team = yfa.Team(oauth, team_key)  # ✅ THIS IS THE KEY FIX
+team = yfa.Team(oauth, team_key)
 
 print(f"🏒 League: {league_name}")
 print(f"👥 Team key: {team_key}")
@@ -47,9 +50,9 @@ totals = {}
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
 
-    stats = team.stats(week)  # ✅ WORKS FOR NHL
+    weekly_stats = team.stats(week)
 
-    for s in stats:
+    for s in weekly_stats:
         sid = str(s["stat_id"])
         val = s["value"]
 
