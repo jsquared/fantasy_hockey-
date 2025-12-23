@@ -28,7 +28,7 @@ current_week = int(settings["current_week"])
 print(f"🏒 League: {league_name}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
 
-# ---------- Resolve Team ----------
+# ---------- Resolve Your Team ----------
 teams = league.teams()   # dict keyed by team_key
 team_key = next(iter(teams))
 
@@ -40,31 +40,35 @@ totals = {}
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
 
-    raw = league.yhandler.get_team_stats_raw(
-        team_key,
-        week=week
-    )
+    raw = league.yhandler.get_scoreboard_raw(LEAGUE_KEY, week)
 
-    team_block = raw["fantasy_content"]["team"][1]
-    stats = team_block["team_stats"]["stats"]
+    scoreboard = raw["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
 
-    for stat in stats:
-        sid = str(stat["stat_id"])
-        val = stat["value"]
+    for matchup in scoreboard.values():
+        teams_block = matchup["matchup"]["teams"]
 
-        try:
-            val = float(val)
-        except (TypeError, ValueError):
-            continue
+        for team in teams_block.values():
+            team_data = team["team"][0]
 
-        totals[sid] = totals.get(sid, 0) + val
+            if team_data["team_key"] != team_key:
+                continue
+
+            stats = team["team"][1]["team_stats"]["stats"]
+
+            for stat in stats:
+                sid = str(stat["stat_id"])
+                val = stat["value"]
+
+                try:
+                    val = float(val)
+                except (TypeError, ValueError):
+                    continue
+
+                totals[sid] = totals.get(sid, 0) + val
 
 # ---------- Build Output ----------
 stats_out = [
-    {
-        "stat_id": sid,
-        "value": round(val, 3)
-    }
+    {"stat_id": sid, "value": round(val, 3)}
     for sid, val in totals.items()
 ]
 
@@ -81,4 +85,4 @@ os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
 with open(OUTPUT_FILE, "w") as f:
     json.dump(payload, f, indent=2)
 
-print(f"✅ Analysis written to {OUTPUT_FILE}")
+print(f"✅ Analysis written to {OUTPUT_FILE}")g
