@@ -26,17 +26,27 @@ league_name = league.settings().get("name", "Unknown League")
 
 # ---------- Get stat categories safely ----------
 stat_categories = league.settings().get("stat_categories", {}).get("stats", [])
+if not stat_categories:
+    raise RuntimeError("❌ No stat categories found in league settings")
+
 stat_id_to_name = {
     str(stat.get("stat_id")): stat.get("name", f"Stat {stat.get('stat_id')}")
     for stat in stat_categories
 }
 
-# ---------- Resolve team ----------
+# ---------- Resolve team safely ----------
 teams = league.teams()
 if not teams:
     raise RuntimeError("❌ No teams found in the league")
-team = teams[0]  # adjust if needed
-team_key = team["team_key"]
+
+# handle both dict and list
+if isinstance(teams, dict):
+    team_key, team_obj = next(iter(teams.items()))
+elif isinstance(teams, list):
+    team_obj = teams[0]
+    team_key = team_obj["team_key"]
+else:
+    raise RuntimeError("❌ Unexpected type for league.teams()")
 
 print(f"🏒 League: {league_name}")
 print(f"👥 Team key: {team_key}")
@@ -47,35 +57,25 @@ team_stats = {}
 
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week} stats...")
-    try:
-        scoreboard = league.scoreboard(week)
-    except AttributeError:
-        # Defensive fallback using raw API
-        scoreboard = league.yhandler.get_scoreboard_raw(week)
 
-    if not scoreboard:
-        print(f"⚠️ Week {week} scoreboard empty, skipping")
-        continue
+    # Using raw API to get team stats (avoids team.stats() AttributeError)
+    raw = league.yhandler.get_scoreboard_raw(week=week)
+    matchups = raw["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
 
-    for matchup in scoreboard.values():
-        matchup_data = matchup.get("matchup", {})
-        teams_block = matchup_data.get("teams", {})
-        if not teams_block:
-            continue  # skip empty matchups
-
+    # Find this team's matchup
+    for matchup in matchups.values():
+        teams_block = matchup["matchup"]["teams"]
         for t in teams_block.values():
-            team_data = t["team"][0]
-            if team_data.get("team_key") != team_key:
-                continue
-            stats_block = t["team"][1].get("team_stats", {}).get("stats", [])
-            for stat in stats_block:
-                sid = str(stat.get("stat_id"))
-                val = stat.get("value")
-                if sid and val is not None:
+            t_key = t["team"][0]["team_key"]
+            if t_key == team_key:
+                stats_list = t["team"][1]["team_stats"]["stats"]
+                for s in stats_list:
+                    sid = str(s["stat"]["stat_id"])
+                    val = s["stat"]["value"]
                     try:
                         val = float(val)
                         team_stats[sid] = team_stats.get(sid, 0) + val
-                    except (TypeError, ValueError):
+                    except ValueError:
                         continue
 
 # ---------- Determine strengths and weaknesses ----------
