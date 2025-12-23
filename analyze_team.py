@@ -24,22 +24,22 @@ league = gm.to_league(LEAGUE_ID)
 current_week = league.current_week()
 league_name = league.settings().get("name", "Unknown League")
 
-# ---------- Get stat categories safely ----------
-stat_categories = league.settings().get("stat_categories", {}).get("stats", [])
-if not stat_categories:
-    raise RuntimeError("❌ No stat categories found in league settings")
+# ---------- Load stat categories from raw league/game data ----------
+print("🗂️ Loading stat categories from raw API...")
+raw_league = league.yhandler.get_league_raw()
+# Attempt to extract stat categories
+try:
+    stats_list = raw_league["fantasy_content"]["league"][1]["settings"]["stat_categories"]["stats"]
+except (KeyError, TypeError):
+    raise RuntimeError("❌ Could not find stat categories in raw league data")
 
-stat_id_to_name = {
-    str(stat.get("stat_id")): stat.get("name", f"Stat {stat.get('stat_id')}")
-    for stat in stat_categories
-}
+stat_id_to_name = {str(s["stat_id"]): s["name"] for s in stats_list}
 
 # ---------- Resolve team safely ----------
 teams = league.teams()
 if not teams:
     raise RuntimeError("❌ No teams found in the league")
 
-# handle both dict and list
 if isinstance(teams, dict):
     team_key, team_obj = next(iter(teams.items()))
 elif isinstance(teams, list):
@@ -58,11 +58,15 @@ team_stats = {}
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week} stats...")
 
-    # Using raw API to get team stats (avoids team.stats() AttributeError)
-    raw = league.yhandler.get_scoreboard_raw(week=week)
-    matchups = raw["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
+    # Get raw scoreboard for the week
+    raw_scoreboard = league.yhandler.get_scoreboard_raw(week=week)
+    try:
+        matchups = raw_scoreboard["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
+    except (KeyError, TypeError):
+        print(f"⚠️ Could not find matchups for week {week}")
+        continue
 
-    # Find this team's matchup
+    # Find this team's stats in matchups
     for matchup in matchups.values():
         teams_block = matchup["matchup"]["teams"]
         for t in teams_block.values():
