@@ -13,92 +13,80 @@ if "YAHOO_OAUTH_JSON" in os.environ:
     oauth_data = json.loads(os.environ["YAHOO_OAUTH_JSON"])
     with open("oauth2.json", "w") as f:
         json.dump(oauth_data, f)
+    print("🔐 oauth2.json created from environment variable")
 
 print("🔑 Authenticating with Yahoo...")
 oauth = OAuth2(None, None, from_file="oauth2.json")
 
-# ---------- Yahoo objects ----------
+# ---------- Yahoo Objects ----------
 gm = yfa.Game(oauth, "nhl")
 league = gm.to_league(LEAGUE_ID)
 
+league_name = league.settings()["name"]
 current_week = league.current_week()
-league_name = league.settings().get("name", "Unknown League")
 
-# ---------- Get stat categories safely ----------
-stat_categories = league.settings().get("stat_categories", {}).get("stats", [])
-
-# Fallback to raw API if settings are empty
-if not stat_categories:
-    print("⚠️ Stat categories missing from settings, using raw API fallback")
-    raw_league = gm.yhandler.get_leagues_raw()
-    fc = raw_league.get("fantasy_content", {})
-    # Navigate carefully
-    league_block = None
-    for key, val in fc.items():
-        if key.startswith("465.l."):
-            league_block = val
-            break
-    if league_block and isinstance(league_block, dict):
-        stat_categories = league_block.get("stat_categories", {}).get("stats", [])
-    if not stat_categories:
-        raise RuntimeError("❌ No stat categories found in league (even from raw API)")
+# ---------- Stat Categories (CORRECT WAY) ----------
+print("🗂️ Loading stat categories...")
+stat_categories = league.stat_categories()
 
 stat_id_to_name = {
-    str(stat.get("stat_id")): stat.get("name", f"Stat {stat.get('stat_id')}")
+    str(stat["stat_id"]): stat["display_name"]
     for stat in stat_categories
 }
 
-# ---------- Aggregate weekly stats ----------
+# ---------- Identify Your Team ----------
 teams = league.teams()
+
 if not teams:
     raise RuntimeError("❌ No teams found in league")
 
-team = teams[0]  # adjust index if needed
-team_key = team["team_key"]
+my_team = teams[0]   # change index if needed
+team_key = my_team["team_key"]
 
 print(f"🏒 League: {league_name}")
 print(f"👥 Team key: {team_key}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
 
-team_stats = {}
+# ---------- Aggregate Weekly Stats ----------
+team_totals = {}
 
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
-    try:
-        all_teams_stats = league.stats(week)
-        for t in all_teams_stats:
-            if t["team_key"] == team_key:
-                for s in t.get("stats", []):
-                    sid = str(s.get("stat_id"))
-                    val = s.get("value")
-                    if sid and val is not None:
-                        try:
-                            team_stats[sid] = team_stats.get(sid, 0) + float(val)
-                        except ValueError:
-                            continue
-    except Exception as e:
-        print(f"⚠️ Error fetching stats for week {week}: {e}")
+    weekly_stats = league.team_stats(team_key, week)
 
-# ---------- Determine strengths and weaknesses ----------
+    for stat_id, value in weekly_stats.items():
+        try:
+            team_totals[stat_id] = team_totals.get(stat_id, 0) + float(value)
+        except (TypeError, ValueError):
+            continue
+
+# ---------- Strengths vs Weaknesses ----------
 strengths = []
 weaknesses = []
 
-for sid, val in team_stats.items():
-    name = stat_id_to_name.get(sid, f"Stat {sid}")
-    entry = {"stat_id": sid, "name": name, "value": val}
-    if val > 0:
+for stat_id, total in team_totals.items():
+    entry = {
+        "stat_id": stat_id,
+        "name": stat_id_to_name.get(str(stat_id), f"Stat {stat_id}"),
+        "value": round(total, 2),
+    }
+
+    if total > 0:
         strengths.append(entry)
     else:
         weaknesses.append(entry)
 
-# ---------- Write output ----------
+strengths.sort(key=lambda x: x["value"], reverse=True)
+weaknesses.sort(key=lambda x: x["value"])
+
+# ---------- Output ----------
 payload = {
     "league": league_name,
     "team_key": team_key,
     "weeks_analyzed": current_week,
-    "strengths": sorted(strengths, key=lambda x: x["value"], reverse=True),
-    "weaknesses": sorted(weaknesses, key=lambda x: x["value"]),
-    "lastUpdated": datetime.now(timezone.utc).isoformat()
+    "strengths": strengths,
+    "weaknesses": weaknesses,
+    "lastUpdated": datetime.now(timezone.utc).isoformat(),
 }
 
 os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
