@@ -22,44 +22,45 @@ gm = yfa.Game(oauth, "nhl")
 league = gm.to_league(LEAGUE_ID)
 
 settings = league.settings()
-
-league_name = settings["name"]
+league_name = settings.get("name", "Unknown League")
 current_week = league.current_week()
 
 print(f"🏒 League: {league_name}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
 
-# ---------- Load Stat Categories (CORRECT FOR NHL) ----------
-print("🗂️ Loading stat categories from league settings...")
+# ---------- Load Stat Categories (RAW API — FINAL FIX) ----------
+print("🗂️ Loading stat categories via raw league settings...")
 
-stat_categories = (
-    settings
-    .get("stat_categories", {})
-    .get("stats", [])
-)
+raw = league.yhandler.get_league_settings_raw(LEAGUE_ID)
 
-if not stat_categories:
-    raise RuntimeError("❌ League settings contain no stat categories")
+try:
+    league_block = raw["fantasy_content"]["league"]
+    settings_block = league_block["settings"]
+    stat_blocks = settings_block["stat_categories"]["stats"]
+except Exception as e:
+    raise RuntimeError(f"❌ Failed to locate stat categories in raw API: {e}")
 
 stat_id_to_name = {}
 
-for item in stat_categories:
+for item in stat_blocks:
     stat = item.get("stat", {})
-    sid = str(stat.get("stat_id"))
+    sid = stat.get("stat_id")
     name = stat.get("display_name") or stat.get("name")
 
-    if sid and name:
-        stat_id_to_name[sid] = name
+    if sid is not None and name:
+        stat_id_to_name[str(sid)] = name
+
+if not stat_id_to_name:
+    raise RuntimeError("❌ Stat categories parsed but empty")
 
 print(f"✅ Loaded {len(stat_id_to_name)} stat categories")
 
-# ---------- Identify Your Team ----------
+# ---------- Identify Team ----------
 teams = league.teams()
-
 if not teams:
     raise RuntimeError("❌ No teams found")
 
-my_team = teams[0]   # change index if needed
+my_team = teams[0]   # adjust index if needed
 team_key = my_team["team_key"]
 
 print(f"👥 Team key: {team_key}")
@@ -89,7 +90,7 @@ for stat_id, total in team_totals.items():
         "value": round(total, 2),
     }
 
-    if total > 0:
+    if total >= 0:
         strengths.append(entry)
     else:
         weaknesses.append(entry)
