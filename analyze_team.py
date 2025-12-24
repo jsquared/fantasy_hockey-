@@ -21,17 +21,29 @@ oauth = OAuth2(None, None, from_file="oauth2.json")
 gm = yfa.Game(oauth, "nhl")
 league = gm.to_league(LEAGUE_ID)
 
-league_name = league.settings()["name"]
+settings = league.settings()
+
+league_name = settings["name"]
 current_week = league.current_week()
 
 print(f"🏒 League: {league_name}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
 
-# ---------- Load Stat Categories (CORRECT STRUCTURE) ----------
-print("🗂️ Loading stat categories...")
+# ---------- Load Stat Categories (CORRECT FOR NHL) ----------
+print("🗂️ Loading stat categories from league settings...")
+
+stat_categories = (
+    settings
+    .get("stat_categories", {})
+    .get("stats", [])
+)
+
+if not stat_categories:
+    raise RuntimeError("❌ League settings contain no stat categories")
+
 stat_id_to_name = {}
 
-for item in league.stat_categories():
+for item in stat_categories:
     stat = item.get("stat", {})
     sid = str(stat.get("stat_id"))
     name = stat.get("display_name") or stat.get("name")
@@ -39,8 +51,7 @@ for item in league.stat_categories():
     if sid and name:
         stat_id_to_name[sid] = name
 
-if not stat_id_to_name:
-    raise RuntimeError("❌ Failed to load stat categories")
+print(f"✅ Loaded {len(stat_id_to_name)} stat categories")
 
 # ---------- Identify Your Team ----------
 teams = league.teams()
@@ -58,6 +69,7 @@ team_totals = {}
 
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
+
     weekly_stats = league.team_stats(team_key, week)
 
     for stat_id, value in weekly_stats.items():
@@ -72,7 +84,7 @@ weaknesses = []
 
 for stat_id, total in team_totals.items():
     entry = {
-        "stat_id": stat_id,
+        "stat_id": str(stat_id),
         "name": stat_id_to_name.get(str(stat_id), f"Stat {stat_id}"),
         "value": round(total, 2),
     }
