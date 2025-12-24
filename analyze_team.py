@@ -10,9 +10,8 @@ OUTPUT_FILE = "docs/analysis.json"
 
 # ---------- OAuth ----------
 if "YAHOO_OAUTH_JSON" in os.environ:
-    oauth_data = json.loads(os.environ["YAHOO_OAUTH_JSON"])
     with open("oauth2.json", "w") as f:
-        json.dump(oauth_data, f)
+        json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
     print("🔐 oauth2.json created from environment variable")
 
 print("🔑 Authenticating with Yahoo...")
@@ -25,27 +24,34 @@ league = gm.to_league(LEAGUE_ID)
 league_name = league.settings()["name"]
 current_week = league.current_week()
 
-# ---------- Stat Categories (CORRECT WAY) ----------
-print("🗂️ Loading stat categories...")
-stat_categories = league.stat_categories()
+print(f"🏒 League: {league_name}")
+print(f"📅 Analyzing weeks 1 → {current_week}")
 
-stat_id_to_name = {
-    str(stat["stat_id"]): stat["display_name"]
-    for stat in stat_categories
-}
+# ---------- Load Stat Categories (CORRECT STRUCTURE) ----------
+print("🗂️ Loading stat categories...")
+stat_id_to_name = {}
+
+for item in league.stat_categories():
+    stat = item.get("stat", {})
+    sid = str(stat.get("stat_id"))
+    name = stat.get("display_name") or stat.get("name")
+
+    if sid and name:
+        stat_id_to_name[sid] = name
+
+if not stat_id_to_name:
+    raise RuntimeError("❌ Failed to load stat categories")
 
 # ---------- Identify Your Team ----------
 teams = league.teams()
 
 if not teams:
-    raise RuntimeError("❌ No teams found in league")
+    raise RuntimeError("❌ No teams found")
 
 my_team = teams[0]   # change index if needed
 team_key = my_team["team_key"]
 
-print(f"🏒 League: {league_name}")
 print(f"👥 Team key: {team_key}")
-print(f"📅 Analyzing weeks 1 → {current_week}")
 
 # ---------- Aggregate Weekly Stats ----------
 team_totals = {}
@@ -60,7 +66,7 @@ for week in range(1, current_week + 1):
         except (TypeError, ValueError):
             continue
 
-# ---------- Strengths vs Weaknesses ----------
+# ---------- Strengths & Weaknesses ----------
 strengths = []
 weaknesses = []
 
