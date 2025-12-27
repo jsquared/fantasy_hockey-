@@ -6,6 +6,7 @@ import yahoo_fantasy_api as yfa
 
 # ---------------- CONFIG ----------------
 LEAGUE_ID = "465.l.33140"
+GAME_CODE = "nhl"
 OUTPUT_FILE = "docs/analysis.json"
 
 # ---------------- AUTH ------------------
@@ -18,7 +19,7 @@ print("🔑 Authenticating with Yahoo...")
 oauth = OAuth2(None, None, from_file="oauth2.json")
 
 # ---------------- OBJECTS ----------------
-gm = yfa.Game(oauth, "nhl")
+gm = yfa.Game(oauth, GAME_CODE)
 league = gm.to_league(LEAGUE_ID)
 
 settings = league.settings()
@@ -28,55 +29,17 @@ current_week = league.current_week()
 print(f"🏒 League: {league_name}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
 
-# ---------------- RAW SEARCH UTILS ----------------
-def find_league_block(obj, league_id):
-    """
-    Recursively search Yahoo raw API for the target league block
-    """
-    if isinstance(obj, dict):
-        if obj.get("league_key") == league_id:
-            return obj
-        for v in obj.values():
-            found = find_league_block(v, league_id)
-            if found:
-                return found
+# ---------------- STAT CATEGORIES ----------------
+print("🗂️ Loading stat categories from GAME metadata (canonical)...")
 
-    elif isinstance(obj, list):
-        for item in obj:
-            found = find_league_block(item, league_id)
-            if found:
-                return found
+stat_categories = gm.stat_categories()
 
-    return None
-
-# ---------------- LOAD STAT CATEGORIES ----------------
-print("🗂️ Loading stat categories from raw API (recursive search)...")
-
-raw = league.yhandler.get_leagues_raw()
-
-league_block = find_league_block(raw, LEAGUE_ID)
-
-if not league_block:
-    raise RuntimeError("❌ League not found anywhere in raw Yahoo response")
-
-settings_block = league_block.get("settings")
-
-if not settings_block:
-    raise RuntimeError("❌ League settings missing")
-
-stats_block = (
-    settings_block
-    .get("stat_categories", {})
-    .get("stats", [])
-)
-
-if not stats_block:
-    raise RuntimeError("❌ League contains no stat categories")
+if not stat_categories:
+    raise RuntimeError("❌ Game has no stat categories")
 
 stat_id_to_name = {}
 
-for entry in stats_block:
-    stat = entry.get("stat", {})
+for stat in stat_categories:
     stat_id = stat.get("stat_id")
     name = stat.get("display_name") or stat.get("name")
 
