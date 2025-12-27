@@ -32,7 +32,8 @@ print(f"📅 Analyzing weeks 1 → {current_week}")
 # ---------------- RAW GAME API ----------------
 print("🗂️ Loading stat categories via raw GAME API...")
 
-raw = gm.yhandler.get_games_raw([GAME_CODE])
+# NOTE: your version uses get_game_raw (singular)
+raw = gm.yhandler.get_game_raw(GAME_CODE)
 
 def find_stat_categories(obj):
     if isinstance(obj, dict):
