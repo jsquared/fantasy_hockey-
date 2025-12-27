@@ -29,22 +29,32 @@ print(f"🏒 League: {league_name}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
 
 # ---------------- LOAD STAT CATEGORIES ----------------
-print("🗂️ Loading stat categories from raw league API...")
+print("🗂️ Loading stat categories from get_leagues_raw()...")
 
-raw = league.yhandler.get_league_raw(LEAGUE_ID)
+raw = league.yhandler.get_leagues_raw()
 
-# Yahoo returns: fantasy_content → league → [ metadata, data ]
-league_data = raw.get("fantasy_content", {}).get("league", [])
+leagues = raw.get("fantasy_content", {}).get("leagues", {}).get("league", [])
+target_league = None
+
+for entry in leagues:
+    if isinstance(entry, list):
+        for block in entry:
+            if isinstance(block, dict) and block.get("league_key") == LEAGUE_ID:
+                target_league = entry
+                break
+
+if not target_league:
+    raise RuntimeError("❌ League not found in get_leagues_raw()")
 
 settings_block = None
 
-for block in league_data:
+for block in target_league:
     if isinstance(block, dict) and "settings" in block:
         settings_block = block["settings"]
         break
 
 if not settings_block:
-    raise RuntimeError("❌ League settings not found in raw API")
+    raise RuntimeError("❌ League settings not found")
 
 stat_blocks = (
     settings_block
@@ -65,9 +75,6 @@ for entry in stat_blocks:
     if stat_id is not None and name:
         stat_id_to_name[str(stat_id)] = name
 
-if not stat_id_to_name:
-    raise RuntimeError("❌ Failed to parse stat categories")
-
 print(f"✅ Loaded {len(stat_id_to_name)} stat categories")
 
 # ---------------- TEAM ----------------
@@ -75,7 +82,7 @@ teams = league.teams()
 if not teams:
     raise RuntimeError("❌ No teams found")
 
-team = teams[0]   # adjust index if needed
+team = teams[0]  # adjust index if needed
 team_key = team["team_key"]
 
 print(f"👥 Team key: {team_key}")
@@ -85,7 +92,6 @@ team_totals = {}
 
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
-
     weekly_stats = league.team_stats(team_key, week)
 
     for stat_id, value in weekly_stats.items():
