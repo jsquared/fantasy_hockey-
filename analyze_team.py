@@ -28,46 +28,54 @@ current_week = league.current_week()
 print(f"🏒 League: {league_name}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
 
+# ---------------- RAW SEARCH UTILS ----------------
+def find_league_block(obj, league_id):
+    """
+    Recursively search Yahoo raw API for the target league block
+    """
+    if isinstance(obj, dict):
+        if obj.get("league_key") == league_id:
+            return obj
+        for v in obj.values():
+            found = find_league_block(v, league_id)
+            if found:
+                return found
+
+    elif isinstance(obj, list):
+        for item in obj:
+            found = find_league_block(item, league_id)
+            if found:
+                return found
+
+    return None
+
 # ---------------- LOAD STAT CATEGORIES ----------------
-print("🗂️ Loading stat categories from get_leagues_raw()...")
+print("🗂️ Loading stat categories from raw API (recursive search)...")
 
 raw = league.yhandler.get_leagues_raw()
 
-leagues = raw.get("fantasy_content", {}).get("leagues", {}).get("league", [])
-target_league = None
+league_block = find_league_block(raw, LEAGUE_ID)
 
-for entry in leagues:
-    if isinstance(entry, list):
-        for block in entry:
-            if isinstance(block, dict) and block.get("league_key") == LEAGUE_ID:
-                target_league = entry
-                break
+if not league_block:
+    raise RuntimeError("❌ League not found anywhere in raw Yahoo response")
 
-if not target_league:
-    raise RuntimeError("❌ League not found in get_leagues_raw()")
-
-settings_block = None
-
-for block in target_league:
-    if isinstance(block, dict) and "settings" in block:
-        settings_block = block["settings"]
-        break
+settings_block = league_block.get("settings")
 
 if not settings_block:
-    raise RuntimeError("❌ League settings not found")
+    raise RuntimeError("❌ League settings missing")
 
-stat_blocks = (
+stats_block = (
     settings_block
     .get("stat_categories", {})
     .get("stats", [])
 )
 
-if not stat_blocks:
-    raise RuntimeError("❌ Stat categories missing from league settings")
+if not stats_block:
+    raise RuntimeError("❌ League contains no stat categories")
 
 stat_id_to_name = {}
 
-for entry in stat_blocks:
+for entry in stats_block:
     stat = entry.get("stat", {})
     stat_id = stat.get("stat_id")
     name = stat.get("display_name") or stat.get("name")
@@ -82,7 +90,7 @@ teams = league.teams()
 if not teams:
     raise RuntimeError("❌ No teams found")
 
-team = teams[0]  # adjust index if needed
+team = teams[0]  # change index if needed
 team_key = team["team_key"]
 
 print(f"👥 Team key: {team_key}")
