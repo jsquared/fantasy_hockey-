@@ -29,19 +29,37 @@ current_week = league.current_week()
 print(f"🏒 League: {league_name}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
 
-# ---------------- STAT CATEGORIES ----------------
-print("🗂️ Loading stat categories from GAME metadata (canonical)...")
+# ---------------- RAW GAME API ----------------
+print("🗂️ Loading stat categories via raw GAME API...")
 
-stat_categories = gm.stat_categories()
+raw = gm.yhandler.get_games_raw([GAME_CODE])
 
-if not stat_categories:
-    raise RuntimeError("❌ Game has no stat categories")
+def find_stat_categories(obj):
+    if isinstance(obj, dict):
+        if "stat_categories" in obj:
+            return obj["stat_categories"]
+        for v in obj.values():
+            found = find_stat_categories(v)
+            if found:
+                return found
+    elif isinstance(obj, list):
+        for item in obj:
+            found = find_stat_categories(item)
+            if found:
+                return found
+    return None
+
+stat_block = find_stat_categories(raw)
+
+if not stat_block or "stats" not in stat_block:
+    raise RuntimeError("❌ Could not locate stat categories in raw GAME API")
 
 stat_id_to_name = {}
 
-for stat in stat_categories:
-    stat_id = stat.get("stat_id")
-    name = stat.get("display_name") or stat.get("name")
+for stat in stat_block["stats"]:
+    stat_data = stat.get("stat", stat)
+    stat_id = stat_data.get("stat_id")
+    name = stat_data.get("display_name") or stat_data.get("name")
 
     if stat_id is not None and name:
         stat_id_to_name[str(stat_id)] = name
@@ -53,7 +71,7 @@ teams = league.teams()
 if not teams:
     raise RuntimeError("❌ No teams found")
 
-team = teams[0]  # change index if needed
+team = teams[0]  # adjust index if needed
 team_key = team["team_key"]
 
 print(f"👥 Team key: {team_key}")
