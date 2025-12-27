@@ -29,24 +29,26 @@ current_week = league.current_week()
 print(f"🏒 League: {league_name}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
 
-# ---------------- TEAM ----------------
+# ---------------- TEAMS ----------------
 teams = league.teams()
-if not teams:
-    raise RuntimeError("❌ No teams found")
 
-team = teams[0]  # change index if needed
+if not isinstance(teams, dict) or not teams:
+    raise RuntimeError("❌ league.teams() returned no teams")
+
+# take the first team safely
+team = next(iter(teams.values()))
 team_key = team["team_key"]
 
 print(f"👥 Team key: {team_key}")
 
-# ---------------- WEEKLY STATS ----------------
+# ---------------- STATS ----------------
 team_totals = {}
 weekly_breakdown = {}
 
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
-    weekly_stats = league.team_stats(team_key, week)
 
+    weekly_stats = league.team_stats(team_key, week)
     weekly_breakdown[str(week)] = weekly_stats
 
     for stat_id, value in weekly_stats.items():
