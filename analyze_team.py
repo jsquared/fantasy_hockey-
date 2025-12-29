@@ -2,6 +2,7 @@ import json
 import os
 import statistics
 from datetime import datetime, timezone
+
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
@@ -21,8 +22,8 @@ STAT_MAP = {
     "12": "GWG",
     "14": "SOG",
     "16": "FW",
-    "31": "Hit",
-    "32": "Blk",
+    "31": "Hits",
+    "32": "Blocks",
     "19": "Wins",
     "22": "GA",
     "23": "GAA",
@@ -33,16 +34,18 @@ STAT_MAP = {
 }
 
 # =========================
-# OAuth (GitHub-safe)
+# OAUTH (GitHub-safe)
 # =========================
-if "YAHOO_OAUTH_JSON" in os.environ:
-    with open("oauth2.json", "w") as f:
-        json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
+if "YAHOO_OAUTH_JSON" not in os.environ:
+    raise RuntimeError("YAHOO_OAUTH_JSON missing")
+
+with open("oauth2.json", "w") as f:
+    json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
 
 oauth = OAuth2(None, None, from_file="oauth2.json")
 
 # =========================
-# Yahoo Objects
+# YAHOO OBJECTS
 # =========================
 game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
@@ -50,6 +53,9 @@ league = game.to_league(LEAGUE_ID)
 current_week = int(league.current_week())
 weeks = list(range(1, current_week + 1))
 
+# =========================
+# TEAM METADATA (FIXED)
+# =========================
 teams_raw = league.teams()
 teams = {}
 
@@ -60,78 +66,79 @@ for t in teams_raw:
     }
 
 # =========================
-# STORAGE
+# COLLECT WEEKLY STATS
 # =========================
 weekly_team_stats = {}
-weekly_team_ranks = {}
 
-# =========================
-# FETCH WEEKLY DATA
-# =========================
 for week in weeks:
     raw = league.yhandler.get_scoreboard_raw(
         league.league_id, week
     )
 
     league_data = raw["fantasy_content"]["league"][1]
-    scoreboard = league_data["scoreboard"]["0"]
-    matchups = scoreboard["matchups"]
+    matchups = league_data["scoreboard"]["0"]["matchups"]
 
-    weekly_team_stats[str(week)] = {}
+    weekly_team_stats[week] = {}
 
-    for matchup_key, matchup_data in matchups.items():
-        if matchup_key == "count":
+    for _, matchup_block in matchups.items():
+        if not isinstance(matchup_block, dict):
             continue
 
-        teams_block = matchup_data["matchup"]["0"]["teams"]
+        teams_block = matchup_block["matchup"]["0"]["teams"]
 
-        for team_key, team_data in teams_block.items():
-            if team_key == "count":
+        for _, team_wrapper in teams_block.items():
+            if not isinstance(team_wrapper, dict):
                 continue
 
-            team = team_data["team"]
+            team = team_wrapper["team"]
             meta = team[0]
             stats_block = team[1]["team_stats"]["stats"]
 
-            t_key = meta[0]["team_key"]
+            team_key = meta[0]["team_key"]
 
-            weekly_team_stats[str(week)][t_key] = {}
+            weekly_team_stats[week][team_key] = {}
 
-            for item in stats_block:
-                stat = item["stat"]
-                stat_id = stat["stat_id"]
-                value = stat["value"]
+            for s in stats_block:
+                stat = s.get("stat")
+                if not stat:
+                    continue
+
+                stat_id = stat.get("stat_id")
+                value = stat.get("value")
 
                 if stat_id not in STAT_MAP:
                     continue
 
                 try:
-                    value = float(value)
+                    val = float(value)
                 except (TypeError, ValueError):
                     continue
 
-                weekly_team_stats[str(week)][t_key][STAT_MAP[stat_id]] = value
+                weekly_team_stats[week][team_key][STAT_MAP[stat_id]] = val
 
 # =========================
-# WEEKLY RANKINGS
+# WEEKLY RANKS PER STAT
 # =========================
-for week, team_stats in weekly_team_stats.items():
+weekly_team_ranks = {}
+
+for week, teams_data in weekly_team_stats.items():
     weekly_team_ranks[week] = {}
 
     for stat_name in STAT_MAP.values():
         stat_values = []
 
-        for team_key, stats in team_stats.items():
+        for team_key, stats in teams_data.items():
             if stat_name in stats:
                 stat_values.append((team_key, stats[stat_name]))
 
-        reverse = stat_name not in ["GA", "GAA", "Shots Against"]
+        if not stat_values:
+            continue
 
+        reverse = stat_name not in ["GA", "GAA", "Shots Against"]
         stat_values.sort(key=lambda x: x[1], reverse=reverse)
 
         for rank, (team_key, _) in enumerate(stat_values, start=1):
-            weekly_team_ranks[week].setdefault(team_key, {})
-            weekly_team_ranks[week][team_key][stat_name] = rank
+            weekly_team_ranks[week].setdefault(team_key, {})[stat_name] = rank
 
 # =========================
 # AVERAGE RANKS
@@ -145,9 +152,9 @@ for team_key in teams.keys():
         ranks = []
 
         for week in weekly_team_ranks:
-            rank = weekly_team_ranks[week].get(team_key, {}).get(stat_name)
-            if rank is not None:
-                ranks.append(rank)
+            r = weekly_team_ranks[week].get(team_key, {}).get(stat_name)
+            if r is not None:
+                ranks.append(r)
 
         if ranks:
             avg_team_ranks[team_key][stat_name] = round(
@@ -166,14 +173,14 @@ for team_key in teams.keys():
         weekly = {}
 
         for week in weekly_team_ranks:
-            rank = weekly_team_ranks[week].get(team_key, {}).get(stat_name)
-            if rank is not None:
-                weekly[int(week)] = rank
+            r = weekly_team_ranks[week].get(team_key, {}).get(stat_name)
+            if r is not None:
+                weekly[week] = r
 
         if len(weekly) < 2:
             continue
 
-        weeks_sorted = sorted(weekly.keys())
+        weeks_sorted = sorted(weekly)
         ranks = [weekly[w] for w in weeks_sorted]
 
         deltas = {}
@@ -216,4 +223,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/team_analysis.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/team_analysis.json updated")
+print("docs/team_analysis.json updated")
