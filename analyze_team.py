@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 
 from yahoo_oauth import OAuth2
-from yfantasy_api.yfs import YahooFantasySportsQuery
+import yahoo_fantasy_api as yfa
 
 # =========================
 # CONFIG
@@ -23,17 +23,15 @@ oauth = OAuth2(None, None, from_env=True)
 if not oauth.token_is_valid():
     oauth.refresh_access_token()
 
-yfs = YahooFantasySportsQuery(oauth, "nhl")
-
-# =========================
-# LEAGUE METADATA
-# =========================
-league_meta = yfs.get_league_metadata(LEAGUE_KEY)
-league_name = league_meta.get("name", "Unknown League")
+gm = yfa.Game(oauth, "nhl")
+lg = gm.to_league(LEAGUE_KEY)
+league_name = lg.settings().get("name", "Unknown League")
 
 print(f"🏒 League: {league_name}")
 print(f"📅 Analyzing weeks {START_WEEK} → {END_WEEK}")
 print(f"👥 Team key: {TEAM_KEY}")
+
+team = lg.to_team(TEAM_KEY)
 
 # =========================
 # ANALYZE WEEKS
@@ -43,37 +41,25 @@ total_stats = {}
 
 for week in range(START_WEEK, END_WEEK + 1):
     print(f"🗂️ Week {week}")
+    weekly_stats[str(week)] = {}
 
     try:
-        raw = yfs.get_team_stats(TEAM_KEY, week)
+        stats = team.stats(week)
     except Exception as e:
-        print(f"⚠️ Week {week} failed: {e}")
-        weekly_stats[str(week)] = {}
+        print(f"⚠️ No stats for week {week}: {e}")
         continue
 
-    stats = (
-        raw.get("team", {})
-           .get("team_stats", {})
-           .get("stats", [])
-    )
+    if not stats:
+        continue
 
-    week_totals = {}
-
-    for item in stats:
-        stat = item.get("stat", {})
-        stat_id = stat.get("stat_id")
-        value = stat.get("value")
-
-        if stat_id is None or value is None:
+    for stat_name, value in stats.items():
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
             continue
 
-        value = float(value)
-        stat_id = str(stat_id)
-
-        week_totals[stat_id] = value
-        total_stats[stat_id] = total_stats.get(stat_id, 0) + value
-
-    weekly_stats[str(week)] = week_totals
+        weekly_stats[str(week)][stat_name] = value
+        total_stats[stat_name] = total_stats.get(stat_name, 0) + value
 
 # =========================
 # SAVE OUTPUT
