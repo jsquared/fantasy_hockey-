@@ -43,13 +43,13 @@ weekly_stats = {}
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
 
-    scoreboard = league.scoreboard(week)
-    matchups = scoreboard.get("matchups", [])
-
+    matchups = league.matchups(week)
     week_data = {}
 
     for matchup in matchups:
-        for team in matchup["teams"]:
+        teams_block = matchup["teams"]
+
+        for team in teams_block:
             if team["team_key"] != TEAM_KEY:
                 continue
 
