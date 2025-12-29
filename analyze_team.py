@@ -43,24 +43,29 @@ weekly_breakdown = {}
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
 
-    raw = league.yhandler.get_team_stats_raw(team_key, week)
+    raw = league.yhandler.get_teams_raw(
+        team_keys=[team_key],
+        week=week
+    )
 
-    stats = {}
-    stat_blocks = raw["fantasy_content"]["team"][1]["team_stats"]["stats"]
+    team_block = raw["fantasy_content"]["teams"]["team"]
+    stats_block = team_block[1]["team_stats"]["stats"]
 
-    for item in stat_blocks:
+    week_stats = {}
+
+    for item in stats_block:
         stat = item["stat"]
         stat_id = str(stat["stat_id"])
         value = stat.get("value", 0)
 
-        stats[stat_id] = value
+        week_stats[stat_id] = value
 
         try:
             team_totals[stat_id] = team_totals.get(stat_id, 0) + float(value)
         except (TypeError, ValueError):
             continue
 
-    weekly_breakdown[str(week)] = stats
+    weekly_breakdown[str(week)] = week_stats
 
 # ---------------- OUTPUT ----------------
 payload = {
