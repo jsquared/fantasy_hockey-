@@ -11,33 +11,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout the repo
       - uses: actions/checkout@v4
 
-      # 2️⃣ Setup Python
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      # 3️⃣ Install dependencies (CORRECT)
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install yahoo-oauth yahoo-fantasy-api requests
+          python -m pip install yahoo_oauth yahoo-fantasy-api requests
 
-      # 4️⃣ Run your analysis script
+      - name: Write Yahoo OAuth file
+        run: |
+          echo '${{ secrets.YAHOO_OAUTH_JSON }}' > oauth2.json
+
       - name: Run analyze_team.py
-        env:
-          YAHOO_OAUTH_JSON: ${{ secrets.YAHOO_OAUTH_JSON }}
         run: python analyze_team.py
 
-      # 5️⃣ Commit and push analysis.json
       - name: Commit and push analysis.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add docs/analysis.json
-          git diff --cached --quiet || git commit -m "Update analysis.json"
+          git add docs/team_analysis.json
+          git diff --cached --quiet || git commit -m "Update team_analysis.json"
           git push origin HEAD
