@@ -1,6 +1,5 @@
 import json
 import os
-from datetime import datetime, timezone
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
@@ -25,16 +24,21 @@ oauth = OAuth2(None, None, from_file="oauth2.json")
 game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
 
-team_key = league.team_key()
 current_week = league.current_week()
 
 # =========================
-# Dump raw scoreboard for inspection
+# Fetch raw scoreboard
 # =========================
 raw_scoreboard = league.yhandler.get_scoreboard_raw(league.league_id, current_week)
 
+# =========================
+# Dump entire raw object
+# =========================
 os.makedirs("docs", exist_ok=True)
-with open("docs/raw_scoreboard.json", "w") as f:
+with open("docs/raw_scoreboard_full_dump.json", "w") as f:
     json.dump(raw_scoreboard, f, indent=2)
 
-print(f"Raw scoreboard for week {current_week} dumped to docs/raw_scoreboard.json")
+print(f"✅ Full raw scoreboard for week {current_week} dumped to docs/raw_scoreboard_full_dump.json")
+
+# Optional: also print top-level keys to console
+print("Top-level keys in raw scoreboard:", list(raw_scoreboard.keys()))
