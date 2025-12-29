@@ -1,5 +1,6 @@
 import json
 import os
+import statistics
 from datetime import datetime, timezone
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
@@ -9,7 +10,27 @@ import yahoo_fantasy_api as yfa
 # =========================
 LEAGUE_ID = "465.l.33140"
 GAME_CODE = "nhl"
-WEEKS = 12  # adjust if needed
+
+STAT_MAP = {
+    "1": "Goals",
+    "2": "Assists",
+    "4": "+/-",
+    "5": "PIM",
+    "8": "PPP",
+    "11": "SHP",
+    "12": "GWG",
+    "14": "SOG",
+    "16": "FW",
+    "31": "Hit",
+    "32": "Blk",
+    "19": "Wins",
+    "22": "GA",
+    "23": "GAA",
+    "24": "Shots Against",
+    "25": "Saves",
+    "26": "SV%",
+    "27": "Shutouts",
+}
 
 # =========================
 # OAuth (GitHub-safe)
@@ -26,141 +47,168 @@ oauth = OAuth2(None, None, from_file="oauth2.json")
 game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
 
-teams = league.teams()  # dict keyed by team_key
+current_week = int(league.current_week())
+weeks = list(range(1, current_week + 1))
+
+teams_raw = league.teams()
+teams = {}
+
+for t in teams_raw:
+    teams[t["team_key"]] = {
+        "name": t["name"],
+        "team_id": t["team_id"]
+    }
 
 # =========================
-# STAT MAP
+# STORAGE
 # =========================
-STAT_MAP = {
-    "1": "Goals",
-    "2": "Assists",
-    "4": "+/-",
-    "5": "PIM",
-    "8": "PPP",
-    "11": "SHP",
-    "12": "GWG",
-    "14": "SOG",
-    "16": "FW",
-    "31": "Hits",
-    "32": "Blocks",
-    "19": "Wins",
-    "22": "GA",
-    "23": "GAA",
-    "24": "Shots Against",
-    "25": "Saves",
-    "26": "SV%",
-    "27": "Shutouts"
-}
+weekly_team_stats = {}
+weekly_team_ranks = {}
 
 # =========================
-# HELPERS
+# FETCH WEEKLY DATA
 # =========================
-def extract_team_stats(team_block):
-    stats = {}
-    for item in team_block[1]["team_stats"]["stats"]:
-        stat_id = str(item["stat"]["stat_id"])
-        raw = item["stat"]["value"]
-        try:
-            stats[stat_id] = float(raw)
-        except (TypeError, ValueError):
-            stats[stat_id] = None
-    return stats
+for week in weeks:
+    raw = league.yhandler.get_scoreboard_raw(
+        league.league_id, week
+    )
 
-# =========================
-# DATA STRUCTURES
-# =========================
-weekly_team_stats = {}     # week -> team_key -> stats
-weekly_team_ranks = {}     # week -> team_key -> stat -> rank
-avg_team_ranks = {}        # team_key -> stat -> avg_rank
-
-# =========================
-# LOOP WEEKS
-# =========================
-for week in range(1, WEEKS + 1):
-    raw = league.yhandler.get_scoreboard_raw(league.league_id, week)
     league_data = raw["fantasy_content"]["league"][1]
     scoreboard = league_data["scoreboard"]["0"]
     matchups = scoreboard["matchups"]
 
-    week_stats = {}
+    weekly_team_stats[str(week)] = {}
 
-    for _, matchup_block in matchups.items():
-        if _ == "count":
+    for matchup_key, matchup_data in matchups.items():
+        if matchup_key == "count":
             continue
-        teams_block = matchup_block["matchup"]["0"]["teams"]
 
-        for _, team_entry in teams_block.items():
-            if _ == "count":
+        teams_block = matchup_data["matchup"]["0"]["teams"]
+
+        for team_key, team_data in teams_block.items():
+            if team_key == "count":
                 continue
-            team_block = team_entry["team"]
-            team_key = team_block[0][0]["team_key"]
-            week_stats[team_key] = extract_team_stats(team_block)
 
-    weekly_team_stats[str(week)] = week_stats
+            team = team_data["team"]
+            meta = team[0]
+            stats_block = team[1]["team_stats"]["stats"]
 
-    # =========================
-    # RANKING FOR THIS WEEK
-    # =========================
-    week_ranks = {}
+            t_key = meta[0]["team_key"]
 
-    for team_key in week_stats:
-        week_ranks[team_key] = {}
+            weekly_team_stats[str(week)][t_key] = {}
 
-    for stat_id in STAT_MAP.keys():
-        stat_values = {
-            t: s.get(stat_id)
-            for t, s in week_stats.items()
-            if s.get(stat_id) is not None
-        }
+            for item in stats_block:
+                stat = item["stat"]
+                stat_id = stat["stat_id"]
+                value = stat["value"]
 
-        # Higher is better (even for GA/GAA for now — logic later)
-        sorted_teams = sorted(
-            stat_values.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )
+                if stat_id not in STAT_MAP:
+                    continue
 
-        for rank, (team_key, _) in enumerate(sorted_teams, start=1):
-            week_ranks[team_key][STAT_MAP[stat_id]] = rank
+                try:
+                    value = float(value)
+                except (TypeError, ValueError):
+                    continue
 
-    weekly_team_ranks[str(week)] = week_ranks
+                weekly_team_stats[str(week)][t_key][STAT_MAP[stat_id]] = value
 
 # =========================
-# AVERAGE RANKS ACROSS WEEKS
+# WEEKLY RANKINGS
 # =========================
+for week, team_stats in weekly_team_stats.items():
+    weekly_team_ranks[week] = {}
+
+    for stat_name in STAT_MAP.values():
+        stat_values = []
+
+        for team_key, stats in team_stats.items():
+            if stat_name in stats:
+                stat_values.append((team_key, stats[stat_name]))
+
+        reverse = stat_name not in ["GA", "GAA", "Shots Against"]
+
+        stat_values.sort(key=lambda x: x[1], reverse=reverse)
+
+        for rank, (team_key, _) in enumerate(stat_values, start=1):
+            weekly_team_ranks[week].setdefault(team_key, {})
+            weekly_team_ranks[week][team_key][stat_name] = rank
+
+# =========================
+# AVERAGE RANKS
+# =========================
+avg_team_ranks = {}
+
 for team_key in teams.keys():
     avg_team_ranks[team_key] = {}
 
     for stat_name in STAT_MAP.values():
-        total = 0
-        count = 0
+        ranks = []
 
-        for week in weekly_team_ranks.values():
-            rank = week.get(team_key, {}).get(stat_name)
+        for week in weekly_team_ranks:
+            rank = weekly_team_ranks[week].get(team_key, {}).get(stat_name)
             if rank is not None:
-                total += rank
-                count += 1
+                ranks.append(rank)
 
-        avg_team_ranks[team_key][stat_name] = (
-            total / count if count else None
-        )
+        if ranks:
+            avg_team_ranks[team_key][stat_name] = round(
+                sum(ranks) / len(ranks), 3
+            )
+
+# =========================
+# TREND DETECTION
+# =========================
+team_trends = {}
+
+for team_key in teams.keys():
+    team_trends[team_key] = {}
+
+    for stat_name in STAT_MAP.values():
+        weekly = {}
+
+        for week in weekly_team_ranks:
+            rank = weekly_team_ranks[week].get(team_key, {}).get(stat_name)
+            if rank is not None:
+                weekly[int(week)] = rank
+
+        if len(weekly) < 2:
+            continue
+
+        weeks_sorted = sorted(weekly.keys())
+        ranks = [weekly[w] for w in weeks_sorted]
+
+        deltas = {}
+        for i in range(1, len(weeks_sorted)):
+            deltas[str(weeks_sorted[i])] = ranks[i - 1] - ranks[i]
+
+        avg_delta = sum(deltas.values()) / len(deltas)
+
+        x = list(range(len(ranks)))
+        x_mean = sum(x) / len(x)
+        y_mean = sum(ranks) / len(ranks)
+
+        num = sum((x[i] - x_mean) * (ranks[i] - y_mean) for i in range(len(x)))
+        den = sum((x[i] - x_mean) ** 2 for i in range(len(x)))
+        slope = num / den if den else 0
+
+        team_trends[team_key][stat_name] = {
+            "weekly_ranks": weekly,
+            "week_over_week_delta": deltas,
+            "avg_delta": round(avg_delta, 3),
+            "trend_slope": round(slope, 3),
+            "stdev": round(statistics.stdev(ranks), 3)
+        }
 
 # =========================
 # OUTPUT
 # =========================
 payload = {
-    "league": league.settings().get("name", "Unknown League"),
-    "weeks_analyzed": WEEKS,
-    "teams": {
-        k: {
-            "name": v["name"],
-            "manager": v.get("managers", [{}])[0].get("nickname")
-        }
-        for k, v in teams.items()
-    },
+    "league": league.settings().get("name"),
+    "weeks_analyzed": weeks,
+    "teams": teams,
     "weekly_team_stats": weekly_team_stats,
     "weekly_team_ranks": weekly_team_ranks,
     "average_team_ranks": avg_team_ranks,
+    "trend_analysis": team_trends,
     "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
@@ -168,4 +216,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/team_analysis.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("docs/team_analysis.json updated with league-wide ranking data")
+print("✅ docs/team_analysis.json updated")
