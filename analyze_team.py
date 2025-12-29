@@ -9,9 +9,9 @@ import yahoo_fantasy_api as yfa
 # =========================
 LEAGUE_ID = "465.l.33140"
 GAME_CODE = "nhl"
-WEEK = 1  # change this to whichever week you want
-TOP_N = 8
-BOTTOM_N = 5
+WEEK = 1
+TOP_N = 5  # number of top stats to call strengths
+BOTTOM_N = 5  # number of bottom stats to call weaknesses
 
 # =========================
 # OAuth (GitHub-safe)
@@ -27,8 +27,7 @@ oauth = OAuth2(None, None, from_file="oauth2.json")
 # =========================
 game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
-
-team_key = league.team_key()  # your team key
+my_team_key = league.team_key()
 
 # =========================
 # Fetch scoreboard raw for the week
@@ -39,42 +38,7 @@ scoreboard = league_data["scoreboard"]["0"]
 matchups = scoreboard["matchups"]
 
 # =========================
-# Find my team stats
-# =========================
-my_stats = None
-my_points = None
-my_remaining = None
-
-for k, v in matchups.items():
-    if k == "count":
-        continue
-
-    matchup = v["matchup"]
-    teams = matchup["0"]["teams"]
-
-    for tk, tv in teams.items():
-        if tk == "count":
-            continue
-
-        team_block = tv["team"]
-        meta = team_block[0]
-
-        if meta[0]["team_key"] != team_key:
-            continue
-
-        my_stats = team_block[1]["team_stats"]["stats"]
-        my_points = team_block[1]["team_points"]["total"]
-        my_remaining = team_block[1]["team_remaining_games"]["total"]
-        break
-
-    if my_stats:
-        break
-
-if not my_stats:
-    raise RuntimeError("❌ Could not find your team stats")
-
-# =========================
-# Map stat IDs to names
+# Stat ID → Name Map
 # =========================
 STAT_MAP = {
     "1": "Goals", "2": "Assists", "4": "+/-", "5": "PIM", "8": "PPP",
@@ -83,43 +47,103 @@ STAT_MAP = {
     "26": "SV%", "27": "Shutouts", "31": "Hit", "32": "Blk"
 }
 
-total_stats = []
-for item in my_stats:
-    stat = item.get("stat")
-    if stat is None:
+# =========================
+# Collect all team stats
+# =========================
+league_stats = {}
+
+for k, v in matchups.items():
+    if k == "count":
         continue
-
-    stat_id = str(stat.get("stat_id"))
-    value_raw = stat.get("value")
-
-    try:
-        value = float(value_raw)
-    except (TypeError, ValueError):
-        value = value_raw  # keep as string if not a number
-
-    total_stats.append({
-        "stat_id": stat_id,
-        "name": STAT_MAP.get(stat_id, f"Stat {stat_id}"),
-        "value": value
-    })
-
-# Sort strengths/weaknesses
-total_stats_sorted = sorted(total_stats, key=lambda x: float(x["value"]) if isinstance(x["value"], (int, float, str)) and str(x["value"]).replace('.', '', 1).isdigit() else 0, reverse=True)
-strengths = total_stats_sorted[:TOP_N]
-weaknesses = list(reversed(total_stats_sorted[-BOTTOM_N:]))
+    matchup = v["matchup"]
+    teams = matchup["0"]["teams"]
+    for tk, tv in teams.items():
+        if tk == "count":
+            continue
+        team_block = tv["team"]
+        meta = team_block[0]
+        team_key = meta[0]["team_key"]
+        team_name = meta[2]["name"]
+        stats_raw = team_block[1]["team_stats"]["stats"]
+        stats = {}
+        for item in stats_raw:
+            stat = item.get("stat")
+            if stat is None:
+                continue
+            stat_id = str(stat.get("stat_id"))
+            value_raw = stat.get("value")
+            try:
+                value = float(value_raw)
+            except (TypeError, ValueError):
+                value = value_raw
+            stats[stat_id] = value
+        league_stats[team_key] = {
+            "team_name": team_name,
+            "stats": stats
+        }
 
 # =========================
-# Save output
+# Get my stats
+# =========================
+my_stats = league_stats[my_team_key]["stats"]
+
+# =========================
+# Compare against league
+# =========================
+strengths = []
+weaknesses = []
+
+for stat_id, my_value in my_stats.items():
+    # Skip if my value is not numeric
+    try:
+        my_val_num = float(my_value)
+    except (TypeError, ValueError):
+        continue
+
+    # Get all numeric values for this stat across league
+    league_values = []
+    for team_data in league_stats.values():
+        val = team_data["stats"].get(stat_id)
+        try:
+            val_num = float(val)
+            league_values.append(val_num)
+        except (TypeError, ValueError):
+            continue
+
+    if not league_values:
+        continue
+
+    max_val = max(league_values)
+    min_val = min(league_values)
+
+    # For positive stats higher is better, negative stats (like GA, Shots Against) lower is better
+    if stat_id in ["22", "23", "24"]:  # GA, GAA, Shots Against -> lower better
+        if my_val_num == min_val:
+            strengths.append({"stat_id": stat_id, "name": STAT_MAP.get(stat_id, stat_id), "value": my_val_num})
+        if my_val_num == max_val:
+            weaknesses.append({"stat_id": stat_id, "name": STAT_MAP.get(stat_id, stat_id), "value": my_val_num})
+    else:
+        if my_val_num == max_val:
+            strengths.append({"stat_id": stat_id, "name": STAT_MAP.get(stat_id, stat_id), "value": my_val_num})
+        if my_val_num == min_val:
+            weaknesses.append({"stat_id": stat_id, "name": STAT_MAP.get(stat_id, stat_id), "value": my_val_num})
+
+# Keep only top/bottom N
+strengths = sorted(strengths, key=lambda x: float(x["value"]), reverse=True)[:TOP_N]
+weaknesses = sorted(weaknesses, key=lambda x: float(x["value"]))[:BOTTOM_N]
+
+# =========================
+# Save everything to JSON
 # =========================
 payload = {
     "league": league.settings().get("name", "Unknown League"),
-    "team_key": team_key,
     "week": WEEK,
-    "team_points": my_points,
-    "total_stats": total_stats,
+    "my_team_key": my_team_key,
+    "team_name": league_stats[my_team_key]["team_name"],
+    "team_points": my_stats.get("points", None),
+    "all_team_stats": league_stats,
     "strengths": strengths,
     "weaknesses": weaknesses,
-    "remaining_games": my_remaining,
     "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
