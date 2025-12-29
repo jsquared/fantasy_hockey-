@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 
 from yahoo_oauth import OAuth2
-from yfantasy_api import YahooFantasySportsQuery
+from yfantasy_api.yfs import YahooFantasySportsQuery
 
 # =========================
 # CONFIG
@@ -26,7 +26,7 @@ if not oauth.token_is_valid():
 yfs = YahooFantasySportsQuery(oauth, "nhl")
 
 # =========================
-# LOAD LEAGUE METADATA
+# LEAGUE METADATA
 # =========================
 league_meta = yfs.get_league_metadata(LEAGUE_KEY)
 league_name = league_meta.get("name", "Unknown League")
@@ -47,24 +47,31 @@ for week in range(START_WEEK, END_WEEK + 1):
     try:
         raw = yfs.get_team_stats(TEAM_KEY, week)
     except Exception as e:
-        print(f"⚠️ Failed week {week}: {e}")
+        print(f"⚠️ Week {week} failed: {e}")
         weekly_stats[str(week)] = {}
         continue
 
-    stats_block = raw.get("team", {}).get("team_stats", {}).get("stats", [])
+    stats = (
+        raw.get("team", {})
+           .get("team_stats", {})
+           .get("stats", [])
+    )
 
     week_totals = {}
 
-    for stat in stats_block:
-        stat_id = stat.get("stat", {}).get("stat_id")
-        value = stat.get("stat", {}).get("value")
+    for item in stats:
+        stat = item.get("stat", {})
+        stat_id = stat.get("stat_id")
+        value = stat.get("value")
 
         if stat_id is None or value is None:
             continue
 
-        week_totals[str(stat_id)] = float(value)
+        value = float(value)
+        stat_id = str(stat_id)
 
-        total_stats[str(stat_id)] = total_stats.get(str(stat_id), 0) + float(value)
+        week_totals[stat_id] = value
+        total_stats[stat_id] = total_stats.get(stat_id, 0) + value
 
     weekly_stats[str(week)] = week_totals
 
