@@ -1,80 +1,97 @@
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
-# =========================
+
+# ======================
 # CONFIG
-# =========================
-LEAGUE_KEY = "465.l.33140"
+# ======================
+GAME_CODE = "nhl"
+LEAGUE_ID = "465.l.33140"
 TEAM_KEY = "465.l.33140.t.11"
 START_WEEK = 1
 END_WEEK = 12
 OUTPUT_FILE = "docs/analysis.json"
 
-# =========================
-# AUTH
-# =========================
+
+# ======================
+# AUTH (NON-INTERACTIVE)
+# ======================
 print("🔑 Authenticating with Yahoo...")
-
 oauth = OAuth2(None, None, from_env=True)
-if not oauth.token_is_valid():
-    oauth.refresh_access_token()
 
-gm = yfa.Game(oauth, "nhl")
-lg = gm.to_league(LEAGUE_KEY)
-league_name = lg.settings().get("name", "Unknown League")
+# ======================
+# INIT API OBJECTS
+# ======================
+gm = yfa.Game(oauth, GAME_CODE)
+lg = gm.league(LEAGUE_ID)
 
-print(f"🏒 League: {league_name}")
+print(f"🏒 League: {lg.settings()['name']}")
 print(f"📅 Analyzing weeks {START_WEEK} → {END_WEEK}")
 print(f"👥 Team key: {TEAM_KEY}")
 
-team = lg.to_team(TEAM_KEY)
+team = yfa.Team(oauth, TEAM_KEY)
 
-# =========================
-# ANALYZE WEEKS
-# =========================
+
+# ======================
+# DATA STRUCTURES
+# ======================
 weekly_stats = {}
 total_stats = {}
 
+
+# ======================
+# MAIN LOOP
+# ======================
 for week in range(START_WEEK, END_WEEK + 1):
     print(f"🗂️ Week {week}")
-    weekly_stats[str(week)] = {}
+    weekly_totals = {}
 
     try:
-        stats = team.stats(week)
+        players = team.roster(week=week)
     except Exception as e:
-        print(f"⚠️ No stats for week {week}: {e}")
+        print(f"⚠️ Failed to load roster for week {week}: {e}")
+        weekly_stats[str(week)] = {}
         continue
 
-    if not stats:
-        continue
+    for player in players:
+        player_key = player["player_key"]
 
-    for stat_name, value in stats.items():
         try:
-            value = float(value)
-        except (TypeError, ValueError):
+            stats = team.player_stats(player_key, week=week)
+        except Exception:
             continue
 
-        weekly_stats[str(week)][stat_name] = value
-        total_stats[stat_name] = total_stats.get(stat_name, 0) + value
+        for stat_name, value in stats.items():
+            try:
+                val = float(value)
+            except (TypeError, ValueError):
+                continue
 
-# =========================
-# SAVE OUTPUT
-# =========================
+            weekly_totals[stat_name] = weekly_totals.get(stat_name, 0) + val
+            total_stats[stat_name] = total_stats.get(stat_name, 0) + val
+
+    weekly_stats[str(week)] = weekly_totals
+
+
+# ======================
+# OUTPUT
+# ======================
 output = {
-    "league": league_name,
+    "league": lg.settings()["name"],
     "team_key": TEAM_KEY,
     "weeks_analyzed": END_WEEK,
     "total_stats": total_stats,
     "weekly_stats": weekly_stats,
-    "lastUpdated": datetime.utcnow().isoformat() + "Z",
+    "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
-os.makedirs("docs", exist_ok=True)
+os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
+
 with open(OUTPUT_FILE, "w") as f:
     json.dump(output, f, indent=2)
 
-print("✅ Analysis complete")
+print("✅ analysis.json updated successfully")
