@@ -36,30 +36,18 @@ TEAM_KEY = team_meta["team_key"]
 
 print(f"👥 Team key: {TEAM_KEY}")
 
-# ---------------- HELPERS ----------------
+# ---------------- MATCHUP NORMALIZER ----------------
 def extract_matchups(raw):
-    """
-    Normalize Yahoo matchup responses into a list of matchup dicts
-    """
     if isinstance(raw, list):
         return raw
-
     if isinstance(raw, dict):
-        # case: {"matchup": {...}}
         if "matchup" in raw:
             return [raw["matchup"]]
-
-        # case: {"fantasy_content": {...}}
         if "fantasy_content" in raw:
-            fc = raw["fantasy_content"]
-            if "league" in fc:
-                league_block = fc["league"]
-                if isinstance(league_block, list):
-                    for block in league_block:
-                        if isinstance(block, dict) and "scoreboard" in block:
-                            sb = block["scoreboard"]
-                            return sb.get("matchups", [])
-
+            league_block = raw["fantasy_content"].get("league", [])
+            for block in league_block:
+                if isinstance(block, dict) and "scoreboard" in block:
+                    return block["scoreboard"].get("matchups", [])
     return []
 
 # ---------------- ANALYSIS ----------------
@@ -80,16 +68,23 @@ for week in range(1, current_week + 1):
         if not isinstance(teams_block, list):
             continue
 
-        for team in teams_block:
-            if team.get("team_key") != TEAM_KEY:
+        for entry in teams_block:
+            team_block = entry.get("team")
+            if not isinstance(team_block, list) or len(team_block) < 2:
                 continue
 
-            stats_block = (
-                team.get("team_stats", {})
+            meta = team_block[0]
+            data = team_block[1]
+
+            if meta.get("team_key") != TEAM_KEY:
+                continue
+
+            stats = (
+                data.get("team_stats", {})
                     .get("stats", [])
             )
 
-            for s in stats_block:
+            for s in stats:
                 stat = s.get("stat", {})
                 stat_id = str(stat.get("stat_id"))
                 value = stat.get("value", 0)
