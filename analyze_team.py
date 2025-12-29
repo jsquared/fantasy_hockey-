@@ -15,25 +15,30 @@ TEAM_KEY = "465.l.33140.t.11"
 START_WEEK = 1
 END_WEEK = 12
 OUTPUT_FILE = "docs/analysis.json"
+OAUTH_FILE = "oauth2.json"
 
 
 # ======================
-# AUTH (NON-INTERACTIVE)
+# AUTH (FILE-BASED, NON-INTERACTIVE)
 # ======================
-print("🔑 Authenticating with Yahoo...")
-oauth = OAuth2(None, None, from_env=True)
+print("🔑 Authenticating with Yahoo (file-based OAuth)...")
+
+if not os.path.exists(OAUTH_FILE):
+    raise RuntimeError("❌ oauth2.json not found — workflow must create it")
+
+oauth = OAuth2(None, None, from_file=OAUTH_FILE)
+
 
 # ======================
 # INIT API OBJECTS
 # ======================
 gm = yfa.Game(oauth, GAME_CODE)
 lg = gm.league(LEAGUE_ID)
+team = yfa.Team(oauth, TEAM_KEY)
 
 print(f"🏒 League: {lg.settings()['name']}")
 print(f"📅 Analyzing weeks {START_WEEK} → {END_WEEK}")
 print(f"👥 Team key: {TEAM_KEY}")
-
-team = yfa.Team(oauth, TEAM_KEY)
 
 
 # ======================
@@ -44,7 +49,7 @@ total_stats = {}
 
 
 # ======================
-# MAIN LOOP
+# MAIN LOOP (PLAYER STATS → TEAM TOTALS)
 # ======================
 for week in range(START_WEEK, END_WEEK + 1):
     print(f"🗂️ Week {week}")
@@ -53,7 +58,7 @@ for week in range(START_WEEK, END_WEEK + 1):
     try:
         players = team.roster(week=week)
     except Exception as e:
-        print(f"⚠️ Failed to load roster for week {week}: {e}")
+        print(f"⚠️ Roster load failed: {e}")
         weekly_stats[str(week)] = {}
         continue
 
@@ -65,20 +70,20 @@ for week in range(START_WEEK, END_WEEK + 1):
         except Exception:
             continue
 
-        for stat_name, value in stats.items():
+        for stat, value in stats.items():
             try:
-                val = float(value)
+                v = float(value)
             except (TypeError, ValueError):
                 continue
 
-            weekly_totals[stat_name] = weekly_totals.get(stat_name, 0) + val
-            total_stats[stat_name] = total_stats.get(stat_name, 0) + val
+            weekly_totals[stat] = weekly_totals.get(stat, 0) + v
+            total_stats[stat] = total_stats.get(stat, 0) + v
 
     weekly_stats[str(week)] = weekly_totals
 
 
 # ======================
-# OUTPUT
+# WRITE OUTPUT
 # ======================
 output = {
     "league": lg.settings()["name"],
@@ -94,4 +99,4 @@ os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
 with open(OUTPUT_FILE, "w") as f:
     json.dump(output, f, indent=2)
 
-print("✅ analysis.json updated successfully")
+print("✅ analysis.json written successfully")
