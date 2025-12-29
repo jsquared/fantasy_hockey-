@@ -29,19 +29,14 @@ current_week = league.current_week()
 print(f"🏒 League: {league_name}")
 print(f"📅 Analyzing weeks 1 → {current_week}")
 
-# ---------------- TEAMS ----------------
+# ---------------- TEAM ----------------
 teams = league.teams()
-
-if not isinstance(teams, dict) or not teams:
-    raise RuntimeError("❌ league.teams() returned no teams")
-
-# take first team safely
 team_meta = next(iter(teams.values()))
 team_key = team_meta["team_key"]
 
 print(f"👥 Team key: {team_key}")
 
-# convert to Team OBJECT (this is the critical fix)
+# THIS IS THE CRITICAL STEP
 team = league.to_team(team_key)
 
 # ---------------- STATS ----------------
@@ -51,7 +46,7 @@ weekly_breakdown = {}
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
 
-    weekly_stats = team.stats(week)
+    weekly_stats = team.stats(week)  # ✅ ONLY valid method
     weekly_breakdown[str(week)] = weekly_stats
 
     for stat_id, value in weekly_stats.items():
