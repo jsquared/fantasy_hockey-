@@ -1,71 +1,73 @@
 {
-  "week": "1",
+  "league": "The Liberties Invitational",
+  "team_key": "465.l.33140.t.13",
+  "week": 1,
   "team_points": "12",
   "total_stats": [
     {
-      "stat_id": "24",
-      "name": "Shots Against",
-      "value": 136
-    },
-    {
-      "stat_id": "25",
-      "name": "Saves",
-      "value": 124
-    },
-    {
-      "stat_id": "16",
-      "name": "FW",
-      "value": 85
-    },
-    {
-      "stat_id": "14",
-      "name": "SOG",
-      "value": 73
-    },
-    {
-      "stat_id": "31",
-      "name": "Hit",
-      "value": 35
-    },
-    {
-      "stat_id": "32",
-      "name": "Blk",
-      "value": 31
-    },
-    {
-      "stat_id": "5",
-      "name": "PIM",
-      "value": 18
-    },
-    {
-      "stat_id": "8",
-      "name": "PPP",
-      "value": 13
-    },
-    {
-      "stat_id": "22",
-      "name": "GA",
-      "value": 12
-    },
-    {
       "stat_id": "1",
       "name": "Goals",
-      "value": 11
+      "value": 11.0
     },
     {
       "stat_id": "2",
       "name": "Assists",
-      "value": 11
+      "value": 11.0
     },
     {
       "stat_id": "4",
       "name": "+/-",
-      "value": 7
+      "value": 7.0
+    },
+    {
+      "stat_id": "5",
+      "name": "PIM",
+      "value": 18.0
+    },
+    {
+      "stat_id": "8",
+      "name": "PPP",
+      "value": 13.0
+    },
+    {
+      "stat_id": "11",
+      "name": "SHP",
+      "value": 0.0
+    },
+    {
+      "stat_id": "12",
+      "name": "GWG",
+      "value": 2.0
+    },
+    {
+      "stat_id": "14",
+      "name": "SOG",
+      "value": 73.0
+    },
+    {
+      "stat_id": "16",
+      "name": "FW",
+      "value": 85.0
+    },
+    {
+      "stat_id": "31",
+      "name": "Hit",
+      "value": 35.0
+    },
+    {
+      "stat_id": "32",
+      "name": "Blk",
+      "value": 31.0
     },
     {
       "stat_id": "19",
       "name": "Wins",
-      "value": 4
+      "value": 4.0
+    },
+    {
+      "stat_id": "22",
+      "name": "GA",
+      "value": 12.0
     },
     {
       "stat_id": "23",
@@ -73,9 +75,14 @@
       "value": 2.42
     },
     {
-      "stat_id": "12",
-      "name": "GWG",
-      "value": 2
+      "stat_id": "25",
+      "name": "Saves",
+      "value": 124.0
+    },
+    {
+      "stat_id": "24",
+      "name": "Shots Against",
+      "value": 136.0
     },
     {
       "stat_id": "26",
@@ -83,53 +90,63 @@
       "value": 0.912
     },
     {
-      "stat_id": "11",
-      "name": "SHP",
-      "value": 0
-    },
-    {
       "stat_id": "27",
       "name": "Shutouts",
-      "value": 0
+      "value": 0.0
     }
   ],
   "strengths": [
     {
       "stat_id": "24",
       "name": "Shots Against",
-      "value": 136
+      "value": 136.0
     },
     {
       "stat_id": "25",
       "name": "Saves",
-      "value": 124
+      "value": 124.0
     },
     {
       "stat_id": "16",
       "name": "FW",
-      "value": 85
+      "value": 85.0
     },
     {
       "stat_id": "14",
       "name": "SOG",
-      "value": 73
+      "value": 73.0
     },
     {
       "stat_id": "31",
       "name": "Hit",
-      "value": 35
+      "value": 35.0
+    },
+    {
+      "stat_id": "32",
+      "name": "Blk",
+      "value": 31.0
+    },
+    {
+      "stat_id": "5",
+      "name": "PIM",
+      "value": 18.0
+    },
+    {
+      "stat_id": "8",
+      "name": "PPP",
+      "value": 13.0
     }
   ],
   "weaknesses": [
     {
       "stat_id": "27",
       "name": "Shutouts",
-      "value": 0
+      "value": 0.0
     },
     {
       "stat_id": "11",
       "name": "SHP",
-      "value": 0
+      "value": 0.0
     },
     {
       "stat_id": "26",
@@ -139,7 +156,7 @@
     {
       "stat_id": "12",
       "name": "GWG",
-      "value": 2
+      "value": 2.0
     },
     {
       "stat_id": "23",
@@ -147,5 +164,10 @@
       "value": 2.42
     }
   ],
-  "lastUpdated": "2025-12-29T18:41:24.826513+00:00"
+  "remaining_games": {
+    "remaining_games": 0,
+    "live_games": 0,
+    "completed_games": 35
+  },
+  "lastUpdated": "2025-12-29T18:58:53.340065+00:00"
 }
