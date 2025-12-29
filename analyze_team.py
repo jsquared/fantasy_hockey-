@@ -46,18 +46,26 @@ for week in range(1, current_week + 1):
     matchups = league.matchups(week)
     week_data = {}
 
-    for matchup in matchups:
-        teams_block = matchup["teams"]
+    for item in matchups:
+        # 🔑 SAFELY UNWRAP MATCHUP OBJECT
+        matchup = item.get("matchup", item)
+
+        teams_block = matchup.get("teams", [])
+        if not isinstance(teams_block, list):
+            continue
 
         for team in teams_block:
-            if team["team_key"] != TEAM_KEY:
+            if team.get("team_key") != TEAM_KEY:
                 continue
 
-            stats = team["team_stats"]["stats"]
+            stats_block = (
+                team.get("team_stats", {})
+                    .get("stats", [])
+            )
 
-            for s in stats:
-                stat = s["stat"]
-                stat_id = str(stat["stat_id"])
+            for s in stats_block:
+                stat = s.get("stat", {})
+                stat_id = str(stat.get("stat_id"))
                 value = stat.get("value", 0)
 
                 week_data[stat_id] = value
