@@ -91,10 +91,9 @@ for k, v in matchups.items():
 my_stats = league_stats[my_team_key]["stats"]
 
 # =========================
-# Compare against league
+# Rank each stat vs league
 # =========================
-strengths = []
-weaknesses = []
+ranked_stats = []
 
 for stat_id, my_value in my_stats.items():
     try:
@@ -113,44 +112,24 @@ for stat_id, my_value in my_stats.items():
     if not league_values:
         continue
 
-    max_val = max(league_values)
-    min_val = min(league_values)
-
-    # Determine positive vs negative stats
+    # Determine rank
     if stat_id in ["22","23","24"]:  # negative stats → lower is better
-        if stat_id in GOALIE_STATS:
-            if my_val_num == min_val:
-                strengths.append({"stat_id": stat_id, "name": STAT_MAP[stat_id], "value": my_val_num})
-            if my_val_num == max_val:
-                weaknesses.append({"stat_id": stat_id, "name": STAT_MAP[stat_id], "value": my_val_num})
-        else:  # skaters with negative effect (rare)
-            if my_val_num == min_val:
-                strengths.append({"stat_id": stat_id, "name": STAT_MAP[stat_id], "value": my_val_num})
-            if my_val_num == max_val:
-                weaknesses.append({"stat_id": stat_id, "name": STAT_MAP[stat_id], "value": my_val_num})
-    else:  # higher is better
-        if stat_id in GOALIE_STATS:
-            if my_val_num == max_val:
-                strengths.append({"stat_id": stat_id, "name": STAT_MAP[stat_id], "value": my_val_num})
-            if my_val_num == min_val:
-                weaknesses.append({"stat_id": stat_id, "name": STAT_MAP[stat_id], "value": my_val_num})
-        else:
-            if my_val_num == max_val:
-                strengths.append({"stat_id": stat_id, "name": STAT_MAP[stat_id], "value": my_val_num})
-            if my_val_num == min_val:
-                weaknesses.append({"stat_id": stat_id, "name": STAT_MAP[stat_id], "value": my_val_num})
+        league_values_sorted = sorted(league_values)
+    else:
+        league_values_sorted = sorted(league_values, reverse=True)
 
-# =========================
-# Filter top/bottom counts
-# =========================
-skater_strengths = sorted([s for s in strengths if s["stat_id"] in SKATER_STATS], key=lambda x: float(x["value"]), reverse=True)[:2]
-skater_weaknesses = sorted([w for w in weaknesses if w["stat_id"] in SKATER_STATS], key=lambda x: float(x["value"]))[:2]
-goalie_strengths = sorted([s for s in strengths if s["stat_id"] in GOALIE_STATS], key=lambda x: float(x["value"]), reverse=True)[:1]
-goalie_weaknesses = sorted([w for w in weaknesses if w["stat_id"] in GOALIE_STATS], key=lambda x: float(x["value"]))[:1]
+    try:
+        rank = league_values_sorted.index(my_val_num) + 1
+    except ValueError:
+        rank = None  # in case of missing data
 
-# Combine
-final_strengths = skater_strengths + goalie_strengths
-final_weaknesses = skater_weaknesses + goalie_weaknesses
+    ranked_stats.append({
+        "stat_id": stat_id,
+        "name": STAT_MAP.get(stat_id, f"Stat {stat_id}"),
+        "value": my_val_num,
+        "rank": rank,
+        "total_teams": len(league_values)
+    })
 
 # =========================
 # Save everything to JSON
@@ -160,10 +139,8 @@ payload = {
     "week": WEEK,
     "my_team_key": my_team_key,
     "team_name": league_stats[my_team_key]["team_name"],
-    "team_points": my_stats.get("points", None),
     "all_team_stats": league_stats,
-    "strengths": final_strengths,
-    "weaknesses": final_weaknesses,
+    "ranked_stats": ranked_stats,
     "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
