@@ -3,37 +3,19 @@ import os
 from datetime import datetime, timezone
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
-from statistics import mean
+from collections import defaultdict
 
 # =========================
 # CONFIG
 # =========================
 LEAGUE_ID = "465.l.33140"
 GAME_CODE = "nhl"
-WEEKS = 12  # weeks to analyze
+WEEKS = 12
+SWING_THRESHOLD = 0.10  # 10%
 
-# Higher is better (False = lower is better)
-STAT_BETTER_HIGH = {
-    "Goals": True,
-    "Assists": True,
-    "+/-": True,
-    "PIM": True,
-    "PPP": True,
-    "SHP": True,
-    "GWG": True,
-    "SOG": True,
-    "FW": True,
-    "Hits": True,
-    "Blocks": True,
-    "Wins": True,
-    "GA": False,
-    "GAA": False,
-    "Shots Against": False,
-    "Saves": True,
-    "SV%": True,
-    "Shutouts": True,
-}
-
+# =========================
+# STAT MAP
+# =========================
 STAT_MAP = {
     "1": "Goals",
     "2": "Assists",
@@ -55,6 +37,8 @@ STAT_MAP = {
     "27": "Shutouts"
 }
 
+LOWER_IS_BETTER = {"GA", "GAA", "Shots Against"}
+
 # =========================
 # OAuth (GitHub-safe)
 # =========================
@@ -70,12 +54,12 @@ oauth = OAuth2(None, None, from_file="oauth2.json")
 game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
 
-teams = league.teams()
 my_team_key = league.team_key()
 current_week = league.current_week()
+teams_meta = league.teams()
 
 # =========================
-# HELPERS
+# Helpers
 # =========================
 def extract_team_stats(team_block):
     stats = {}
@@ -83,89 +67,83 @@ def extract_team_stats(team_block):
         stat_id = str(item["stat"]["stat_id"])
         raw = item["stat"]["value"]
         try:
-            stats[STAT_MAP[stat_id]] = float(raw)
+            stats[stat_id] = float(raw)
         except (TypeError, ValueError):
-            stats[STAT_MAP[stat_id]] = None
+            stats[stat_id] = None
     return stats
+
+def normalize(value, min_v, max_v):
+    if max_v == min_v:
+        return 0.5
+    return (value - min_v) / (max_v - min_v)
 
 # =========================
 # DATA COLLECTION
 # =========================
-weekly_stats = {}   # week -> team -> stat -> value
-weekly_ranks = {}   # week -> team -> stat -> rank
+weekly_stats = defaultdict(dict)
+weekly_ranks = defaultdict(dict)
 
 for week in range(1, WEEKS + 1):
     raw = league.yhandler.get_scoreboard_raw(league.league_id, week)
     matchups = raw["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
 
-    week_data = {}
-
-    for _, matchup in matchups.items():
+    for _, matchup_block in matchups.items():
         if _ == "count":
             continue
 
-        teams_block = matchup["matchup"]["0"]["teams"]
+        teams_block = matchup_block["matchup"]["0"]["teams"]
         for _, team_entry in teams_block.items():
             if _ == "count":
                 continue
 
             team_block = team_entry["team"]
-            tkey = team_block[0][0]["team_key"]
-            week_data[tkey] = extract_team_stats(team_block)
+            team_key = team_block[0][0]["team_key"]
+            weekly_stats[week][team_key] = extract_team_stats(team_block)
 
-    weekly_stats[str(week)] = week_data
-
-    # Ranking
-    week_rank = {t: {} for t in week_data}
-    for stat in STAT_MAP.values():
+    # Weekly ranking
+    for stat_id, stat_name in STAT_MAP.items():
         values = {
-            t: s.get(stat)
-            for t, s in week_data.items()
-            if s.get(stat) is not None
+            t: s.get(stat_id)
+            for t, s in weekly_stats[week].items()
+            if s.get(stat_id) is not None
         }
 
-        reverse = STAT_BETTER_HIGH.get(stat, True)
-        sorted_vals = sorted(values.items(), key=lambda x: x[1], reverse=reverse)
+        reverse = stat_name not in LOWER_IS_BETTER
+        ranked = sorted(values.items(), key=lambda x: x[1], reverse=reverse)
 
-        for rank, (t, _) in enumerate(sorted_vals, start=1):
-            week_rank[t][stat] = rank
-
-    weekly_ranks[str(week)] = week_rank
+        for rank, (team_key, _) in enumerate(ranked, start=1):
+            weekly_ranks[week].setdefault(team_key, {})[stat_name] = rank
 
 # =========================
-# AVERAGES & TRENDS
+# AVERAGES + TRENDS
 # =========================
-avg_values = {}
-avg_ranks = {}
-trends = {}
+avg_stats = defaultdict(dict)
+avg_ranks = defaultdict(dict)
+trends = defaultdict(dict)
 
-for tkey in teams:
-    avg_values[tkey] = {}
-    avg_ranks[tkey] = {}
-    trends[tkey] = {}
-
-    for stat in STAT_MAP.values():
-        vals = []
+for team_key in teams_meta.keys():
+    for stat_id, stat_name in STAT_MAP.items():
+        values = []
         ranks = []
 
-        for w in weekly_stats.values():
-            v = w.get(tkey, {}).get(stat)
+        for week in range(1, WEEKS + 1):
+            v = weekly_stats[week].get(team_key, {}).get(stat_id)
+            r = weekly_ranks[week].get(team_key, {}).get(stat_name)
             if v is not None:
-                vals.append(v)
-
-        for w in weekly_ranks.values():
-            r = w.get(tkey, {}).get(stat)
+                values.append(v)
             if r is not None:
                 ranks.append(r)
 
-        avg_values[tkey][stat] = mean(vals) if vals else None
-        avg_ranks[tkey][stat] = mean(ranks) if ranks else None
+        avg_stats[team_key][stat_name] = sum(values) / len(values) if values else None
+        avg_ranks[team_key][stat_name] = sum(ranks) / len(ranks) if ranks else None
 
-        # Trend = last 3 weeks slope
-        if len(vals) >= 3:
-            trends[tkey][stat] = vals[-1] - vals[-3]
+        # Trend (last 3 weeks vs prior)
+        if len(values) >= 6:
+            recent = sum(values[-3:]) / 3
+            earlier = sum(values[:-3]) / (len(values) - 3)
+            trends[team_key][stat_name] = recent - earlier
         else:
-            trends[tkey][stat] = 0
+            trends[team_key][stat_name] = 0
 
 # =========================
 # CURRENT MATCHUP
@@ -174,18 +152,13 @@ raw = league.yhandler.get_scoreboard_raw(league.league_id, current_week)
 matchups = raw["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
 
 opp_key = None
-
 for _, v in matchups.items():
     if _ == "count":
         continue
     teams_block = v["matchup"]["0"]["teams"]
-    team_keys = [
-        tv["team"][0][0]["team_key"]
-        for tk, tv in teams_block.items()
-        if tk != "count"
-    ]
-    if my_team_key in team_keys:
-        opp_key = next(t for t in team_keys if t != my_team_key)
+    keys = [tv["team"][0][0]["team_key"] for tk, tv in teams_block.items() if tk != "count"]
+    if my_team_key in keys:
+        opp_key = next(k for k in keys if k != my_team_key)
         break
 
 # =========================
@@ -193,40 +166,30 @@ for _, v in matchups.items():
 # =========================
 predictions = {}
 
-for stat in STAT_MAP.values():
-    my_avg = avg_values[my_team_key][stat]
-    opp_avg = avg_values[opp_key][stat]
+for stat_name in STAT_MAP.values():
+    my_val = avg_stats[my_team_key].get(stat_name)
+    opp_val = avg_stats[opp_key].get(stat_name)
 
-    my_rank = avg_ranks[my_team_key][stat]
-    opp_rank = avg_ranks[opp_key][stat]
+    my_rank = avg_ranks[my_team_key].get(stat_name)
+    opp_rank = avg_ranks[opp_key].get(stat_name)
 
-    my_trend = trends[my_team_key][stat]
-    opp_trend = trends[opp_key][stat]
+    if None in (my_val, opp_val, my_rank, opp_rank):
+        continue
 
-    score = 0
+    vals = [avg_stats[t][stat_name] for t in avg_stats if avg_stats[t][stat_name] is not None]
+    min_v, max_v = min(vals), max(vals)
 
-    if my_avg is not None and opp_avg is not None:
-        score += 1 if my_avg > opp_avg else -1
+    my_score = normalize(my_val, min_v, max_v) + (1 / my_rank)
+    opp_score = normalize(opp_val, min_v, max_v) + (1 / opp_rank)
 
-    if my_rank is not None and opp_rank is not None:
-        score += 1 if my_rank < opp_rank else -1
+    diff = my_score - opp_score
+    confidence = abs(diff) / max(my_score, opp_score)
 
-    score += 0.5 if my_trend > opp_trend else -0.5
-
-    if score >= 1.5:
-        result = "WIN"
-    elif score <= -1.5:
-        result = "LOSE"
-    else:
-        result = "TOSS_UP"
-
-    predictions[stat] = {
-        "prediction": result,
-        "my_avg": my_avg,
-        "opp_avg": opp_avg,
-        "my_avg_rank": my_rank,
-        "opp_avg_rank": opp_rank,
-        "trend_diff": my_trend - opp_trend
+    predictions[stat_name] = {
+        "winner": "me" if diff > 0 else "opponent",
+        "confidence": round(confidence, 3),
+        "swing": confidence < SWING_THRESHOLD,
+        "trend": round(trends[my_team_key].get(stat_name, 0), 3)
     }
 
 # =========================
@@ -235,12 +198,13 @@ for stat in STAT_MAP.values():
 payload = {
     "league": league.settings()["name"],
     "weeks_analyzed": WEEKS,
-    "my_team": teams[my_team_key]["name"],
-    "opponent": teams[opp_key]["name"],
-    "average_stat_values": avg_values,
-    "average_stat_ranks": avg_ranks,
+    "current_week": current_week,
+    "my_team": my_team_key,
+    "opponent": opp_key,
+    "average_stats": avg_stats,
+    "average_ranks": avg_ranks,
     "trends": trends,
-    "current_matchup_predictions": predictions,
+    "predictions": predictions,
     "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
@@ -248,4 +212,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/team_analysis.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("docs/team_analysis.json updated with matchup predictions")
+print("docs/team_analysis.json updated with predictions, confidence, and swing categories")
