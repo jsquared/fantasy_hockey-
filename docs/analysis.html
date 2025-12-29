@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fantasy Hockey Analysis</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  h1, h2 { color: #2c3e50; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+  th { background-color: #2980b9; color: white; }
+  tr:nth-child(even) { background-color: #f2f2f2; }
+  .winner { background-color: #2ecc71; color: white; }
+  .loser { background-color: #e74c3c; color: white; }
+  .swing { font-style: italic; color: #f39c12; }
+</style>
+</head>
+<body>
+
+<h1>Fantasy Hockey Analysis</h1>
+<p>League: <span id="league"></span></p>
+<p>Current Week: <span id="current_week"></span></p>
+<p>Last Updated: <span id="last_updated"></span></p>
+
+<h2>Matchup: My Team vs Opponent</h2>
+<table id="matchup_table">
+  <thead>
+    <tr>
+      <th>Stat</th>
+      <th>My Team</th>
+      <th>Opponent</th>
+      <th>Predicted Winner</th>
+      <th>Confidence</th>
+      <th>Swing?</th>
+      <th>Trend</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+fetch('team_analysis.json')
+  .then(response => response.json())
+  .then(data => {
+    document.getElementById('league').textContent = data.league;
+    document.getElementById('current_week').textContent = data.current_week;
+    document.getElementById('last_updated').textContent = data.lastUpdated;
+
+    const myTeam = data.my_team;
+    const opponent = data.opponent;
+    const predictions = data.predictions;
+    const tbody = document.querySelector('#matchup_table tbody');
+
+    Object.keys(predictions).forEach(stat => {
+      const pred = predictions[stat];
+      const row = document.createElement('tr');
+
+      row.innerHTML = `
+        <td>${stat}</td>
+        <td>${data.average_stats[myTeam][stat].toFixed(2)}</td>
+        <td>${data.average_stats[opponent][stat].toFixed(2)}</td>
+        <td class="${pred.winner === 'me' ? 'winner' : 'loser'}">${pred.winner}</td>
+        <td>${(pred.confidence * 100).toFixed(1)}%</td>
+        <td>${pred.swing ? 'Yes' : 'No'}</td>
+        <td>${pred.trend.toFixed(2)}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  })
+  .catch(err => console.error('Error loading team_analysis.json:', err));
+</script>
+
+</body>
+</html>
