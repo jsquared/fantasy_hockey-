@@ -36,8 +36,6 @@ team_key = team_meta["team_key"]
 
 print(f"👥 Team key: {team_key}")
 
-team = league.to_team(team_key)
-
 # ---------------- STATS ----------------
 team_totals = {}
 weekly_breakdown = {}
@@ -45,14 +43,24 @@ weekly_breakdown = {}
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
 
-    weekly_stats = team.team_stats(week)  # ✅ CORRECT METHOD
-    weekly_breakdown[str(week)] = weekly_stats
+    raw = league.yhandler.get_team_stats_raw(team_key, week)
 
-    for stat_id, value in weekly_stats.items():
+    stats = {}
+    stat_blocks = raw["fantasy_content"]["team"][1]["team_stats"]["stats"]
+
+    for item in stat_blocks:
+        stat = item["stat"]
+        stat_id = str(stat["stat_id"])
+        value = stat.get("value", 0)
+
+        stats[stat_id] = value
+
         try:
             team_totals[stat_id] = team_totals.get(stat_id, 0) + float(value)
         except (TypeError, ValueError):
             continue
+
+    weekly_breakdown[str(week)] = stats
 
 # ---------------- OUTPUT ----------------
 payload = {
