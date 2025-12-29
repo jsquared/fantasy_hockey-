@@ -3,7 +3,6 @@
   "week": 1,
   "my_team_key": "465.l.33140.t.13",
   "team_name": "Strange Brew",
-  "team_points": null,
   "all_team_stats": {
     "465.l.33140.t.1": {
       "team_name": "Slafreakoffsky",
@@ -328,34 +327,133 @@
       }
     }
   },
-  "strengths": [
+  "ranked_stats": [
     {
       "stat_id": "1",
       "name": "Goals",
-      "value": 11.0
+      "value": 11.0,
+      "rank": 1,
+      "total_teams": 14
+    },
+    {
+      "stat_id": "2",
+      "name": "Assists",
+      "value": 11.0,
+      "rank": 13,
+      "total_teams": 14
     },
     {
       "stat_id": "4",
       "name": "+/-",
-      "value": 7.0
+      "value": 7.0,
+      "rank": 1,
+      "total_teams": 14
+    },
+    {
+      "stat_id": "5",
+      "name": "PIM",
+      "value": 18.0,
+      "rank": 3,
+      "total_teams": 14
+    },
+    {
+      "stat_id": "8",
+      "name": "PPP",
+      "value": 13.0,
+      "rank": 2,
+      "total_teams": 14
+    },
+    {
+      "stat_id": "11",
+      "name": "SHP",
+      "value": 0.0,
+      "rank": 8,
+      "total_teams": 14
+    },
+    {
+      "stat_id": "12",
+      "name": "GWG",
+      "value": 2.0,
+      "rank": 3,
+      "total_teams": 14
+    },
+    {
+      "stat_id": "14",
+      "name": "SOG",
+      "value": 73.0,
+      "rank": 3,
+      "total_teams": 14
+    },
+    {
+      "stat_id": "16",
+      "name": "FW",
+      "value": 85.0,
+      "rank": 3,
+      "total_teams": 14
+    },
+    {
+      "stat_id": "31",
+      "name": "Hit",
+      "value": 35.0,
+      "rank": 7,
+      "total_teams": 14
+    },
+    {
+      "stat_id": "32",
+      "name": "Blk",
+      "value": 31.0,
+      "rank": 4,
+      "total_teams": 14
     },
     {
       "stat_id": "19",
       "name": "Wins",
-      "value": 4.0
-    }
-  ],
-  "weaknesses": [
+      "value": 4.0,
+      "rank": 1,
+      "total_teams": 14
+    },
     {
-      "stat_id": "11",
-      "name": "SHP",
-      "value": 0.0
+      "stat_id": "22",
+      "name": "GA",
+      "value": 12.0,
+      "rank": 7,
+      "total_teams": 14
+    },
+    {
+      "stat_id": "23",
+      "name": "GAA",
+      "value": 2.42,
+      "rank": 5,
+      "total_teams": 14
+    },
+    {
+      "stat_id": "25",
+      "name": "Saves",
+      "value": 124.0,
+      "rank": 4,
+      "total_teams": 14
+    },
+    {
+      "stat_id": "24",
+      "name": "Shots Against",
+      "value": 136.0,
+      "rank": 11,
+      "total_teams": 14
+    },
+    {
+      "stat_id": "26",
+      "name": "SV%",
+      "value": 0.912,
+      "rank": 6,
+      "total_teams": 14
     },
     {
       "stat_id": "27",
       "name": "Shutouts",
-      "value": 0.0
+      "value": 0.0,
+      "rank": 5,
+      "total_teams": 14
     }
   ],
-  "lastUpdated": "2025-12-29T20:53:46.854114+00:00"
+  "lastUpdated": "2025-12-29T20:56:17.193266+00:00"
 }
