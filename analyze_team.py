@@ -1,68 +1,93 @@
 import json
 import os
-from yahoo_oauth import OAuth2
-import yahoo_fantasy_api as yfa
+from datetime import datetime, timezone
 
 # =========================
 # CONFIG
 # =========================
-LEAGUE_ID = "465.l.33140"
-GAME_CODE = "nhl"
+STAT_MAP = {
+    "1": "Goals",
+    "2": "Assists",
+    "4": "+/-",
+    "5": "PIM",
+    "8": "PPP",
+    "11": "SHP",
+    "12": "GWG",
+    "14": "SOG",
+    "16": "FW",
+    "31": "Hit",
+    "32": "Blk",
+    "19": "Wins",
+    "22": "GA",
+    "23": "GAA",
+    "25": "Saves",
+    "24": "Shots Against",
+    "26": "SV%",
+    "27": "Shutouts"
+}
+
+TOP_N = 5  # number of strengths to highlight
+BOTTOM_N = 5  # number of weaknesses to highlight
 
 # =========================
-# OAuth (GitHub-safe)
+# Load your raw team dump
 # =========================
-if "YAHOO_OAUTH_JSON" in os.environ:
-    with open("oauth2.json", "w") as f:
-        json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
+with open("docs/team_analysis.json") as f:
+    data = json.load(f)
 
-oauth = OAuth2(None, None, from_file="oauth2.json")
-
-# =========================
-# Yahoo Objects
-# =========================
-game = yfa.Game(oauth, GAME_CODE)
-league = game.to_league(LEAGUE_ID)
-
-team_key = league.team_key()  # Your team key
-week = 1  # Week to inspect
+raw_stats = data.get("team_stats", {}).get("stats", [])
 
 # =========================
-# Fetch scoreboard
+# Process stats
 # =========================
-raw_scoreboard = league.yhandler.get_scoreboard_raw(league.league_id, week)
-league_data = raw_scoreboard["fantasy_content"]["league"][1]
-matchups = league_data["scoreboard"]["0"]["matchups"]
-
-# =========================
-# Find only my team
-# =========================
-my_team_data = None
-
-for k, v in matchups.items():
-    if k == "count":
+processed_stats = []
+for item in raw_stats:
+    stat = item.get("stat")
+    if not stat:
         continue
-    matchup = v["matchup"]
-    teams = matchup["0"]["teams"]
-    for tk, tv in teams.items():
-        if tk == "count":
-            continue
-        team_block = tv["team"]
-        meta = team_block[0]
-        if meta[0]["team_key"] == team_key:
-            my_team_data = team_block[1]  # This contains stats, points, etc.
-            break
-    if my_team_data:
-        break
+    stat_id = str(stat.get("stat_id"))
+    raw_value = stat.get("value")
+    if raw_value == "":
+        continue  # skip empty values
 
-if not my_team_data:
-    raise RuntimeError("❌ Could not find your team data for week 1")
+    try:
+        # Determine type: SV% and GAA are floats, rest can be int
+        if stat_id in {"23", "26"}:
+            value = float(raw_value)
+        else:
+            value = int(float(raw_value))
+    except (ValueError, TypeError):
+        continue
+
+    processed_stats.append({
+        "stat_id": stat_id,
+        "name": STAT_MAP.get(stat_id, f"Stat {stat_id}"),
+        "value": value
+    })
+
+# Sort descending (highest first) for strengths
+processed_stats.sort(key=lambda x: x["value"], reverse=True)
+
+strengths = processed_stats[:TOP_N]
+weaknesses = list(reversed(processed_stats[-BOTTOM_N:]))
 
 # =========================
-# Dump to JSON
+# Build analysis payload
+# =========================
+payload = {
+    "week": data.get("team_stats", {}).get("week"),
+    "team_points": data.get("team_points", {}).get("total"),
+    "total_stats": processed_stats,
+    "strengths": strengths,
+    "weaknesses": weaknesses,
+    "lastUpdated": datetime.now(timezone.utc).isoformat()
+}
+
+# =========================
+# Save analysis
 # =========================
 os.makedirs("docs", exist_ok=True)
 with open("docs/team_analysis.json", "w") as f:
-    json.dump(my_team_data, f, indent=2)
+    json.dump(payload, f, indent=2)
 
-print("✅ My team data for week 1 dumped to docs/team_analysis.json")
+print("✅ Team analysis updated for week", payload["week"])
