@@ -36,6 +36,32 @@ TEAM_KEY = team_meta["team_key"]
 
 print(f"👥 Team key: {TEAM_KEY}")
 
+# ---------------- HELPERS ----------------
+def extract_matchups(raw):
+    """
+    Normalize Yahoo matchup responses into a list of matchup dicts
+    """
+    if isinstance(raw, list):
+        return raw
+
+    if isinstance(raw, dict):
+        # case: {"matchup": {...}}
+        if "matchup" in raw:
+            return [raw["matchup"]]
+
+        # case: {"fantasy_content": {...}}
+        if "fantasy_content" in raw:
+            fc = raw["fantasy_content"]
+            if "league" in fc:
+                league_block = fc["league"]
+                if isinstance(league_block, list):
+                    for block in league_block:
+                        if isinstance(block, dict) and "scoreboard" in block:
+                            sb = block["scoreboard"]
+                            return sb.get("matchups", [])
+
+    return []
+
 # ---------------- ANALYSIS ----------------
 team_totals = {}
 weekly_stats = {}
@@ -43,14 +69,14 @@ weekly_stats = {}
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
 
-    matchups = league.matchups(week)
+    raw_matchups = league.matchups(week)
+    matchups = extract_matchups(raw_matchups)
+
     week_data = {}
 
-    for item in matchups:
-        # 🔑 SAFELY UNWRAP MATCHUP OBJECT
-        matchup = item.get("matchup", item)
-
+    for matchup in matchups:
         teams_block = matchup.get("teams", [])
+
         if not isinstance(teams_block, list):
             continue
 
