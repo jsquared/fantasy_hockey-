@@ -32,13 +32,10 @@ current_week = league.current_week()
 raw_scoreboard = league.yhandler.get_scoreboard_raw(league.league_id, current_week)
 
 # =========================
-# Dump entire raw object
+# Dump full data to team_analysis.json
 # =========================
 os.makedirs("docs", exist_ok=True)
-with open("docs/raw_scoreboard_full_dump.json", "w") as f:
+with open("docs/team_analysis.json", "w") as f:
     json.dump(raw_scoreboard, f, indent=2)
 
-print(f"✅ Full raw scoreboard for week {current_week} dumped to docs/raw_scoreboard_full_dump.json")
-
-# Optional: also print top-level keys to console
-print("Top-level keys in raw scoreboard:", list(raw_scoreboard.keys()))
+print(f"✅ Full raw scoreboard for week {current_week} dumped to docs/team_analysis.json")
