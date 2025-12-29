@@ -1,18 +1,18 @@
 {
   "league": "The Liberties Invitational",
-  "week": 12,
+  "week": 13,
   "status": "MIDEVENT",
   "myTeam": {
     "team_key": "465.l.33140.t.13",
     "name": "Strange Brew",
-    "score": 6.0,
+    "score": 0.0,
     "team_logo": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/829eefc79fdfe7de6dc699a1451049819b386702107751b140c73bd8d87a5b86.png"
   },
   "opponent": {
-    "team_key": "465.l.33140.t.14",
-    "name": "Grambling",
-    "score": 7.0,
-    "team_logo": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/b2102ed6f5c92cb2388c3ca6e41c70a3bdc1773061908fd503ca3215544e57a2.jpg"
+    "team_key": "465.l.33140.t.10",
+    "name": "Goon's Love Red Meat",
+    "score": 0.0,
+    "team_logo": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/ea25dbd0872bcfe4a4e670a8249a3fe878edf811f7c6b65a230fb139afdb77d5.jpg"
   },
-  "lastUpdated": "2025-12-29T07:55:08.073361+00:00"
+  "lastUpdated": "2025-12-29T08:16:00.811985+00:00"
 }
