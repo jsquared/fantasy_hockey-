@@ -43,10 +43,8 @@ weekly_breakdown = {}
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
 
-    raw = league.yhandler.get_teams_raw(
-        team_keys=[team_key],
-        week=week
-    )
+    # ✅ CORRECT raw API call for your version
+    raw = league.yhandler.get_teams_raw([team_key], week)
 
     team_block = raw["fantasy_content"]["teams"]["team"]
     stats_block = team_block[1]["team_stats"]["stats"]
