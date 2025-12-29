@@ -36,7 +36,6 @@ team_key = team_meta["team_key"]
 
 print(f"👥 Team key: {team_key}")
 
-# THIS IS THE CRITICAL STEP
 team = league.to_team(team_key)
 
 # ---------------- STATS ----------------
@@ -46,7 +45,7 @@ weekly_breakdown = {}
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
 
-    weekly_stats = team.stats(week)  # ✅ ONLY valid method
+    weekly_stats = team.team_stats(week)  # ✅ CORRECT METHOD
     weekly_breakdown[str(week)] = weekly_stats
 
     for stat_id, value in weekly_stats.items():
