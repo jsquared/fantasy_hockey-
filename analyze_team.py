@@ -32,46 +32,50 @@ print(f"📅 Analyzing weeks 1 → {current_week}")
 # ---------------- TEAM ----------------
 teams = league.teams()
 team_meta = next(iter(teams.values()))
-team_key = team_meta["team_key"]
+TEAM_KEY = team_meta["team_key"]
 
-print(f"👥 Team key: {team_key}")
+print(f"👥 Team key: {TEAM_KEY}")
 
-# ---------------- STATS ----------------
+# ---------------- ANALYSIS ----------------
 team_totals = {}
-weekly_breakdown = {}
+weekly_stats = {}
 
 for week in range(1, current_week + 1):
     print(f"🗂️ Week {week}")
 
-    # ✅ CORRECT raw API call for your version
-    raw = league.yhandler.get_teams_raw([team_key], week)
+    scoreboard = league.scoreboard(week)
+    matchups = scoreboard.get("matchups", [])
 
-    team_block = raw["fantasy_content"]["teams"]["team"]
-    stats_block = team_block[1]["team_stats"]["stats"]
+    week_data = {}
 
-    week_stats = {}
+    for matchup in matchups:
+        for team in matchup["teams"]:
+            if team["team_key"] != TEAM_KEY:
+                continue
 
-    for item in stats_block:
-        stat = item["stat"]
-        stat_id = str(stat["stat_id"])
-        value = stat.get("value", 0)
+            stats = team["team_stats"]["stats"]
 
-        week_stats[stat_id] = value
+            for s in stats:
+                stat = s["stat"]
+                stat_id = str(stat["stat_id"])
+                value = stat.get("value", 0)
 
-        try:
-            team_totals[stat_id] = team_totals.get(stat_id, 0) + float(value)
-        except (TypeError, ValueError):
-            continue
+                week_data[stat_id] = value
 
-    weekly_breakdown[str(week)] = week_stats
+                try:
+                    team_totals[stat_id] = team_totals.get(stat_id, 0) + float(value)
+                except (TypeError, ValueError):
+                    pass
+
+    weekly_stats[str(week)] = week_data
 
 # ---------------- OUTPUT ----------------
 payload = {
     "league": league_name,
-    "team_key": team_key,
+    "team_key": TEAM_KEY,
     "weeks_analyzed": current_week,
     "total_stats": team_totals,
-    "weekly_stats": weekly_breakdown,
+    "weekly_stats": weekly_stats,
     "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
