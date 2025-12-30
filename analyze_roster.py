@@ -62,12 +62,15 @@ for team_key, team_info in teams.items():
                 continue
             main_info = player_main[0]
 
-            # selected position
+            # selected position (defensively)
             selected_position = None
-            if len(player_main) > 1:
+            if len(player_main) > 1 and isinstance(player_main[1], list):
                 try:
-                    selected_position = player_main[1][1].get("position")
-                except (IndexError, AttributeError):
+                    for item in player_main[1]:
+                        if isinstance(item, dict) and "position" in item:
+                            selected_position = item["position"]
+                            break
+                except Exception:
                     selected_position = None
 
             # headshot/image
