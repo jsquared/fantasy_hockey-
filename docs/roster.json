@@ -1,91 +1,443 @@
 {
-  "league": "The Liberties Invitational",
-  "week": 13,
+  "league": "The Morning Halfie",
+  "week": 24,
   "teams": {
-    "465.l.33140.t.14": {
-      "team_key": "465.l.33140.t.14",
-      "team_name": "Grambling",
+    "303.l.73840.t.3": {
+      "team_key": "303.l.73840.t.3",
+      "team_name": {
+        "team_key": "303.l.73840.t.3",
+        "team_id": "3",
+        "name": "The Donkey Show",
+        "url": "https://hockey.fantasysports.yahoo.com/2012/hockey/73840/3",
+        "team_logos": [
+          {
+            "team_logo": {
+              "size": "large",
+              "url": "https://s.yimg.com/cv/apiv2/default/nhl/nhl_7.png"
+            }
+          }
+        ],
+        "waiver_priority": 1,
+        "number_of_moves": 12,
+        "number_of_trades": 0,
+        "roster_adds": {
+          "coverage_type": "week",
+          "coverage_value": 25,
+          "value": "0"
+        },
+        "clinched_playoffs": 1,
+        "league_scoring_type": "head",
+        "draft_position": 10,
+        "has_draft_grade": 0,
+        "managers": [
+          {
+            "manager": {
+              "manager_id": "3",
+              "nickname": "Brock Champ",
+              "guid": "BE2UYCFM2SDMPGOORO3OP2HYUM",
+              "email": "blndmsty@yahoo.com",
+              "image_url": "https://s.yimg.com/ag/images/4727/37723805963_85e8e4_64sq.jpg",
+              "felo_score": "662",
+              "felo_tier": "silver"
+            }
+          }
+        ]
+      },
       "manager": null,
       "players": []
     },
-    "465.l.33140.t.1": {
-      "team_key": "465.l.33140.t.1",
-      "team_name": "Slafreakoffsky",
+    "303.l.73840.t.2": {
+      "team_key": "303.l.73840.t.2",
+      "team_name": {
+        "team_key": "303.l.73840.t.2",
+        "team_id": "2",
+        "name": "Manti Te'LOLed",
+        "url": "https://hockey.fantasysports.yahoo.com/2012/hockey/73840/2",
+        "team_logos": [
+          {
+            "team_logo": {
+              "size": "large",
+              "url": "https://s.yimg.com/cv/apiv2/default/nhl/nhl_1.png"
+            }
+          }
+        ],
+        "waiver_priority": 9,
+        "number_of_moves": 25,
+        "number_of_trades": "2",
+        "roster_adds": {
+          "coverage_type": "week",
+          "coverage_value": 25,
+          "value": "0"
+        },
+        "clinched_playoffs": 1,
+        "league_scoring_type": "head",
+        "draft_position": 9,
+        "has_draft_grade": 0,
+        "managers": [
+          {
+            "manager": {
+              "manager_id": "2",
+              "nickname": "David",
+              "guid": "MFCEDJGRHE2RPL2IGZQKR7LM6E",
+              "email": "lakings54@yahoo.com",
+              "image_url": "https://s.yimg.com/ag/images/4569/37885691100_c4bed3_64sq.jpg",
+              "felo_score": "654",
+              "felo_tier": "silver"
+            }
+          }
+        ]
+      },
       "manager": null,
       "players": []
     },
-    "465.l.33140.t.11": {
-      "team_key": "465.l.33140.t.11",
-      "team_name": "Holy Doodle",
+    "303.l.73840.t.6": {
+      "team_key": "303.l.73840.t.6",
+      "team_name": {
+        "team_key": "303.l.73840.t.6",
+        "team_id": "6",
+        "name": "Gomez Lovers",
+        "url": "https://hockey.fantasysports.yahoo.com/2012/hockey/73840/6",
+        "team_logos": [
+          {
+            "team_logo": {
+              "size": "large",
+              "url": "https://secure.gravatar.com/avatar/b923681e4ae63a81bfc6c15660a56dea?d=https%3A%2F%2Fs.yimg.com%2Fdh%2Fap%2Ffantasy%2Fimg%2Fprofile_96.png&s=96&r=r"
+            }
+          }
+        ],
+        "waiver_priority": 5,
+        "number_of_moves": 3,
+        "number_of_trades": 0,
+        "roster_adds": {
+          "coverage_type": "week",
+          "coverage_value": 25,
+          "value": "0"
+        },
+        "clinched_playoffs": 1,
+        "league_scoring_type": "head",
+        "draft_position": 4,
+        "has_draft_grade": 0,
+        "managers": [
+          {
+            "manager": {
+              "manager_id": "6",
+              "nickname": "jeff",
+              "guid": "BT7DEEFPORR46FOZCGGM2GC5BQ",
+              "email": "jeffkrez@hotmail.com",
+              "image_url": "https://s.yimg.com/ag/images/4590/25271339748_1b8f9b_64sq.jpg",
+              "felo_score": "642",
+              "felo_tier": "silver"
+            }
+          }
+        ]
+      },
       "manager": null,
       "players": []
     },
-    "465.l.33140.t.2": {
-      "team_key": "465.l.33140.t.2",
-      "team_name": "Pasha 13",
+    "303.l.73840.t.7": {
+      "team_key": "303.l.73840.t.7",
+      "team_name": {
+        "team_key": "303.l.73840.t.7",
+        "team_id": "7",
+        "name": "TimmyT's Bunker Folk",
+        "url": "https://hockey.fantasysports.yahoo.com/2012/hockey/73840/7",
+        "team_logos": [
+          {
+            "team_logo": {
+              "size": "large",
+              "url": "https://s.yimg.com/dh/ap/fantasy/img/profile_96.png"
+            }
+          }
+        ],
+        "waiver_priority": 10,
+        "number_of_moves": 19,
+        "number_of_trades": 0,
+        "roster_adds": {
+          "coverage_type": "week",
+          "coverage_value": 25,
+          "value": "0"
+        },
+        "clinched_playoffs": 1,
+        "league_scoring_type": "head",
+        "draft_position": 7,
+        "has_draft_grade": 0,
+        "managers": [
+          {
+            "manager": {
+              "manager_id": "7",
+              "nickname": "Robert",
+              "guid": "EZE7IY3YQEU7BOKNPVG5EAV4QA",
+              "email": "rmcleod31@yahoo.com",
+              "image_url": "https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg",
+              "felo_score": "590",
+              "felo_tier": "bronze"
+            }
+          }
+        ]
+      },
       "manager": null,
       "players": []
     },
-    "465.l.33140.t.13": {
-      "team_key": "465.l.33140.t.13",
-      "team_name": "Strange Brew",
+    "303.l.73840.t.1": {
+      "team_key": "303.l.73840.t.1",
+      "team_name": {
+        "team_key": "303.l.73840.t.1",
+        "team_id": "1",
+        "name": "Foreign Felchers",
+        "url": "https://hockey.fantasysports.yahoo.com/2012/hockey/73840/1",
+        "team_logos": [
+          {
+            "team_logo": {
+              "size": "large",
+              "url": "https://s.yimg.com/cv/apiv2/default/nhl/nhl_6.png"
+            }
+          }
+        ],
+        "waiver_priority": 7,
+        "number_of_moves": 24,
+        "number_of_trades": "1",
+        "roster_adds": {
+          "coverage_type": "week",
+          "coverage_value": 25,
+          "value": "0"
+        },
+        "clinched_playoffs": 1,
+        "league_scoring_type": "head",
+        "draft_position": 2,
+        "has_draft_grade": 0,
+        "managers": [
+          {
+            "manager": {
+              "manager_id": "1",
+              "nickname": "Graeme Bourne",
+              "guid": "TCJFUZM5BNYAJYJUOTF57VERRQ",
+              "is_commissioner": "1",
+              "email": "gbourne05@gmail.com",
+              "image_url": "https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg",
+              "felo_score": "715",
+              "felo_tier": "gold"
+            }
+          }
+        ]
+      },
       "manager": null,
       "players": []
     },
-    "465.l.33140.t.12": {
-      "team_key": "465.l.33140.t.12",
-      "team_name": "Puck Rogerz",
+    "303.l.73840.t.9": {
+      "team_key": "303.l.73840.t.9",
+      "team_name": {
+        "team_key": "303.l.73840.t.9",
+        "team_id": "9",
+        "name": "Grobert does it 4 me",
+        "url": "https://hockey.fantasysports.yahoo.com/2012/hockey/73840/9",
+        "team_logos": [
+          {
+            "team_logo": {
+              "size": "large",
+              "url": "https://s.yimg.com/dh/ap/fantasy/img/profile_96.png"
+            }
+          }
+        ],
+        "waiver_priority": 3,
+        "number_of_moves": 0,
+        "number_of_trades": 0,
+        "roster_adds": {
+          "coverage_type": "week",
+          "coverage_value": 25,
+          "value": "0"
+        },
+        "clinched_playoffs": 1,
+        "league_scoring_type": "head",
+        "draft_position": 6,
+        "has_draft_grade": 0,
+        "managers": [
+          {
+            "manager": {
+              "manager_id": "9",
+              "nickname": "--hidden--",
+              "guid": "7PV5KRZ7D2FMBOVK62OQ3HNI3I",
+              "email": "jknutson103@gmail.com",
+              "felo_score": "633",
+              "felo_tier": "silver"
+            }
+          }
+        ]
+      },
       "manager": null,
       "players": []
     },
-    "465.l.33140.t.3": {
-      "team_key": "465.l.33140.t.3",
-      "team_name": "BADA BING!",
+    "303.l.73840.t.8": {
+      "team_key": "303.l.73840.t.8",
+      "team_name": {
+        "team_key": "303.l.73840.t.8",
+        "team_id": "8",
+        "name": "The Day After Morrow",
+        "url": "https://hockey.fantasysports.yahoo.com/2012/hockey/73840/8",
+        "team_logos": [
+          {
+            "team_logo": {
+              "size": "large",
+              "url": "https://s.yimg.com/dh/ap/fantasy/img/profile_96.png"
+            }
+          }
+        ],
+        "waiver_priority": 6,
+        "number_of_moves": 14,
+        "number_of_trades": "1",
+        "roster_adds": {
+          "coverage_type": "week",
+          "coverage_value": 25,
+          "value": "0"
+        },
+        "league_scoring_type": "head",
+        "draft_position": 1,
+        "has_draft_grade": 0,
+        "managers": [
+          {
+            "manager": {
+              "manager_id": "8",
+              "nickname": "Kelly",
+              "guid": "GLCY6MZFFH45WZ5X2E4S5FF4L4",
+              "email": "leek415@gmail.com",
+              "image_url": "https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg",
+              "felo_score": "591",
+              "felo_tier": "bronze"
+            }
+          }
+        ]
+      },
       "manager": null,
       "players": []
     },
-    "465.l.33140.t.9": {
-      "team_key": "465.l.33140.t.9",
-      "team_name": "Keller Instinct",
+    "303.l.73840.t.10": {
+      "team_key": "303.l.73840.t.10",
+      "team_name": {
+        "team_key": "303.l.73840.t.10",
+        "team_id": "10",
+        "name": "Puck Suckers",
+        "url": "https://hockey.fantasysports.yahoo.com/2012/hockey/73840/10",
+        "team_logos": [
+          {
+            "team_logo": {
+              "size": "large",
+              "url": "https://s.yimg.com/cv/apiv2/default/nhl/nhl_1.png"
+            }
+          }
+        ],
+        "waiver_priority": 2,
+        "number_of_moves": 2,
+        "number_of_trades": 0,
+        "roster_adds": {
+          "coverage_type": "week",
+          "coverage_value": 25,
+          "value": "0"
+        },
+        "league_scoring_type": "head",
+        "draft_position": 8,
+        "has_draft_grade": 0,
+        "managers": [
+          {
+            "manager": {
+              "manager_id": "10",
+              "nickname": "--hidden--",
+              "guid": "--",
+              "felo_score": "590",
+              "felo_tier": "bronze"
+            }
+          }
+        ]
+      },
       "manager": null,
       "players": []
     },
-    "465.l.33140.t.5": {
-      "team_key": "465.l.33140.t.5",
-      "team_name": "The Clawfull",
+    "303.l.73840.t.5": {
+      "team_key": "303.l.73840.t.5",
+      "team_name": {
+        "team_key": "303.l.73840.t.5",
+        "team_id": "5",
+        "name": "Ranger",
+        "is_owned_by_current_login": 1,
+        "url": "https://hockey.fantasysports.yahoo.com/2012/hockey/73840/5",
+        "team_logos": [
+          {
+            "team_logo": {
+              "size": "large",
+              "url": "https://s.yimg.com/dh/ap/fantasy/img/profile_96.png"
+            }
+          }
+        ],
+        "waiver_priority": 4,
+        "number_of_moves": 16,
+        "number_of_trades": "1",
+        "roster_adds": {
+          "coverage_type": "week",
+          "coverage_value": 25,
+          "value": "0"
+        },
+        "league_scoring_type": "head",
+        "draft_position": 5,
+        "has_draft_grade": 0,
+        "managers": [
+          {
+            "manager": {
+              "manager_id": "5",
+              "nickname": "Jason",
+              "guid": "7RGCMMZFFCD3TYERS6NAACYUXI",
+              "is_current_login": "1",
+              "email": "jknutson103@gmail.com",
+              "image_url": "https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg",
+              "felo_score": "571",
+              "felo_tier": "bronze"
+            }
+          }
+        ]
+      },
       "manager": null,
       "players": []
     },
-    "465.l.33140.t.7": {
-      "team_key": "465.l.33140.t.7",
-      "team_name": "Post and Out",
-      "manager": null,
-      "players": []
-    },
-    "465.l.33140.t.6": {
-      "team_key": "465.l.33140.t.6",
-      "team_name": "Top Chedda",
-      "manager": null,
-      "players": []
-    },
-    "465.l.33140.t.4": {
-      "team_key": "465.l.33140.t.4",
-      "team_name": "Hugs not drugs!",
-      "manager": null,
-      "players": []
-    },
-    "465.l.33140.t.8": {
-      "team_key": "465.l.33140.t.8",
-      "team_name": "The ZibaneCHADs",
-      "manager": null,
-      "players": []
-    },
-    "465.l.33140.t.10": {
-      "team_key": "465.l.33140.t.10",
-      "team_name": "Goon's Love Red Meat",
+    "303.l.73840.t.4": {
+      "team_key": "303.l.73840.t.4",
+      "team_name": {
+        "team_key": "303.l.73840.t.4",
+        "team_id": "4",
+        "name": "TEAM AMERICA WP",
+        "url": "https://hockey.fantasysports.yahoo.com/2012/hockey/73840/4",
+        "team_logos": [
+          {
+            "team_logo": {
+              "size": "large",
+              "url": "https://s.yimg.com/dh/ap/fantasy/img/profile_96.png"
+            }
+          }
+        ],
+        "waiver_priority": 8,
+        "number_of_moves": 8,
+        "number_of_trades": "1",
+        "roster_adds": {
+          "coverage_type": "week",
+          "coverage_value": 25,
+          "value": "0"
+        },
+        "league_scoring_type": "head",
+        "draft_position": 3,
+        "has_draft_grade": 0,
+        "managers": [
+          {
+            "manager": {
+              "manager_id": "4",
+              "nickname": "Dewey",
+              "guid": "MEUJ6FG5BEBZJGKHYL7GBYAEXA",
+              "email": "apex931977@yahoo.com",
+              "image_url": "https://s.yimg.com/ag/images/4586/38737539696_ee7ada_64sq.jpg",
+              "felo_score": "556",
+              "felo_tier": "bronze"
+            }
+          }
+        ]
+      },
       "manager": null,
       "players": []
     }
   },
-  "lastUpdated": "2025-12-30T04:34:34.452915+00:00"
+  "lastUpdated": "2025-12-30T04:42:01.675695+00:00"
 }
