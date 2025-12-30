@@ -26,45 +26,29 @@ game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
 
 current_week = league.current_week()
+teams = league.teams()  # dict keyed by team_key
 
 # =========================
-# Fetch raw league scoreboard
+# Pull rosters for all teams
 # =========================
-raw = league.yhandler.get_scoreboard_raw(league.league_id, current_week)
-matchups = raw["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
+league_rosters = {}
+
+for team_key in teams.keys():
+    raw_roster = league.yhandler.get_roster_raw(team_key, current_week)
+    league_rosters[team_key] = raw_roster
 
 # =========================
-# Extract all team rosters
-# =========================
-all_teams = {}
-
-for _, matchup_block in matchups.items():
-    if _ == "count":
-        continue
-
-    teams_block = matchup_block["matchup"]["0"]["teams"]
-    for tk, tv in teams_block.items():
-        if tk == "count":
-            continue
-        team_block = tv["team"]
-        team_key = team_block[0][0]["team_key"]
-        all_teams[team_key] = team_block
-
-# =========================
-# Prepare payload
+# OUTPUT
 # =========================
 payload = {
     "league": league.settings().get("name", "Unknown League"),
     "week": current_week,
-    "teams": all_teams,
+    "teams": league_rosters,
     "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
-# =========================
-# Save to JSON
-# =========================
 os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("docs/roster.json updated with all teams")
+print("docs/roster.json updated with FULL league rosters")
