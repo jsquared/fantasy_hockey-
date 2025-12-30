@@ -3,28 +3,30 @@ import os
 from datetime import datetime, timezone
 
 from yahoo_oauth import OAuth2
-from yahoo_fantasy_api import League
+import yahoo_fantasy_api as yfa
 
 
-def unwrap(items):
-    """
-    Yahoo returns lists of {key: value} dicts.
-    This converts them into a single dict.
-    """
-    out = {}
-    for item in items:
-        if isinstance(item, dict):
-            out.update(item)
-    return out
+OUTPUT_PATH = "docs/roster.json"
 
 
-# --- OAuth ---
+def safe_get(d, *keys):
+    """Safely navigate nested dicts"""
+    for k in keys:
+        if not isinstance(d, dict) or k not in d:
+            return None
+        d = d[k]
+    return d
+
+
+# ---------------------------
+# Auth & League Setup
+# ---------------------------
 oauth = OAuth2(None, None, from_file="oauth2.json")
+gm = yfa.Game(oauth, "nhl")
 
-# --- League ---
-GAME_KEY = "465"          # NHL
-LEAGUE_ID = "33140"       # Your league
-league = League(oauth, f"{GAME_KEY}.l.{LEAGUE_ID}")
+# Grab first league
+league_id = gm.league_ids()[0]
+league = gm.to_league(league_id)
 
 current_week = league.current_week()
 
@@ -32,84 +34,96 @@ output = {
     "league": league.settings()["name"],
     "week": current_week,
     "teams": {},
-    "lastUpdated": datetime.now(timezone.utc).isoformat()
+    "lastUpdated": datetime.now(timezone.utc).isoformat(),
 }
 
-teams = league.teams()
-
-for team_key, team_name in teams.items():
+# ---------------------------
+# Iterate Teams
+# ---------------------------
+for team_key, team_name in league.teams().items():
     print(f"Pulling roster for {team_key}")
 
-    team_data = {
+    team_entry = {
         "team_key": team_key,
         "team_name": team_name,
         "manager": None,
-        "players": []
+        "players": [],
     }
 
-    # --- ROSTER ---
+    # ---------------------------
+    # Get Roster (RAW)
+    # ---------------------------
     roster_raw = league.yhandler.get_roster_raw(team_key, current_week)
 
-    # Path: team -> roster -> players -> player
-    team_block = roster_raw["fantasy_content"]["team"][1]
-    roster_block = team_block["roster"]
-    players_block = roster_block["players"]
+    try:
+        roster_block = roster_raw["team"][1]["roster"]
+        players_block = roster_block["players"]
+    except (KeyError, IndexError, TypeError):
+        print(f"⚠️ No roster found for {team_key}")
+        output["teams"][team_key] = team_entry
+        continue
 
+    # ---------------------------
+    # Parse Players
+    # ---------------------------
     for p in players_block:
-        if "player" not in p:
-            continue
+        player = p.get("player", [])
 
-        player = unwrap(p["player"])
-
-        # --- Selected position ---
+        # Flatten player array into dict
+        pdata = {}
         selected_position = None
-        if "selected_position" in player:
-            selected_position = player["selected_position"].get("position")
 
-        player_key = player.get("player_key")
+        for item in player:
+            if isinstance(item, dict):
+                if "selected_position" in item:
+                    selected_position = safe_get(item, "selected_position", "position")
+                else:
+                    pdata.update(item)
 
-        # --- SEASON STATS ---
-        stats = {}
-        try:
-            stats_raw = league.yhandler.get_player_stats_raw(
-                player_key,
-                req_type="season"
-            )
+        player_key = pdata.get("player_key")
+        player_id = pdata.get("player_id")
 
-            stat_list = (
-                stats_raw["fantasy_content"]["player"][1]
-                ["player_stats"]["stats"]
-            )
-
-            for s in stat_list:
-                stat = s["stat"]
-                stats[stat["stat_id"]] = stat.get("value")
-
-        except Exception as e:
-            stats = {}
-
-        team_data["players"].append({
+        player_entry = {
             "player_key": player_key,
-            "player_id": player.get("player_id"),
-            "name": player.get("name", {}).get("full"),
-            "editorial_team": player.get("editorial_team_full_name"),
-            "team_abbr": player.get("editorial_team_abbr"),
-            "primary_position": player.get("primary_position"),
-            "eligible_positions": [
-                pos["position"]
-                for pos in player.get("eligible_positions", [])
-            ],
+            "player_id": player_id,
+            "name": pdata.get("name", {}).get("full"),
+            "editorial_team": pdata.get("editorial_team_full_name"),
+            "team_abbr": pdata.get("editorial_team_abbr"),
+            "primary_position": pdata.get("primary_position"),
+            "eligible_positions": pdata.get("eligible_positions", []),
             "selected_position": selected_position,
-            "status": player.get("status"),
-            "stats": stats
-        })
+            "stats": {},
+        }
 
-    output["teams"][team_key] = team_data
+        # ---------------------------
+        # Fetch SEASON stats
+        # ---------------------------
+        if player_key:
+            try:
+                stats_raw = league.yhandler.get_player_stats_raw(
+                    player_key, "season"
+                )
 
+                stats_block = stats_raw["player"][1]["player_stats"]["stats"]
+                for s in stats_block:
+                    stat = s.get("stat", {})
+                    stat_id = stat.get("stat_id")
+                    value = stat.get("value")
+                    player_entry["stats"][stat_id] = value
 
-# --- Write file ---
+            except Exception as e:
+                print(f"⚠️ Stats failed for {player_key}: {e}")
+
+        team_entry["players"].append(player_entry)
+
+    output["teams"][team_key] = team_entry
+
+# ---------------------------
+# Write Output
+# ---------------------------
 os.makedirs("docs", exist_ok=True)
-with open("docs/roster.json", "w") as f:
+
+with open(OUTPUT_PATH, "w") as f:
     json.dump(output, f, indent=2)
 
-print("Roster written to docs/roster.json")
+print(f"✅ Roster written to {OUTPUT_PATH}")
