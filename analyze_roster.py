@@ -8,8 +8,8 @@ import yahoo_fantasy_api as yfa
 # CONFIG
 # =========================
 GAME_CODE = "nhl"
-PLAYER_KEY = "465.p.8642"  # Quinton Byfield
 LEAGUE_ID = "465.l.33140"
+PLAYER_KEY = "465.p.8642"  # Quinton Byfield
 
 # =========================
 # OAuth
@@ -25,35 +25,43 @@ oauth = OAuth2(None, None, from_file="oauth2.json")
 # =========================
 game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
-
 current_week = league.current_week()
 
 # =========================
-# Pull Quinton Byfield stats
+# Get full roster
 # =========================
-stats_dict = {}
-try:
-    raw_stats = league.yhandler.get_player_stats_raw(PLAYER_KEY, week=current_week)
-    stats_list = raw_stats["fantasy_content"]["player"][1]["player_stats"]["stats"]
-    for s in stats_list:
-        stat_id = s["stat"]["stat_id"]
-        value = s["stat"]["value"]
-        stats_dict[stat_id] = value
-except Exception as e:
-    print(f"Failed to get stats for {PLAYER_KEY}: {e}")
+team_key = "465.l.33140.t.14"  # Grambling
+roster_raw = league.yhandler.get_roster_raw(team_key, current_week)
+players_block = roster_raw["fantasy_content"]["team"][1]["roster"]
 
 # =========================
-# Prepare player info
+# Find Quinton Byfield
 # =========================
-player_info = {
-    "player_key": PLAYER_KEY,
-    "name": "Quinton Byfield",
-    "team": "Los Angeles Kings",
-    "team_abbr": "LA",
-    "primary_position": "C",
-    "selected_position": "C",
-    "stats": stats_dict
-}
+byfield_stats = {}
+byfield_info = None
+
+for slot_key, slot in players_block.items():
+    for player_entry in slot["players"].values():
+        player_data = player_entry["player"][0]
+        selected_pos_block = player_entry["player"][1]
+        if player_data[0]["player_key"] == PLAYER_KEY:
+            byfield_info = {
+                "player_key": PLAYER_KEY,
+                "name": player_data[2]["name"]["full"],
+                "team": player_data[6]["editorial_team_full_name"],
+                "team_abbr": player_data[7]["editorial_team_abbr"],
+                "primary_position": player_data[12]["display_position"],
+                "selected_position": selected_pos_block[1]["position"]
+            }
+            # Extract stats if present
+            stats_block = player_data[-1].get("player_stats", {})
+            if stats_block:
+                for stat in stats_block.get("stats", []):
+                    byfield_stats[stat["stat"]["stat_id"]] = stat["stat"]["value"]
+            byfield_info["stats"] = byfield_stats
+            break
+    if byfield_info:
+        break
 
 # =========================
 # Write output
@@ -61,7 +69,7 @@ player_info = {
 payload = {
     "league": league.settings().get("name", "Unknown League"),
     "week": current_week,
-    "player": player_info,
+    "player": byfield_info,
     "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
