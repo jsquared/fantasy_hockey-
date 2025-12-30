@@ -11,7 +11,7 @@ LEAGUE_ID = "465.l.33140"   # your league
 GAME_CODE = "nhl"
 
 # =========================
-# OAuth (GitHub-safe)
+# OAuth
 # =========================
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
@@ -28,7 +28,7 @@ current_week = league.current_week()
 teams = league.teams()  # dict keyed by team_key
 
 # =========================
-# Pull rosters and stats for all teams
+# Pull rosters and stats
 # =========================
 league_rosters = {}
 
@@ -36,43 +36,56 @@ for team_key, team_obj in teams.items():
     raw_roster = league.yhandler.get_roster_raw(team_key, current_week)
     roster_block = raw_roster.get("fantasy_content", {}).get("team", [])
     if len(roster_block) < 2:
-        continue  # malformed
+        continue
 
     roster_data = roster_block[1].get("roster", {})
+
     players_list = []
 
-    for slot_key, slot_value in roster_data.items():
-        if isinstance(slot_value, dict) and "players" in slot_value:
-            for player_index, player_block in slot_value["players"].items():
-                player_main = player_block.get("player", [])
-                if not player_main or not isinstance(player_main, list):
-                    continue
+    for slot_key in roster_data:
+        slot_value = roster_data[slot_key]
 
-                main_info = player_main[0]
-                player_dict = {
-                    "player_key": main_info[0].get("player_key"),
-                    "player_id": main_info[1].get("player_id"),
-                    "name": main_info[2]["name"]["full"],
-                    "team": main_info[6].get("editorial_team_full_name"),
-                    "team_abbr": main_info[7].get("editorial_team_abbr"),
-                    "primary_position": main_info[12] if len(main_info) > 12 else None,
-                    "selected_position": None,
-                    "stats": {}
-                }
+        # Skip if not dict or missing 'players'
+        if not isinstance(slot_value, dict) or "players" not in slot_value:
+            continue
 
-                # Selected position
-                if len(player_main) > 1 and player_main[1]:
-                    sel_block = player_main[1]
-                    if isinstance(sel_block, list) and len(sel_block) > 1:
-                        player_dict["selected_position"] = sel_block[1].get("position")
+        players = slot_value["players"]
+        # players can be a dict keyed by integers
+        for player_index in players:
+            player_block = players[player_index]
+            if not isinstance(player_block, dict):
+                continue
 
-                # Stats
-                stats_block = main_info[-1].get("player_stats", {}) if isinstance(main_info[-1], dict) else {}
+            player_main = player_block.get("player", [])
+            if not player_main or not isinstance(player_main, list):
+                continue
+
+            main_info = player_main[0]
+            player_dict = {
+                "player_key": main_info[0].get("player_key"),
+                "player_id": main_info[1].get("player_id"),
+                "name": main_info[2]["name"]["full"],
+                "team": main_info[6].get("editorial_team_full_name"),
+                "team_abbr": main_info[7].get("editorial_team_abbr"),
+                "primary_position": main_info[12] if len(main_info) > 12 else None,
+                "selected_position": None,
+                "stats": {}
+            }
+
+            # Selected position
+            if len(player_main) > 1 and isinstance(player_main[1], list) and len(player_main[1]) > 1:
+                sel_block = player_main[1]
+                player_dict["selected_position"] = sel_block[1].get("position")
+
+            # Player stats
+            stats_block = {}
+            if len(main_info) >= 22 and isinstance(main_info[21], dict):
+                stats_block = main_info[21].get("player_stats", {})
                 for stat_entry in stats_block.get("stats", []):
                     stat_info = stat_entry.get("stat", {})
                     player_dict["stats"][stat_info.get("stat_id")] = stat_info.get("value")
 
-                players_list.append(player_dict)
+            players_list.append(player_dict)
 
     league_rosters[team_key] = {
         "team_key": team_key,
