@@ -57,6 +57,10 @@ for team_key, team_info in teams.items():
             continue
         roster_slots = slot_block.get("roster", {}).get("0", {}).get("players", {})
         for player_block in roster_slots.values():
+            # skip if not a dict (sometimes it's an int)
+            if not isinstance(player_block, dict):
+                continue
+
             player_main = player_block.get("player", [])
             if not player_main or not isinstance(player_main, list):
                 continue
