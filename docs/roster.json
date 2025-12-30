@@ -1,0 +1,2935 @@
+{
+  "league": "The Liberties Invitational",
+  "week": 13,
+  "teams": {
+    "465.l.33140.t.1": [
+      [
+        {
+          "team_key": "465.l.33140.t.1"
+        },
+        {
+          "team_id": "1"
+        },
+        {
+          "name": "Slafreakoffsky"
+        },
+        [],
+        {
+          "url": "https://hockey.fantasysports.yahoo.com/hockey/33140/1"
+        },
+        {
+          "team_logos": [
+            {
+              "team_logo": {
+                "size": "large",
+                "url": "https://s.yimg.com/ep/cx/blendr/v2/image-dirty-png_1721256043528.png"
+              }
+            }
+          ]
+        },
+        {
+          "previous_season_team_rank": 4
+        },
+        [],
+        {
+          "waiver_priority": 5
+        },
+        [],
+        {
+          "number_of_moves": 36
+        },
+        {
+          "number_of_trades": "1"
+        },
+        {
+          "roster_adds": {
+            "coverage_type": "week",
+            "coverage_value": 13,
+            "value": "0"
+          }
+        },
+        [],
+        {
+          "league_scoring_type": "head"
+        },
+        [],
+        {
+          "draft_position": 5
+        },
+        {
+          "has_draft_grade": 0
+        },
+        [],
+        [],
+        [],
+        [],
+        [],
+        {
+          "managers": [
+            {
+              "manager": {
+                "manager_id": "1",
+                "nickname": "Graeme Bourne",
+                "guid": "TCJFUZM5BNYAJYJUOTF57VERRQ",
+                "is_commissioner": "1",
+                "email": "gbourne05@gmail.com",
+                "image_url": "https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg",
+                "felo_score": "875",
+                "felo_tier": "platinum"
+              }
+            }
+          ]
+        }
+      ],
+      {
+        "team_stats": {
+          "coverage_type": "week",
+          "week": "13",
+          "stats": [
+            {
+              "stat": {
+                "stat_id": "1",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "2",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "4",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "5",
+                "value": 15
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "8",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "11",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "12",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "14",
+                "value": 8
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "16",
+                "value": 18
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "31",
+                "value": 3
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "32",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "19",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "22",
+                "value": 4
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "23",
+                "value": "4.09"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "25",
+                "value": 24
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "24",
+                "value": 28
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "26",
+                "value": ".857"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "27",
+                "value": 0
+              }
+            }
+          ]
+        },
+        "team_points": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": "5"
+        },
+        "team_remaining_games": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": {
+            "remaining_games": 47,
+            "live_games": 7,
+            "completed_games": 2
+          }
+        }
+      }
+    ],
+    "465.l.33140.t.3": [
+      [
+        {
+          "team_key": "465.l.33140.t.3"
+        },
+        {
+          "team_id": "3"
+        },
+        {
+          "name": "BADA BING!"
+        },
+        [],
+        {
+          "url": "https://hockey.fantasysports.yahoo.com/hockey/33140/3"
+        },
+        {
+          "team_logos": [
+            {
+              "team_logo": {
+                "size": "large",
+                "url": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/0cb06b483f4ed22c1fc777bfde930b2a09f36880dd5f06a3b9ca8b982741f20e.jpg"
+              }
+            }
+          ]
+        },
+        {
+          "previous_season_team_rank": 12
+        },
+        [],
+        {
+          "waiver_priority": 1
+        },
+        [],
+        {
+          "number_of_moves": 30
+        },
+        {
+          "number_of_trades": 0
+        },
+        {
+          "roster_adds": {
+            "coverage_type": "week",
+            "coverage_value": 13,
+            "value": "1"
+          }
+        },
+        [],
+        {
+          "league_scoring_type": "head"
+        },
+        [],
+        {
+          "draft_position": 14
+        },
+        {
+          "has_draft_grade": 0
+        },
+        [],
+        [],
+        [],
+        [],
+        [],
+        {
+          "managers": [
+            {
+              "manager": {
+                "manager_id": "3",
+                "nickname": "jeremy",
+                "guid": "DANQTRFO422ZKU7MBUYB6MYSVM",
+                "email": "jparisi26@gmail.com",
+                "image_url": "https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg",
+                "felo_score": "633",
+                "felo_tier": "silver"
+              }
+            }
+          ]
+        }
+      ],
+      {
+        "team_stats": {
+          "coverage_type": "week",
+          "week": "13",
+          "stats": [
+            {
+              "stat": {
+                "stat_id": "1",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "2",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "4",
+                "value": 3
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "5",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "8",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "11",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "12",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "14",
+                "value": 15
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "16",
+                "value": 13
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "31",
+                "value": 12
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "32",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "19",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "22",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "23",
+                "value": "0.00"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "25",
+                "value": 17
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "24",
+                "value": 17
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "26",
+                "value": "1.000"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "27",
+                "value": 0
+              }
+            }
+          ]
+        },
+        "team_points": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": "6"
+        },
+        "team_remaining_games": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": {
+            "remaining_games": 44,
+            "live_games": 7,
+            "completed_games": 3
+          }
+        }
+      }
+    ],
+    "465.l.33140.t.2": [
+      [
+        {
+          "team_key": "465.l.33140.t.2"
+        },
+        {
+          "team_id": "2"
+        },
+        {
+          "name": "Pasha 13"
+        },
+        [],
+        {
+          "url": "https://hockey.fantasysports.yahoo.com/hockey/33140/2"
+        },
+        {
+          "team_logos": [
+            {
+              "team_logo": {
+                "size": "large",
+                "url": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/59599235842_5065e2.png"
+              }
+            }
+          ]
+        },
+        {
+          "previous_season_team_rank": 9
+        },
+        [],
+        {
+          "waiver_priority": 2
+        },
+        [],
+        {
+          "number_of_moves": 22
+        },
+        {
+          "number_of_trades": 0
+        },
+        {
+          "roster_adds": {
+            "coverage_type": "week",
+            "coverage_value": 13,
+            "value": "1"
+          }
+        },
+        [],
+        {
+          "league_scoring_type": "head"
+        },
+        [],
+        {
+          "draft_position": 8
+        },
+        {
+          "has_draft_grade": 0
+        },
+        [],
+        [],
+        [],
+        [],
+        [],
+        {
+          "managers": [
+            {
+              "manager": {
+                "manager_id": "2",
+                "nickname": "Ian",
+                "guid": "RDJW3Q5SXJPIBFUZ2S4KAPM3FY",
+                "email": "ianduggan@gmail.com",
+                "image_url": "https://s.yimg.com/ag/images/b7ea189a-4db2-4296-a028-9db0df6e7436_64sq.jpg",
+                "felo_score": "888",
+                "felo_tier": "platinum"
+              }
+            }
+          ]
+        }
+      ],
+      {
+        "team_stats": {
+          "coverage_type": "week",
+          "week": "13",
+          "stats": [
+            {
+              "stat": {
+                "stat_id": "1",
+                "value": 5
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "2",
+                "value": 5
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "4",
+                "value": 3
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "5",
+                "value": 7
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "8",
+                "value": 4
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "11",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "12",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "14",
+                "value": 20
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "16",
+                "value": 26
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "31",
+                "value": 7
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "32",
+                "value": 5
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "19",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "22",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "23",
+                "value": "0.00"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "25",
+                "value": 11
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "24",
+                "value": 11
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "26",
+                "value": "1.000"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "27",
+                "value": 0
+              }
+            }
+          ]
+        },
+        "team_points": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": "9"
+        },
+        "team_remaining_games": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": {
+            "remaining_games": 39,
+            "live_games": 3,
+            "completed_games": 9
+          }
+        }
+      }
+    ],
+    "465.l.33140.t.8": [
+      [
+        {
+          "team_key": "465.l.33140.t.8"
+        },
+        {
+          "team_id": "8"
+        },
+        {
+          "name": "The ZibaneCHADs"
+        },
+        [],
+        {
+          "url": "https://hockey.fantasysports.yahoo.com/hockey/33140/8"
+        },
+        {
+          "team_logos": [
+            {
+              "team_logo": {
+                "size": "large",
+                "url": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/1f3b59659a35b34d1ab3b00a19306aeccb6c13e84dc4b91a0a8f7b25d97fdfc5.png"
+              }
+            }
+          ]
+        },
+        {
+          "previous_season_team_rank": 14
+        },
+        [],
+        {
+          "waiver_priority": 4
+        },
+        [],
+        {
+          "number_of_moves": 15
+        },
+        {
+          "number_of_trades": 0
+        },
+        {
+          "roster_adds": {
+            "coverage_type": "week",
+            "coverage_value": 13,
+            "value": "0"
+          }
+        },
+        [],
+        {
+          "league_scoring_type": "head"
+        },
+        [],
+        {
+          "draft_position": 3
+        },
+        {
+          "has_draft_grade": 0
+        },
+        [],
+        [],
+        [],
+        [],
+        [],
+        {
+          "managers": [
+            {
+              "manager": {
+                "manager_id": "8",
+                "nickname": "Miguel",
+                "guid": "2IGQKIFDKFR6BFRI5UR5DDJEQE",
+                "email": "mvalle1801@gmail.com",
+                "image_url": "https://s.yimg.com/ag/images/d3bd9b78-145a-4fba-8e11-fcb14786987e_64sq.jpg",
+                "felo_score": "512",
+                "felo_tier": "bronze"
+              }
+            }
+          ]
+        }
+      ],
+      {
+        "team_stats": {
+          "coverage_type": "week",
+          "week": "13",
+          "stats": [
+            {
+              "stat": {
+                "stat_id": "1",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "2",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "4",
+                "value": -5
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "5",
+                "value": 6
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "8",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "11",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "12",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "14",
+                "value": 14
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "16",
+                "value": 15
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "31",
+                "value": 9
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "32",
+                "value": 7
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "19",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "22",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "23",
+                "value": "1.77"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "25",
+                "value": 12
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "24",
+                "value": 13
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "26",
+                "value": ".923"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "27",
+                "value": 0
+              }
+            }
+          ]
+        },
+        "team_points": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": "3"
+        },
+        "team_remaining_games": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": {
+            "remaining_games": 38,
+            "live_games": 5,
+            "completed_games": 6
+          }
+        }
+      }
+    ],
+    "465.l.33140.t.4": [
+      [
+        {
+          "team_key": "465.l.33140.t.4"
+        },
+        {
+          "team_id": "4"
+        },
+        {
+          "name": "Hugs not drugs!"
+        },
+        [],
+        {
+          "url": "https://hockey.fantasysports.yahoo.com/hockey/33140/4"
+        },
+        {
+          "team_logos": [
+            {
+              "team_logo": {
+                "size": "large",
+                "url": "https://s.yimg.com/ep/cx/blendr/v2/image-lion-1-png_1721175794452.png"
+              }
+            }
+          ]
+        },
+        {
+          "previous_season_team_rank": 6
+        },
+        [],
+        {
+          "waiver_priority": 6
+        },
+        [],
+        {
+          "number_of_moves": 26
+        },
+        {
+          "number_of_trades": 0
+        },
+        {
+          "roster_adds": {
+            "coverage_type": "week",
+            "coverage_value": 13,
+            "value": "0"
+          }
+        },
+        [],
+        {
+          "league_scoring_type": "head"
+        },
+        [],
+        {
+          "draft_position": 11
+        },
+        {
+          "has_draft_grade": 0
+        },
+        [],
+        [],
+        [],
+        [],
+        [],
+        {
+          "managers": [
+            {
+              "manager": {
+                "manager_id": "4",
+                "nickname": "Tony",
+                "guid": "K576XNWQOKV5EH7TGRUYW3Z3MQ",
+                "email": "amcabbey@gmail.com",
+                "image_url": "https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg",
+                "felo_score": "729",
+                "felo_tier": "gold"
+              }
+            }
+          ]
+        }
+      ],
+      {
+        "team_stats": {
+          "coverage_type": "week",
+          "week": "13",
+          "stats": [
+            {
+              "stat": {
+                "stat_id": "1",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "2",
+                "value": 4
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "4",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "5",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "8",
+                "value": 3
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "11",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "12",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "14",
+                "value": 18
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "16",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "31",
+                "value": 6
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "32",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "19",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "22",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "23",
+                "value": "1.00"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "25",
+                "value": 27
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "24",
+                "value": 28
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "26",
+                "value": ".964"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "27",
+                "value": 0
+              }
+            }
+          ]
+        },
+        "team_points": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": "6"
+        },
+        "team_remaining_games": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": {
+            "remaining_games": 51,
+            "live_games": 5,
+            "completed_games": 5
+          }
+        }
+      }
+    ],
+    "465.l.33140.t.6": [
+      [
+        {
+          "team_key": "465.l.33140.t.6"
+        },
+        {
+          "team_id": "6"
+        },
+        {
+          "name": "Top Chedda"
+        },
+        [],
+        {
+          "url": "https://hockey.fantasysports.yahoo.com/hockey/33140/6"
+        },
+        {
+          "team_logos": [
+            {
+              "team_logo": {
+                "size": "large",
+                "url": "https://s.yimg.com/ep/cx/blendr/v2/image-zamboni-png_1721256433917.png"
+              }
+            }
+          ]
+        },
+        {
+          "previous_season_team_rank": 10
+        },
+        [],
+        {
+          "waiver_priority": 11
+        },
+        [],
+        {
+          "number_of_moves": 17
+        },
+        {
+          "number_of_trades": 0
+        },
+        {
+          "roster_adds": {
+            "coverage_type": "week",
+            "coverage_value": 13,
+            "value": "2"
+          }
+        },
+        [],
+        {
+          "league_scoring_type": "head"
+        },
+        [],
+        {
+          "draft_position": 10
+        },
+        {
+          "has_draft_grade": 0
+        },
+        [],
+        [],
+        [],
+        [],
+        [],
+        {
+          "managers": [
+            {
+              "manager": {
+                "manager_id": "6",
+                "nickname": "Jon",
+                "guid": "RBF3R3GFNLFGF3FEN3Q7JJRXMM",
+                "email": "jondlittle@gmail.com",
+                "image_url": "https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg",
+                "felo_score": "591",
+                "felo_tier": "bronze"
+              }
+            }
+          ]
+        }
+      ],
+      {
+        "team_stats": {
+          "coverage_type": "week",
+          "week": "13",
+          "stats": [
+            {
+              "stat": {
+                "stat_id": "1",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "2",
+                "value": 4
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "4",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "5",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "8",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "11",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "12",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "14",
+                "value": 14
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "16",
+                "value": 15
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "31",
+                "value": 6
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "32",
+                "value": 8
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "19",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "22",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "23",
+                "value": "2.06"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "25",
+                "value": 16
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "24",
+                "value": 18
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "26",
+                "value": ".889"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "27",
+                "value": 0
+              }
+            }
+          ]
+        },
+        "team_points": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": "2"
+        },
+        "team_remaining_games": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": {
+            "remaining_games": 33,
+            "live_games": 8,
+            "completed_games": 3
+          }
+        }
+      }
+    ],
+    "465.l.33140.t.5": [
+      [
+        {
+          "team_key": "465.l.33140.t.5"
+        },
+        {
+          "team_id": "5"
+        },
+        {
+          "name": "The Clawfull"
+        },
+        [],
+        {
+          "url": "https://hockey.fantasysports.yahoo.com/hockey/33140/5"
+        },
+        {
+          "team_logos": [
+            {
+              "team_logo": {
+                "size": "large",
+                "url": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/79b08abbee531fc146521e7e899d706f2a14a2a5cb2e940876d852497d8af285.jpg"
+              }
+            }
+          ]
+        },
+        {
+          "previous_season_team_rank": 1
+        },
+        [],
+        {
+          "waiver_priority": 10
+        },
+        [],
+        {
+          "number_of_moves": 27
+        },
+        {
+          "number_of_trades": 0
+        },
+        {
+          "roster_adds": {
+            "coverage_type": "week",
+            "coverage_value": 13,
+            "value": "0"
+          }
+        },
+        [],
+        {
+          "league_scoring_type": "head"
+        },
+        [],
+        {
+          "draft_position": 7
+        },
+        {
+          "has_draft_grade": 0
+        },
+        [],
+        [],
+        [],
+        [],
+        [],
+        {
+          "managers": [
+            {
+              "manager": {
+                "manager_id": "5",
+                "nickname": "Jim",
+                "guid": "NHUDUBV4GZRRXGYAKQMDFMW37E",
+                "email": "jim.duggan@att.net",
+                "image_url": "https://s.yimg.com/ag/images/c41a64b7-abd3-4d2b-8e72-4bcbdb9dabba_64sq.jpg",
+                "felo_score": "826",
+                "felo_tier": "platinum"
+              }
+            }
+          ]
+        }
+      ],
+      {
+        "team_stats": {
+          "coverage_type": "week",
+          "week": "13",
+          "stats": [
+            {
+              "stat": {
+                "stat_id": "1",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "2",
+                "value": 4
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "4",
+                "value": 4
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "5",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "8",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "11",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "12",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "14",
+                "value": 13
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "16",
+                "value": 21
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "31",
+                "value": 9
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "32",
+                "value": 11
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "19",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "22",
+                "value": 3
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "23",
+                "value": "2.38"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "25",
+                "value": 37
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "24",
+                "value": 40
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "26",
+                "value": ".925"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "27",
+                "value": 0
+              }
+            }
+          ]
+        },
+        "team_points": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": "9"
+        },
+        "team_remaining_games": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": {
+            "remaining_games": 42,
+            "live_games": 8,
+            "completed_games": 5
+          }
+        }
+      }
+    ],
+    "465.l.33140.t.7": [
+      [
+        {
+          "team_key": "465.l.33140.t.7"
+        },
+        {
+          "team_id": "7"
+        },
+        {
+          "name": "Post and Out"
+        },
+        [],
+        {
+          "url": "https://hockey.fantasysports.yahoo.com/hockey/33140/7"
+        },
+        {
+          "team_logos": [
+            {
+              "team_logo": {
+                "size": "large",
+                "url": "https://s.yimg.com/ep/cx/blendr/v2/image-goal-light-png_1721256328232.png"
+              }
+            }
+          ]
+        },
+        {
+          "previous_season_team_rank": 3
+        },
+        [],
+        {
+          "waiver_priority": 12
+        },
+        [],
+        {
+          "number_of_moves": 32
+        },
+        {
+          "number_of_trades": "3"
+        },
+        {
+          "roster_adds": {
+            "coverage_type": "week",
+            "coverage_value": 13,
+            "value": "0"
+          }
+        },
+        [],
+        {
+          "league_scoring_type": "head"
+        },
+        [],
+        {
+          "draft_position": 4
+        },
+        {
+          "has_draft_grade": 0
+        },
+        [],
+        [],
+        [],
+        [],
+        [],
+        {
+          "managers": [
+            {
+              "manager": {
+                "manager_id": "7",
+                "nickname": "shane",
+                "guid": "OAWPWLEFEFGQ3U3GGJX7EGMPLI",
+                "email": "swillia1212@gmail.com",
+                "image_url": "https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg",
+                "felo_score": "595",
+                "felo_tier": "bronze"
+              }
+            }
+          ]
+        }
+      ],
+      {
+        "team_stats": {
+          "coverage_type": "week",
+          "week": "13",
+          "stats": [
+            {
+              "stat": {
+                "stat_id": "1",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "2",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "4",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "5",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "8",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "11",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "12",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "14",
+                "value": 11
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "16",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "31",
+                "value": 12
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "32",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "19",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "22",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "23",
+                "value": null
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "25",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "24",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "26",
+                "value": null
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "27",
+                "value": 0
+              }
+            }
+          ]
+        },
+        "team_points": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": "2"
+        },
+        "team_remaining_games": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": {
+            "remaining_games": 43,
+            "live_games": 6,
+            "completed_games": 2
+          }
+        }
+      }
+    ],
+    "465.l.33140.t.9": [
+      [
+        {
+          "team_key": "465.l.33140.t.9"
+        },
+        {
+          "team_id": "9"
+        },
+        {
+          "name": "Keller Instinct"
+        },
+        [],
+        {
+          "url": "https://hockey.fantasysports.yahoo.com/hockey/33140/9"
+        },
+        {
+          "team_logos": [
+            {
+              "team_logo": {
+                "size": "large",
+                "url": "https://s.yimg.com/ep/cx/blendr/v2/image-hockey-player-emoji-png_1721256348578.png"
+              }
+            }
+          ]
+        },
+        {
+          "previous_season_team_rank": 5
+        },
+        [],
+        {
+          "waiver_priority": 3
+        },
+        [],
+        {
+          "number_of_moves": 8
+        },
+        {
+          "number_of_trades": 0
+        },
+        {
+          "roster_adds": {
+            "coverage_type": "week",
+            "coverage_value": 13,
+            "value": "0"
+          }
+        },
+        [],
+        {
+          "league_scoring_type": "head"
+        },
+        [],
+        {
+          "draft_position": 6
+        },
+        {
+          "has_draft_grade": 0
+        },
+        [],
+        [],
+        [],
+        [],
+        [],
+        {
+          "managers": [
+            {
+              "manager": {
+                "manager_id": "9",
+                "nickname": "Paul",
+                "guid": "ZSF4IJ4KWDMXQAXA545KSR6Q3A",
+                "email": "paulcmclean@yahoo.com",
+                "image_url": "https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg",
+                "felo_score": "742",
+                "felo_tier": "gold"
+              }
+            }
+          ]
+        }
+      ],
+      {
+        "team_stats": {
+          "coverage_type": "week",
+          "week": "13",
+          "stats": [
+            {
+              "stat": {
+                "stat_id": "1",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "2",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "4",
+                "value": -1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "5",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "8",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "11",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "12",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "14",
+                "value": 11
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "16",
+                "value": 3
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "31",
+                "value": 3
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "32",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "19",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "22",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "23",
+                "value": null
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "25",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "24",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "26",
+                "value": null
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "27",
+                "value": 0
+              }
+            }
+          ]
+        },
+        "team_points": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": "1"
+        },
+        "team_remaining_games": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": {
+            "remaining_games": 43,
+            "live_games": 7,
+            "completed_games": 1
+          }
+        }
+      }
+    ],
+    "465.l.33140.t.14": [
+      [
+        {
+          "team_key": "465.l.33140.t.14"
+        },
+        {
+          "team_id": "14"
+        },
+        {
+          "name": "Grambling"
+        },
+        [],
+        {
+          "url": "https://hockey.fantasysports.yahoo.com/hockey/33140/14"
+        },
+        {
+          "team_logos": [
+            {
+              "team_logo": {
+                "size": "large",
+                "url": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/b2102ed6f5c92cb2388c3ca6e41c70a3bdc1773061908fd503ca3215544e57a2.jpg"
+              }
+            }
+          ]
+        },
+        {
+          "previous_season_team_rank": 2
+        },
+        [],
+        {
+          "waiver_priority": 13
+        },
+        [],
+        {
+          "number_of_moves": 27
+        },
+        {
+          "number_of_trades": "1"
+        },
+        {
+          "roster_adds": {
+            "coverage_type": "week",
+            "coverage_value": 13,
+            "value": "0"
+          }
+        },
+        [],
+        {
+          "league_scoring_type": "head"
+        },
+        [],
+        {
+          "draft_position": 1
+        },
+        {
+          "has_draft_grade": 0
+        },
+        [],
+        [],
+        [],
+        [],
+        [],
+        {
+          "managers": [
+            {
+              "manager": {
+                "manager_id": "14",
+                "nickname": "Andy",
+                "guid": "F7WPOQOKM5AZQBCW4IIE5YQO2A",
+                "email": "andrewdalyjr@gmail.com",
+                "image_url": "https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg",
+                "felo_score": "787",
+                "felo_tier": "gold"
+              }
+            }
+          ]
+        }
+      ],
+      {
+        "team_stats": {
+          "coverage_type": "week",
+          "week": "13",
+          "stats": [
+            {
+              "stat": {
+                "stat_id": "1",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "2",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "4",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "5",
+                "value": 8
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "8",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "11",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "12",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "14",
+                "value": 15
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "16",
+                "value": 15
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "31",
+                "value": 5
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "32",
+                "value": 7
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "19",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "22",
+                "value": 3
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "23",
+                "value": "2.73"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "25",
+                "value": 25
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "24",
+                "value": 28
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "26",
+                "value": ".893"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "27",
+                "value": 0
+              }
+            }
+          ]
+        },
+        "team_points": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": "10"
+        },
+        "team_remaining_games": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": {
+            "remaining_games": 41,
+            "live_games": 7,
+            "completed_games": 4
+          }
+        }
+      }
+    ],
+    "465.l.33140.t.10": [
+      [
+        {
+          "team_key": "465.l.33140.t.10"
+        },
+        {
+          "team_id": "10"
+        },
+        {
+          "name": "Goon's Love Red Meat"
+        },
+        [],
+        {
+          "url": "https://hockey.fantasysports.yahoo.com/hockey/33140/10"
+        },
+        {
+          "team_logos": [
+            {
+              "team_logo": {
+                "size": "large",
+                "url": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/ea25dbd0872bcfe4a4e670a8249a3fe878edf811f7c6b65a230fb139afdb77d5.jpg"
+              }
+            }
+          ]
+        },
+        {
+          "previous_season_team_rank": 8
+        },
+        [],
+        {
+          "waiver_priority": 14
+        },
+        [],
+        {
+          "number_of_moves": 22
+        },
+        {
+          "number_of_trades": "3"
+        },
+        {
+          "roster_adds": {
+            "coverage_type": "week",
+            "coverage_value": 13,
+            "value": "0"
+          }
+        },
+        [],
+        {
+          "league_scoring_type": "head"
+        },
+        [],
+        {
+          "draft_position": 13
+        },
+        {
+          "has_draft_grade": 0
+        },
+        [],
+        [],
+        [],
+        [],
+        [],
+        {
+          "managers": [
+            {
+              "manager": {
+                "manager_id": "10",
+                "nickname": "Jo",
+                "guid": "25RCHYH5T7MIYC3GO7ZZHL726T",
+                "email": "jpezel@unb.ca",
+                "image_url": "https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg",
+                "felo_score": "629",
+                "felo_tier": "silver"
+              }
+            }
+          ]
+        }
+      ],
+      {
+        "team_stats": {
+          "coverage_type": "week",
+          "week": "13",
+          "stats": [
+            {
+              "stat": {
+                "stat_id": "1",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "2",
+                "value": 3
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "4",
+                "value": -3
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "5",
+                "value": 4
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "8",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "11",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "12",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "14",
+                "value": 13
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "16",
+                "value": 21
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "31",
+                "value": 3
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "32",
+                "value": 10
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "19",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "22",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "23",
+                "value": "3.51"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "25",
+                "value": 16
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "24",
+                "value": 18
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "26",
+                "value": ".889"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "27",
+                "value": 0
+              }
+            }
+          ]
+        },
+        "team_points": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": "3"
+        },
+        "team_remaining_games": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": {
+            "remaining_games": 44,
+            "live_games": 10,
+            "completed_games": 3
+          }
+        }
+      }
+    ],
+    "465.l.33140.t.13": [
+      [
+        {
+          "team_key": "465.l.33140.t.13"
+        },
+        {
+          "team_id": "13"
+        },
+        {
+          "name": "Strange Brew"
+        },
+        {
+          "is_owned_by_current_login": 1
+        },
+        {
+          "url": "https://hockey.fantasysports.yahoo.com/hockey/33140/13"
+        },
+        {
+          "team_logos": [
+            {
+              "team_logo": {
+                "size": "large",
+                "url": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/829eefc79fdfe7de6dc699a1451049819b386702107751b140c73bd8d87a5b86.png"
+              }
+            }
+          ]
+        },
+        {
+          "previous_season_team_rank": 13
+        },
+        [],
+        {
+          "waiver_priority": 8
+        },
+        [],
+        {
+          "number_of_moves": 12
+        },
+        {
+          "number_of_trades": "1"
+        },
+        {
+          "roster_adds": {
+            "coverage_type": "week",
+            "coverage_value": 13,
+            "value": "1"
+          }
+        },
+        [],
+        {
+          "league_scoring_type": "head"
+        },
+        [],
+        {
+          "draft_position": 9
+        },
+        {
+          "has_draft_grade": 0
+        },
+        [],
+        [],
+        [],
+        [],
+        [],
+        {
+          "managers": [
+            {
+              "manager": {
+                "manager_id": "13",
+                "nickname": "Jason",
+                "guid": "7RGCMMZFFCD3TYERS6NAACYUXI",
+                "is_current_login": "1",
+                "email": "jknutson103@gmail.com",
+                "image_url": "https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg",
+                "felo_score": "579",
+                "felo_tier": "bronze"
+              }
+            }
+          ]
+        }
+      ],
+      {
+        "team_stats": {
+          "coverage_type": "week",
+          "week": "13",
+          "stats": [
+            {
+              "stat": {
+                "stat_id": "1",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "2",
+                "value": 4
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "4",
+                "value": 3
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "5",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "8",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "11",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "12",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "14",
+                "value": 14
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "16",
+                "value": 18
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "31",
+                "value": 10
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "32",
+                "value": 4
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "19",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "22",
+                "value": 5
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "23",
+                "value": "2.53"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "25",
+                "value": 40
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "24",
+                "value": 45
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "26",
+                "value": ".889"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "27",
+                "value": 0
+              }
+            }
+          ]
+        },
+        "team_points": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": "8"
+        },
+        "team_remaining_games": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": {
+            "remaining_games": 33,
+            "live_games": 6,
+            "completed_games": 5
+          }
+        }
+      }
+    ],
+    "465.l.33140.t.11": [
+      [
+        {
+          "team_key": "465.l.33140.t.11"
+        },
+        {
+          "team_id": "11"
+        },
+        {
+          "name": "Holy Doodle"
+        },
+        [],
+        {
+          "url": "https://hockey.fantasysports.yahoo.com/hockey/33140/11"
+        },
+        {
+          "team_logos": [
+            {
+              "team_logo": {
+                "size": "large",
+                "url": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/8d1c555c253c922f3a33eeca2b3e2d0f3b71b9c03959482af4d0d5fcc79c8ad5.png"
+              }
+            }
+          ]
+        },
+        {
+          "previous_season_team_rank": 7
+        },
+        [],
+        {
+          "waiver_priority": 9
+        },
+        [],
+        {
+          "number_of_moves": 24
+        },
+        {
+          "number_of_trades": "1"
+        },
+        {
+          "roster_adds": {
+            "coverage_type": "week",
+            "coverage_value": 13,
+            "value": "0"
+          }
+        },
+        [],
+        {
+          "league_scoring_type": "head"
+        },
+        [],
+        {
+          "draft_position": 2
+        },
+        {
+          "has_draft_grade": 0
+        },
+        [],
+        [],
+        [],
+        [],
+        [],
+        {
+          "managers": [
+            {
+              "manager": {
+                "manager_id": "11",
+                "nickname": "SFNR",
+                "guid": "7IVJANCMUNQX7QBMP5KEBUTPKQ",
+                "email": "seanreilly415@gmail.com",
+                "image_url": "https://s.yimg.com/ag/images/0c6e15ae-0213-4685-90ff-ac7b4e89c2b2wa_64sq.jpg",
+                "felo_score": "901",
+                "felo_tier": "diamond"
+              }
+            }
+          ]
+        }
+      ],
+      {
+        "team_stats": {
+          "coverage_type": "week",
+          "week": "13",
+          "stats": [
+            {
+              "stat": {
+                "stat_id": "1",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "2",
+                "value": 4
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "4",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "5",
+                "value": 4
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "8",
+                "value": 2
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "11",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "12",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "14",
+                "value": 12
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "16",
+                "value": 20
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "31",
+                "value": 8
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "32",
+                "value": 4
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "19",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "22",
+                "value": 3
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "23",
+                "value": "2.34"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "25",
+                "value": 20
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "24",
+                "value": 23
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "26",
+                "value": ".870"
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "27",
+                "value": 0
+              }
+            }
+          ]
+        },
+        "team_points": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": "11"
+        },
+        "team_remaining_games": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": {
+            "remaining_games": 46,
+            "live_games": 8,
+            "completed_games": 5
+          }
+        }
+      }
+    ],
+    "465.l.33140.t.12": [
+      [
+        {
+          "team_key": "465.l.33140.t.12"
+        },
+        {
+          "team_id": "12"
+        },
+        {
+          "name": "Puck Rogerz"
+        },
+        [],
+        {
+          "url": "https://hockey.fantasysports.yahoo.com/hockey/33140/12"
+        },
+        {
+          "team_logos": [
+            {
+              "team_logo": {
+                "size": "large",
+                "url": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/32167dcb6147a7be2409f8ae67b8bf26ae0ad0ec251241d43600935bd6803557.png"
+              }
+            }
+          ]
+        },
+        [],
+        [],
+        {
+          "waiver_priority": 7
+        },
+        [],
+        {
+          "number_of_moves": 37
+        },
+        {
+          "number_of_trades": 0
+        },
+        {
+          "roster_adds": {
+            "coverage_type": "week",
+            "coverage_value": 13,
+            "value": "0"
+          }
+        },
+        [],
+        {
+          "league_scoring_type": "head"
+        },
+        [],
+        {
+          "draft_position": 12
+        },
+        {
+          "has_draft_grade": 0
+        },
+        [],
+        [],
+        [],
+        [],
+        [],
+        {
+          "managers": [
+            {
+              "manager": {
+                "manager_id": "12",
+                "nickname": "Roger",
+                "guid": "CFEIEIQVL5HBK4MIBTC7AE3EFQ",
+                "email": "rhannis68@gmail.com",
+                "image_url": "https://s.yimg.com/ag/images/default_user_profile_pic_64sq.jpg",
+                "felo_score": "852",
+                "felo_tier": "platinum"
+              }
+            }
+          ]
+        }
+      ],
+      {
+        "team_stats": {
+          "coverage_type": "week",
+          "week": "13",
+          "stats": [
+            {
+              "stat": {
+                "stat_id": "1",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "2",
+                "value": 1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "4",
+                "value": -1
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "5",
+                "value": 5
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "8",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "11",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "12",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "14",
+                "value": 7
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "16",
+                "value": 19
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "31",
+                "value": 8
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "32",
+                "value": 3
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "19",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "22",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "23",
+                "value": null
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "25",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "24",
+                "value": 0
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "26",
+                "value": null
+              }
+            },
+            {
+              "stat": {
+                "stat_id": "27",
+                "value": 0
+              }
+            }
+          ]
+        },
+        "team_points": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": "1"
+        },
+        "team_remaining_games": {
+          "coverage_type": "week",
+          "week": "13",
+          "total": {
+            "remaining_games": 32,
+            "live_games": 5,
+            "completed_games": 3
+          }
+        }
+      }
+    ]
+  },
+  "lastUpdated": "2025-12-30T03:32:45.696082+00:00"
+}
