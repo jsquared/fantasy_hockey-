@@ -609,5 +609,143 @@
         "SHO": 0.0
       }
     }
-  ]
+  ],
+  "trade_analysis": {
+    "weak_categories": [
+      "FW",
+      "A",
+      "PPP"
+    ],
+    "my_totals": {
+      "G": 147.0,
+      "A": 199.0,
+      "PPP": 95.0,
+      "SOG": 1173.0,
+      "FW": 995.0,
+      "HIT": 576.0,
+      "BLK": 455.0
+    },
+    "league_averages": {
+      "BLK": 454.64285714285717,
+      "G": 152.5,
+      "FW": 1161.357142857143,
+      "A": 246.42857142857142,
+      "SOG": 1190.2857142857142,
+      "PPP": 113.5,
+      "HIT": 537.7857142857143
+    },
+    "recommended_targets": [
+      {
+        "team_key": "465.l.33140.t.9",
+        "player_id": 3737,
+        "name": "Sidney Crosby",
+        "boost_score": 477.0,
+        "helps": [
+          "FW",
+          "A",
+          "PPP"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.12",
+        "player_id": 7516,
+        "name": "Nico Hischier",
+        "boost_score": 472.0,
+        "helps": [
+          "FW",
+          "A",
+          "PPP"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.9",
+        "player_id": 6381,
+        "name": "Dylan Larkin",
+        "boost_score": 469.0,
+        "helps": [
+          "FW",
+          "A",
+          "PPP"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.5",
+        "player_id": 6762,
+        "name": "Joel Eriksson Ek",
+        "boost_score": 447.0,
+        "helps": [
+          "FW",
+          "A",
+          "PPP"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.8",
+        "player_id": 6369,
+        "name": "Leon Draisaitl",
+        "boost_score": 417.0,
+        "helps": [
+          "FW",
+          "A",
+          "PPP"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.5",
+        "player_id": 3980,
+        "name": "Jordan Staal",
+        "boost_score": 411.0,
+        "helps": [
+          "FW",
+          "A",
+          "PPP"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.14",
+        "player_id": 5980,
+        "name": "Nathan MacKinnon",
+        "boost_score": 410.0,
+        "helps": [
+          "FW",
+          "A",
+          "PPP"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.1",
+        "player_id": 3788,
+        "name": "Anze Kopitar",
+        "boost_score": 405.0,
+        "helps": [
+          "FW",
+          "A",
+          "PPP"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.1",
+        "player_id": 6745,
+        "name": "Dylan Strome",
+        "boost_score": 397.0,
+        "helps": [
+          "FW",
+          "A",
+          "PPP"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.6",
+        "player_id": 4681,
+        "name": "John Tavares",
+        "boost_score": 394.0,
+        "helps": [
+          "FW",
+          "A",
+          "PPP"
+        ]
+      }
+    ],
+    "generated": "2025-12-31T21:20:37.254014+00:00"
+  }
 }
