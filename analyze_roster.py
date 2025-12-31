@@ -1,112 +1,55 @@
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 
 from yahoo_oauth import OAuth2
-from yahoo_fantasy_api import League, Team
+from yahoo_fantasy_api import League
 
 
+# ---------------- CONFIG ----------------
+
+GAME_CODE = "nhl"
+LEAGUE_ID = "33140"
 OUTPUT_FILE = "docs/roster.json"
 
+# ---------------------------------------
 
-def normalize_player(player_block):
+
+def extract_player_stats(player_block):
     """
-    Yahoo player blocks are inconsistent.
-    This safely extracts metadata, positions, and stats without assuming structure.
+    Extract stats safely from Yahoo player XML/JSON blob
     """
-    player_data = {
-        "player_key": None,
-        "player_id": None,
-        "name": None,
-        "team": None,
-        "team_abbr": None,
-        "primary_position": None,
-        "selected_position": None,
-        "stats": {}
-    }
+    stats_out = {}
 
-    if not isinstance(player_block, dict):
-        return player_data
+    player_stats = player_block.get("player_stats")
+    if not player_stats:
+        return stats_out
 
-    player_items = player_block.get("player", [])
-    if not isinstance(player_items, list):
-        return player_data
+    stats = player_stats.get("stats", {}).get("stat", [])
+    for stat in stats:
+        stat_id = stat.get("stat_id")
+        value = stat.get("value")
+        stats_out[stat_id] = value
 
-    for item in player_items:
-        if not isinstance(item, dict):
-            continue
-
-        # --- Player metadata ---
-        if "player_key" in item:
-            player_data["player_key"] = item.get("player_key")
-            player_data["player_id"] = item.get("player_id")
-            player_data["name"] = item.get("name", {}).get("full")
-            player_data["team"] = item.get("editorial_team_full_name")
-            player_data["team_abbr"] = item.get("editorial_team_abbr")
-
-            # Primary position
-            positions = item.get("display_position")
-            if positions:
-                player_data["primary_position"] = positions
-
-        # --- Selected position ---
-        if "selected_position" in item:
-            pos = item.get("selected_position")
-            if isinstance(pos, dict):
-                player_data["selected_position"] = pos.get("position")
-
-        # --- Stats ---
-        if "stats" in item:
-            stats_block = item.get("stats", {})
-            if isinstance(stats_block, dict):
-                stats_list = stats_block.get("stats", [])
-                if isinstance(stats_list, list):
-                    for stat_entry in stats_list:
-                        if not isinstance(stat_entry, dict):
-                            continue
-                        stat = stat_entry.get("stat", {})
-                        if isinstance(stat, dict):
-                            stat_id = stat.get("stat_id")
-                            value = stat.get("value")
-                            if stat_id is not None:
-                                player_data["stats"][stat_id] = value
-
-    return player_data
+    return stats_out
 
 
 def main():
     # OAuth
     oauth = OAuth2(None, None, from_file="oauth2.json")
+    league = League(oauth, GAME_CODE, LEAGUE_ID)
 
-    # League setup (NO game_code, NO league_key)
-    league = League(
-        oauth,
-        league_id="465.l.33140"
-    )
+    league_key = league.league_id
+    teams = league.teams()
 
     output = {
-        "league": "465.l.33140",
-        "teams": {},
-        "lastUpdated": datetime.now(timezone.utc).isoformat()
+        "league": league_key,
+        "lastUpdated": datetime.utcnow().isoformat() + "Z",
+        "teams": {}
     }
 
-    teams = league.teams()
-    if not isinstance(teams, list):
-        teams = []
-
-    for team_meta in teams:
-        if not isinstance(team_meta, dict):
-            continue
-
-        team_key = team_meta.get("team_key")
-        team_name = team_meta.get("name")
-
-        if not team_key:
-            continue
-
+    for team_key, team_name in teams.items():
         print(f"Pulling roster for {team_key}")
-
-        team = Team(oauth, team_key)
 
         output["teams"][team_key] = {
             "team_key": team_key,
@@ -114,19 +57,56 @@ def main():
             "players": []
         }
 
-        try:
-            roster = team.roster()
-        except Exception as e:
-            print(f"Roster fetch failed for {team_key}: {e}")
+        # ---- Get roster player keys only ----
+        roster = league.yhandler.get_team_roster_raw(team_key)
+
+        players_block = (
+            roster.get("fantasy_content", {})
+            .get("team", {})
+            .get("roster", {})
+            .get("players", {})
+            .get("player", [])
+        )
+
+        player_keys = []
+        for p in players_block:
+            if isinstance(p, dict):
+                key = p.get("player_key")
+                if key:
+                    player_keys.append(key)
+
+        if not player_keys:
             continue
 
-        if not isinstance(roster, list):
-            continue
+        # ---- Fetch stats via Players API ----
+        players_raw = league.yhandler.get_players_raw(
+            league_key,
+            player_keys,
+            subresources=["stats"]
+        )
 
-        for player_block in roster:
-            player_data = normalize_player(player_block)
-            if player_data["player_key"]:
-                output["teams"][team_key]["players"].append(player_data)
+        players_data = (
+            players_raw.get("fantasy_content", {})
+            .get("league", {})
+            .get("players", {})
+            .get("player", [])
+        )
+
+        for player in players_data:
+            if not isinstance(player, dict):
+                continue
+
+            player_entry = {
+                "player_key": player.get("player_key"),
+                "player_id": player.get("player_id"),
+                "name": player.get("name", {}).get("full"),
+                "team": player.get("editorial_team_full_name"),
+                "team_abbr": player.get("editorial_team_abbr"),
+                "position": player.get("display_position"),
+                "stats": extract_player_stats(player)
+            }
+
+            output["teams"][team_key]["players"].append(player_entry)
 
     os.makedirs("docs", exist_ok=True)
     with open(OUTPUT_FILE, "w") as f:
