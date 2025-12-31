@@ -10,37 +10,19 @@ from collections import defaultdict
 # =========================
 LEAGUE_ID = "465.l.33140"
 GAME_CODE = "nhl"
-WEEKS = 12
-SWING_THRESHOLD = 0.10  # 10%
 
 # =========================
-# STAT MAP
+# STATS WE CARE ABOUT
 # =========================
-STAT_MAP = {
-    "G": "Goals",
-    "A": "Assists",
-    "+/-": "+/-",
-    "PIM": "PIM",
-    "PPP": "PPP",
-    "SHP": "SHP",
-    "GWG": "GWG",
-    "SOG": "SOG",
-    "FW": "FW",
-    "HIT": "Hits",
-    "BLK": "Blocks",
-    "W": "Wins",
-    "GA": "GA",
-    "GAA": "GAA",
-    "Shots Against": "Shots Against",
-    "Saves": "Saves",
-    "SV%": "SV%",
-    "Shutouts": "Shutouts"
-}
+STAT_CATEGORIES = [
+    "G", "A", "+/-", "PIM", "PPP", "SHP", "GWG",
+    "SOG", "FW", "HIT", "BLK"
+]
 
 LOWER_IS_BETTER = {"GA", "GAA", "Shots Against"}
 
 # =========================
-# OAuth
+# OAuth (GitHub-safe)
 # =========================
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
@@ -59,105 +41,108 @@ current_week = league.current_week()
 teams_meta = league.teams()
 
 # =========================
-# Get roster and player stats
+# Helpers
 # =========================
-roster_data = []
+def safe_float(val):
+    try:
+        return float(val)
+    except (TypeError, ValueError):
+        return 0.0
+
+# =========================
+# COLLECT ALL ROSTERS + STATS
+# =========================
+all_players = []
+team_totals = defaultdict(lambda: defaultdict(float))
 
 for team_key, team_info in teams_meta.items():
     team_obj = league.to_team(team_key)
-    player_entries = team_obj.roster(week=current_week)
+    roster = team_obj.roster(week=current_week)
 
-    player_ids = [p["player_id"] for p in player_entries]
+    player_ids = [p["player_id"] for p in roster]
     stats = league.player_stats(player_ids, req_type="season")
 
-    for p, s in zip(player_entries, stats):
-        roster_data.append({
+    stats_by_id = {s["player_id"]: s for s in stats}
+
+    for p in roster:
+        pid = p["player_id"]
+        stat_block = stats_by_id.get(pid, {})
+
+        # accumulate team totals safely
+        for stat in STAT_CATEGORIES:
+            team_totals[team_key][stat] += safe_float(stat_block.get(stat))
+
+        all_players.append({
             "team_key": team_key,
-            "player_id": p["player_id"],
+            "team_name": team_info.get("name", ""),
+            "player_id": pid,
             "name": p["name"],
             "positions": p.get("eligible_positions", []),
             "status": p.get("status", ""),
-            "team": team_info.get("name", ""),
-            "season_stats": s
+            "season_stats": stat_block
         })
 
 # =========================
-# Compute league averages and trends
+# LEAGUE MEDIANS
 # =========================
-avg_stats = defaultdict(dict)
-trends = defaultdict(dict)
+league_medians = {}
 
-for stat_name in STAT_MAP.values():
-    values_by_team = {}
-    for team_key, team_info in teams_meta.items():
-        team_obj = league.to_team(team_key)
-        player_entries = team_obj.roster(week=current_week)
-        player_ids = [p["player_id"] for p in player_entries]
-        stats = league.player_stats(player_ids, req_type="season")
-
-        # sum stats across players for team total
-        team_total = 0
-        count = 0
-        for s in stats:
-            v = s.get(stat_name)
-            if v is not None:
-                team_total += v
-                count += 1
-        if count > 0:
-            values_by_team[team_key] = team_total
-
-    # compute average across all teams
-    for team_key in values_by_team:
-        avg_stats[team_key][stat_name] = values_by_team[team_key]
-    # league trend: compare your team vs league median
-    team_values = list(values_by_team.values())
-    median = sorted(team_values)[len(team_values)//2] if team_values else 0
-    for team_key, total in values_by_team.items():
-        trends[team_key][stat_name] = total - median
+for stat in STAT_CATEGORIES:
+    values = [team_totals[t][stat] for t in team_totals]
+    values.sort()
+    league_medians[stat] = values[len(values) // 2] if values else 0
 
 # =========================
-# Identify weak stats in your team
+# FIND MY WEAK STATS
 # =========================
 weak_stats = []
-for stat_name in STAT_MAP.values():
-    if my_team_key not in avg_stats:
-        continue
-    my_val = avg_stats[my_team_key].get(stat_name, 0)
-    team_vals = [v.get(stat_name, 0) for k, v in avg_stats.items() if k != my_team_key]
-    if not team_vals:
-        continue
-    median = sorted(team_vals)[len(team_vals)//2]
-    if (stat_name in LOWER_IS_BETTER and my_val > median) or \
-       (stat_name not in LOWER_IS_BETTER and my_val < median):
-        weak_stats.append(stat_name)
+
+for stat in STAT_CATEGORIES:
+    my_val = team_totals[my_team_key][stat]
+    median = league_medians[stat]
+
+    if stat in LOWER_IS_BETTER:
+        if my_val > median:
+            weak_stats.append(stat)
+    else:
+        if my_val < median:
+            weak_stats.append(stat)
 
 # =========================
-# Recommend trade targets
+# TRADE TARGETS
 # =========================
 trade_targets = []
-for team_key, team_info in teams_meta.items():
-    if team_key == my_team_key:
-        continue
-    team_obj = league.to_team(team_key)
-    player_entries = team_obj.roster(week=current_week)
-    player_ids = [p["player_id"] for p in player_entries]
-    stats = league.player_stats(player_ids, req_type="season")
 
-    for p, s in zip(player_entries, stats):
-        for stat_name in weak_stats:
-            player_val = s.get(stat_name)
-            if player_val is None:
-                continue
-            my_val = avg_stats[my_team_key].get(stat_name, 0)
-            if (stat_name in LOWER_IS_BETTER and player_val < my_val) or \
-               (stat_name not in LOWER_IS_BETTER and player_val > my_val):
-                trade_targets.append({
-                    "player_id": p["player_id"],
-                    "name": p["name"],
-                    "current_team": team_info.get("name", ""),
-                    "stat_to_improve": stat_name,
-                    "value": player_val
-                })
+for p in all_players:
+    if p["team_key"] == my_team_key:
+        continue
+
+    stats = p["season_stats"]
+
+    for stat in weak_stats:
+        player_val = safe_float(stats.get(stat))
+        my_val = team_totals[my_team_key][stat]
+
+        improves = (
+            (stat in LOWER_IS_BETTER and player_val < my_val) or
+            (stat not in LOWER_IS_BETTER and player_val > my_val)
+        )
+
+        if improves:
+            trade_targets.append({
+                "player_id": p["player_id"],
+                "name": p["name"],
+                "from_team": p["team_name"],
+                "stat": stat,
+                "player_value": player_val,
+                "my_team_value": my_val
+            })
+
+# sort by biggest improvement
+trade_targets.sort(
+    key=lambda x: abs(x["player_value"] - x["my_team_value"]),
+    reverse=True
+)
 
 # =========================
 # OUTPUT
@@ -165,14 +150,17 @@ for team_key, team_info in teams_meta.items():
 payload = {
     "league": league.settings()["name"],
     "current_week": current_week,
+    "my_team_key": my_team_key,
     "lastUpdated": datetime.now(timezone.utc).isoformat(),
-    "players": roster_data,
+    "team_totals": team_totals,
+    "league_medians": league_medians,
     "weak_stats": weak_stats,
-    "trade_targets": trade_targets
+    "trade_targets": trade_targets[:25],  # top 25
+    "players": all_players
 }
 
 os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("docs/roster.json updated with player stats, weak stats, and trade recommendations")
+print("✅ docs/roster.json written successfully")
