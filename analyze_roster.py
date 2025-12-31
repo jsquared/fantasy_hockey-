@@ -67,7 +67,7 @@ for team_key in teams_meta:
 # Save output
 # =========================
 os.makedirs("docs", exist_ok=True)
-with open("docs/roster_stats.json", "w") as f:
+with open("docs/roster.json", "w") as f:
     json.dump({
         "league": league.settings().get("name"),
         "current_week": current_week,
@@ -75,4 +75,4 @@ with open("docs/roster_stats.json", "w") as f:
         "players": all_players
     }, f, indent=2)
 
-print("docs/roster_stats.json updated with player season stats.")
+print("docs/roster.json updated with player season stats.")
