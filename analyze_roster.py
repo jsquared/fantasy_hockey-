@@ -1,64 +1,23 @@
 import json
 import os
 from datetime import datetime
+
 from yahoo_oauth import OAuth2
-from yahoo_fantasy_api import League
+from yahoo_fantasy_api import League, Team
 
-# ---------- CONFIG ----------
 GAME_CODE = "nhl"
-LEAGUE_ID = "33140"   # numeric only
-OUTPUT_PATH = "docs/roster.json"
-# ----------------------------
-
-
-def safe_get(d, key, default=None):
-    return d.get(key) if isinstance(d, dict) else default
-
-
-def extract_player_meta(player_block):
-    """
-    Yahoo player blocks are LISTS of dicts and garbage.
-    This pulls out the dict that actually contains player data.
-    """
-    if not isinstance(player_block, list):
-        return None
-
-    for item in player_block:
-        if isinstance(item, dict) and "player_key" in item:
-            return item
-    return None
-
-
-def extract_stats(stats_block):
-    """
-    Converts Yahoo stat list into {stat_id: value}
-    """
-    stats = {}
-
-    if not isinstance(stats_block, dict):
-        return stats
-
-    stat_list = stats_block.get("stats", [])
-    if not isinstance(stat_list, list):
-        return stats
-
-    for s in stat_list:
-        if isinstance(s, dict):
-            stat_id = s.get("stat_id")
-            value = s.get("value")
-            if stat_id is not None:
-                stats[str(stat_id)] = value
-
-    return stats
+LEAGUE_ID = "33140"   # numeric league id
+DOCS_PATH = "docs/roster.json"
 
 
 def main():
-    # ---- OAuth ----
-    oauth = OAuth2(None, None, from_file="oauth.json")
-    if not oauth.token_is_valid():
-        oauth.refresh_access_token()
+    # OAuth via environment (NO oauth.json)
+    oauth = OAuth2(
+        consumer_key=os.environ["YAHOO_CONSUMER_KEY"],
+        consumer_secret=os.environ["YAHOO_CONSUMER_SECRET"],
+        refresh_token=os.environ["YAHOO_REFRESH_TOKEN"],
+    )
 
-    # ---- League ----
     league = League(oauth, GAME_CODE, LEAGUE_ID)
 
     output = {
@@ -67,61 +26,47 @@ def main():
         "lastUpdated": datetime.utcnow().isoformat() + "Z",
     }
 
-    teams = league.teams()
+    # Iterate teams
+    for team_key in league.teams():
+        team = Team(oauth, team_key)
 
-    for team_key, team_name in teams.items():
-        print(f"Pulling roster for {team_key}")
-
-        output["teams"][team_key] = {
+        team_data = {
             "team_key": team_key,
-            "team_name": team_name,
-            "players": []
+            "team_name": team.team_info().get("name"),
+            "players": [],
         }
 
-        roster = league.team_roster(team_key)
+        # Roster returns player keys
+        for player_key in team.roster():
+            player = league.player_details(player_key)
 
-        if not isinstance(roster, list):
-            continue
-
-        for player_block in roster:
-            player_meta = extract_player_meta(player_block)
-            if not player_meta:
-                continue
-
-            player_key = player_meta.get("player_key")
-            player_id = player_meta.get("player_id")
-
-            name_block = safe_get(player_meta, "name", {})
-            name = safe_get(name_block, "full")
-
-            team_abbr = player_meta.get("editorial_team_abbr")
-            position = player_meta.get("display_position")
-            image_url = player_meta.get("image_url")
-
-            # ---- STATS (SEASON) ----
-            stats = {}
-            try:
-                raw_stats = league.player_stats(player_key)
-                if isinstance(raw_stats, dict):
-                    stats = extract_stats(raw_stats)
-            except Exception:
-                stats = {}
-
-            output["teams"][team_key]["players"].append({
+            player_entry = {
                 "player_key": player_key,
-                "player_id": player_id,
-                "name": name,
-                "team_abbr": team_abbr,
-                "position": position,
-                "image_url": image_url,
-                "stats": stats
-            })
+                "player_id": player.get("player_id"),
+                "name": player.get("name", {}).get("full"),
+                "editorial_team": player.get("editorial_team_full_name"),
+                "editorial_team_abbr": player.get("editorial_team_abbr"),
+                "display_position": player.get("display_position"),
+                "eligible_positions": player.get("eligible_positions", {}),
+                "stats": {},
+            }
 
-    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
-    with open(OUTPUT_PATH, "w") as f:
+            # Get stats (season by default)
+            try:
+                stats = league.player_stats(player_key)
+                player_entry["stats"] = stats
+            except Exception as e:
+                player_entry["stats_error"] = str(e)
+
+            team_data["players"].append(player_entry)
+
+        output["teams"][team_key] = team_data
+
+    os.makedirs("docs", exist_ok=True)
+    with open(DOCS_PATH, "w") as f:
         json.dump(output, f, indent=2)
 
-    print(f"Roster written to {OUTPUT_PATH}")
+    print(f"Roster written to {DOCS_PATH}")
 
 
 if __name__ == "__main__":
