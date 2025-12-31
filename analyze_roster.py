@@ -26,107 +26,105 @@ game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
 
 current_week = league.current_week()
-season = league.settings().get("season")
-teams = league.teams()
+teams = league.teams()  # dict keyed by team_key
 
 # =========================
 # Helpers
 # =========================
-def extract_stats(raw_stats):
-    """Convert Yahoo stat array to dict"""
-    stats = {}
-    if not raw_stats:
-        return stats
+def extract_players_from_roster(raw_roster):
+    """Safely extract player blocks from Yahoo roster payload"""
+    team_block = raw_roster["fantasy_content"]["team"]
+    roster_block = team_block[1]["roster"]
 
-    stat_list = (
-        raw_stats.get("fantasy_content", {})
-        .get("player", [{}])[1]
-        .get("player_stats", {})
-        .get("stats", [])
-    )
+    players = []
 
-    for entry in stat_list:
-        stat = entry.get("stat", {})
-        stats[stat.get("stat_id")] = stat.get("value")
+    for key, slot in roster_block.items():
+        if not key.isdigit():
+            continue
+        if "players" not in slot:
+            continue
 
-    return stats
+        for p in slot["players"].values():
+            if not isinstance(p, dict):
+                continue
+            players.append(p)
+
+    return players
+
+
+def parse_player(player_block):
+    """Extract metadata + selected position"""
+    player_main = player_block["player"]
+
+    meta = player_main[0]
+    sel = player_main[1][0]["selected_position"][1]["position"]
+
+    return {
+        "player_key": meta.get("player_key"),
+        "player_id": meta.get("player_id"),
+        "name": meta.get("name", {}).get("full"),
+        "team": meta.get("editorial_team_full_name"),
+        "team_abbr": meta.get("editorial_team_abbr"),
+        "primary_position": meta.get("primary_position"),
+        "selected_position": sel,
+    }
+
+
+def get_season_stats(player_key):
+    """Correct Yahoo call — NO extra params"""
+    raw = league.yhandler.get_player_stats_raw(player_key)
+
+    try:
+        stats = raw["fantasy_content"]["player"][1]["player_stats"]["stats"]
+    except Exception:
+        return {}
+
+    out = {}
+    for s in stats:
+        stat = s["stat"]
+        out[stat["stat_id"]] = stat.get("value")
+
+    return out
+
 
 # =========================
-# Pull rosters + stats
+# Main
 # =========================
-league_output = {}
+output = {
+    "league": league.settings().get("name"),
+    "week": current_week,
+    "teams": {},
+    "lastUpdated": datetime.now(timezone.utc).isoformat()
+}
 
-for team_key, team_info in teams.items():
+for team_key, team_meta in teams.items():
     print(f"Pulling roster for {team_key}")
 
-    roster_raw = league.yhandler.get_roster_raw(team_key, current_week)
-    team_block = roster_raw["fantasy_content"]["team"]
+    raw_roster = league.yhandler.get_roster_raw(team_key, current_week)
+    players_raw = extract_players_from_roster(raw_roster)
 
-    team_data = {
+    team_entry = {
         "team_key": team_key,
-        "team_name": team_info.get("name"),
+        "team_name": team_meta["name"],
         "manager": None,
         "players": []
     }
 
-    # Manager
-    for section in team_block:
-        if isinstance(section, dict) and "managers" in section:
-            mgrs = section["managers"]
-            if mgrs:
-                team_data["manager"] = mgrs[0]["manager"].get("nickname")
+    for p in players_raw:
+        try:
+            player = parse_player(p)
+            player["stats"] = get_season_stats(player["player_key"])
+            team_entry["players"].append(player)
+        except Exception as e:
+            print(f"Skipping player due to parse error: {e}")
 
-    # Players
-    roster_section = team_block[1]["roster"]["0"]["players"]
-
-    for p in roster_section.values():
-        if not isinstance(p, dict):
-            continue
-
-        player_arr = p["player"]
-        meta = player_arr[0]
-
-        player_key = meta[0]["player_key"]
-
-        # Selected position
-        selected_position = None
-        if len(player_arr) > 1:
-            for item in player_arr[1]:
-                if "position" in item:
-                    selected_position = item["position"]
-
-        # Fetch stats (THIS IS THE IMPORTANT PART)
-        raw_stats = league.yhandler.get_player_stats_raw(player_key, season)
-        stats = extract_stats(raw_stats)
-
-        player_data = {
-            "player_key": player_key,
-            "player_id": meta[1]["player_id"],
-            "name": meta[2]["name"]["full"],
-            "team": meta[6]["editorial_team_full_name"],
-            "team_abbr": meta[7]["editorial_team_abbr"],
-            "primary_position": meta[14],
-            "eligible_positions": [p["position"] for p in meta[15]],
-            "selected_position": selected_position,
-            "stats": stats
-        }
-
-        team_data["players"].append(player_data)
-
-    league_output[team_key] = team_data
+    output["teams"][team_key] = team_entry
 
 # =========================
-# OUTPUT
+# Write Output
 # =========================
-payload = {
-    "league": league.settings().get("name"),
-    "week": current_week,
-    "teams": league_output,
-    "lastUpdated": datetime.now(timezone.utc).isoformat()
-}
-
 os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
-    json.dump(payload, f, indent=2)
+    json.dump(output, f, indent=2)
 
-print("✅ docs/roster.json updated with rosters + player stats")
+print("✅ docs/roster.json written successfully")
