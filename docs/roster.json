@@ -1,620 +1,17 @@
 {
   "league": "The Liberties Invitational",
-  "current_week": 13,
-  "lastUpdated": "2025-12-31T20:15:09.836889+00:00",
-  "players": [
-    {
-      "player_id": 7832,
-      "name": "Mark Kastelic",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "C",
-        "RW",
-        "Util"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 7832,
-        "name": "Mark Kastelic",
-        "position_type": "P",
-        "G": 6.0,
-        "A": 7.0,
-        "+/-": 5.0,
-        "PIM": 66.0,
-        "PPP": 1.0,
-        "SHP": 0.0,
-        "GWG": 2.0,
-        "SOG": 54.0,
-        "FW": 172.0,
-        "HIT": 110.0,
-        "BLK": 38.0,
-        "PPT": 0.0,
-        "Avg-PPT": 0.0,
-        "SHT": 0.0,
-        "Avg-SHT": 0.0,
-        "COR": 0.0,
-        "FEN": 0.0,
-        "Off-ZS": 0.0,
-        "Def-ZS": 0.0,
-        "ZS-Pct": 0.0,
-        "GStr": 0.0,
-        "Shifts": 0.0
-      }
-    },
-    {
-      "player_id": 8652,
-      "name": "Anton Lundell",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "C",
-        "Util"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 8652,
-        "name": "Anton Lundell",
-        "position_type": "P",
-        "G": 13.0,
-        "A": 18.0,
-        "+/-": -4.0,
-        "PIM": 18.0,
-        "PPP": 8.0,
-        "SHP": 3.0,
-        "GWG": 3.0,
-        "SOG": 88.0,
-        "FW": 358.0,
-        "HIT": 47.0,
-        "BLK": 28.0,
-        "PPT": 0.0,
-        "Avg-PPT": 0.0,
-        "SHT": 0.0,
-        "Avg-SHT": 0.0,
-        "COR": 0.0,
-        "FEN": 0.0,
-        "Off-ZS": 0.0,
-        "Def-ZS": 0.0,
-        "ZS-Pct": 0.0,
-        "GStr": 0.0,
-        "Shifts": 0.0
-      }
-    },
-    {
-      "player_id": 5391,
-      "name": "Rickard Rakell",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "C",
-        "LW",
-        "RW",
-        "Util"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 5391,
-        "name": "Rickard Rakell",
-        "position_type": "P",
-        "G": 4.0,
-        "A": 9.0,
-        "+/-": -3.0,
-        "PIM": 2.0,
-        "PPP": 5.0,
-        "SHP": 1.0,
-        "GWG": 0.0,
-        "SOG": 44.0,
-        "FW": 1.0,
-        "HIT": 26.0,
-        "BLK": 16.0,
-        "PPT": 0.0,
-        "Avg-PPT": 0.0,
-        "SHT": 0.0,
-        "Avg-SHT": 0.0,
-        "COR": 0.0,
-        "FEN": 0.0,
-        "Off-ZS": 0.0,
-        "Def-ZS": 0.0,
-        "ZS-Pct": 0.0,
-        "GStr": 0.0,
-        "Shifts": 0.0
-      }
-    },
-    {
-      "player_id": 5928,
-      "name": "Anders Lee",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "LW",
-        "Util"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 5928,
-        "name": "Anders Lee",
-        "position_type": "P",
-        "G": 10.0,
-        "A": 15.0,
-        "+/-": 3.0,
-        "PIM": 23.0,
-        "PPP": 5.0,
-        "SHP": 0.0,
-        "GWG": 3.0,
-        "SOG": 98.0,
-        "FW": 32.0,
-        "HIT": 32.0,
-        "BLK": 23.0,
-        "PPT": 0.0,
-        "Avg-PPT": 0.0,
-        "SHT": 0.0,
-        "Avg-SHT": 0.0,
-        "COR": 0.0,
-        "FEN": 0.0,
-        "Off-ZS": 0.0,
-        "Def-ZS": 0.0,
-        "ZS-Pct": 0.0,
-        "GStr": 0.0,
-        "Shifts": 0.0
-      }
-    },
-    {
-      "player_id": 32779,
-      "name": "Beckett Sennecke",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "RW",
-        "Util"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 32779,
-        "name": "Beckett Sennecke",
-        "position_type": "P",
-        "G": 11.0,
-        "A": 18.0,
-        "+/-": -2.0,
-        "PIM": 28.0,
-        "PPP": 5.0,
-        "SHP": 1.0,
-        "GWG": 0.0,
-        "SOG": 74.0,
-        "FW": 2.0,
-        "HIT": 38.0,
-        "BLK": 13.0,
-        "PPT": 0.0,
-        "Avg-PPT": 0.0,
-        "SHT": 0.0,
-        "Avg-SHT": 0.0,
-        "COR": 0.0,
-        "FEN": 0.0,
-        "Off-ZS": 0.0,
-        "Def-ZS": 0.0,
-        "ZS-Pct": 0.0,
-        "GStr": 0.0,
-        "Shifts": 0.0
-      }
-    },
-    {
-      "player_id": 8293,
-      "name": "Cole Caufield",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "LW",
-        "RW",
-        "Util"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 8293,
-        "name": "Cole Caufield",
-        "position_type": "P",
-        "G": 19.0,
-        "A": 20.0,
-        "+/-": 9.0,
-        "PIM": 8.0,
-        "PPP": 14.0,
-        "SHP": 0.0,
-        "GWG": 5.0,
-        "SOG": 110.0,
-        "FW": 3.0,
-        "HIT": 32.0,
-        "BLK": 11.0,
-        "PPT": 0.0,
-        "Avg-PPT": 0.0,
-        "SHT": 0.0,
-        "Avg-SHT": 0.0,
-        "COR": 0.0,
-        "FEN": 0.0,
-        "Off-ZS": 0.0,
-        "Def-ZS": 0.0,
-        "ZS-Pct": 0.0,
-        "GStr": 0.0,
-        "Shifts": 0.0
-      }
-    },
-    {
-      "player_id": 7124,
-      "name": "Jakob Chychrun",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "D",
-        "Util"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 7124,
-        "name": "Jakob Chychrun",
-        "position_type": "P",
-        "G": 15.0,
-        "A": 15.0,
-        "+/-": 21.0,
-        "PIM": 33.0,
-        "PPP": 7.0,
-        "SHP": 0.0,
-        "GWG": 4.0,
-        "SOG": 135.0,
-        "FW": 0.0,
-        "HIT": 35.0,
-        "BLK": 48.0,
-        "PPT": 0.0,
-        "Avg-PPT": 0.0,
-        "SHT": 0.0,
-        "Avg-SHT": 0.0,
-        "COR": 0.0,
-        "FEN": 0.0,
-        "Off-ZS": 0.0,
-        "Def-ZS": 0.0,
-        "ZS-Pct": 0.0,
-        "GStr": 0.0,
-        "Shifts": 0.0
-      }
-    },
-    {
-      "player_id": 7117,
-      "name": "Mikhail Sergachev",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "D",
-        "Util"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 7117,
-        "name": "Mikhail Sergachev",
-        "position_type": "P",
-        "G": 5.0,
-        "A": 21.0,
-        "+/-": -8.0,
-        "PIM": 24.0,
-        "PPP": 10.0,
-        "SHP": 1.0,
-        "GWG": 0.0,
-        "SOG": 86.0,
-        "FW": 0.0,
-        "HIT": 21.0,
-        "BLK": 72.0,
-        "PPT": 0.0,
-        "Avg-PPT": 0.0,
-        "SHT": 0.0,
-        "Avg-SHT": 0.0,
-        "COR": 0.0,
-        "FEN": 0.0,
-        "Off-ZS": 0.0,
-        "Def-ZS": 0.0,
-        "ZS-Pct": 0.0,
-        "GStr": 0.0,
-        "Shifts": 0.0
-      }
-    },
-    {
-      "player_id": 5689,
-      "name": "Jacob Trouba",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "D",
-        "Util"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 5689,
-        "name": "Jacob Trouba",
-        "position_type": "P",
-        "G": 6.0,
-        "A": 11.0,
-        "+/-": 9.0,
-        "PIM": 8.0,
-        "PPP": 0.0,
-        "SHP": 1.0,
-        "GWG": 1.0,
-        "SOG": 71.0,
-        "FW": 0.0,
-        "HIT": 78.0,
-        "BLK": 69.0,
-        "PPT": 0.0,
-        "Avg-PPT": 0.0,
-        "SHT": 0.0,
-        "Avg-SHT": 0.0,
-        "COR": 0.0,
-        "FEN": 0.0,
-        "Off-ZS": 0.0,
-        "Def-ZS": 0.0,
-        "ZS-Pct": 0.0,
-        "GStr": 0.0,
-        "Shifts": 0.0
-      }
-    },
-    {
-      "player_id": 5992,
-      "name": "Josh Morrissey",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "D",
-        "Util"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 5992,
-        "name": "Josh Morrissey",
-        "position_type": "P",
-        "G": 6.0,
-        "A": 24.0,
-        "+/-": 7.0,
-        "PIM": 12.0,
-        "PPP": 8.0,
-        "SHP": 0.0,
-        "GWG": 0.0,
-        "SOG": 69.0,
-        "FW": 0.0,
-        "HIT": 21.0,
-        "BLK": 69.0,
-        "PPT": 0.0,
-        "Avg-PPT": 0.0,
-        "SHT": 0.0,
-        "Avg-SHT": 0.0,
-        "COR": 0.0,
-        "FEN": 0.0,
-        "Off-ZS": 0.0,
-        "Def-ZS": 0.0,
-        "ZS-Pct": 0.0,
-        "GStr": 0.0,
-        "Shifts": 0.0
-      }
-    },
-    {
-      "player_id": 6370,
-      "name": "Sam Bennett",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "C",
-        "Util"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 6370,
-        "name": "Sam Bennett",
-        "position_type": "P",
-        "G": 13.0,
-        "A": 16.0,
-        "+/-": -1.0,
-        "PIM": 38.0,
-        "PPP": 7.0,
-        "SHP": 0.0,
-        "GWG": 4.0,
-        "SOG": 97.0,
-        "FW": 271.0,
-        "HIT": 81.0,
-        "BLK": 16.0,
-        "PPT": 0.0,
-        "Avg-PPT": 0.0,
-        "SHT": 0.0,
-        "Avg-SHT": 0.0,
-        "COR": 0.0,
-        "FEN": 0.0,
-        "Off-ZS": 0.0,
-        "Def-ZS": 0.0,
-        "ZS-Pct": 0.0,
-        "GStr": 0.0,
-        "Shifts": 0.0
-      }
-    },
-    {
-      "player_id": 8357,
-      "name": "Pavel Dorofeyev",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "LW",
-        "RW",
-        "Util"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 8357,
-        "name": "Pavel Dorofeyev",
-        "position_type": "P",
-        "G": 15.0,
-        "A": 11.0,
-        "+/-": -8.0,
-        "PIM": 10.0,
-        "PPP": 15.0,
-        "SHP": 0.0,
-        "GWG": 1.0,
-        "SOG": 104.0,
-        "FW": 0.0,
-        "HIT": 17.0,
-        "BLK": 18.0,
-        "PPT": 0.0,
-        "Avg-PPT": 0.0,
-        "SHT": 0.0,
-        "Avg-SHT": 0.0,
-        "COR": 0.0,
-        "FEN": 0.0,
-        "Off-ZS": 0.0,
-        "Def-ZS": 0.0,
-        "ZS-Pct": 0.0,
-        "GStr": 0.0,
-        "Shifts": 0.0
-      }
-    },
-    {
-      "player_id": 4471,
-      "name": "Steven Stamkos",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "C",
-        "LW",
-        "RW",
-        "Util"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 4471,
-        "name": "Steven Stamkos",
-        "position_type": "P",
-        "G": 17.0,
-        "A": 8.0,
-        "+/-": -9.0,
-        "PIM": 22.0,
-        "PPP": 6.0,
-        "SHP": 0.0,
-        "GWG": 7.0,
-        "SOG": 91.0,
-        "FW": 138.0,
-        "HIT": 32.0,
-        "BLK": 15.0,
-        "PPT": 0.0,
-        "Avg-PPT": 0.0,
-        "SHT": 0.0,
-        "Avg-SHT": 0.0,
-        "COR": 0.0,
-        "FEN": 0.0,
-        "Off-ZS": 0.0,
-        "Def-ZS": 0.0,
-        "ZS-Pct": 0.0,
-        "GStr": 0.0,
-        "Shifts": 0.0
-      }
-    },
-    {
-      "player_id": 9277,
-      "name": "Matt Savoie",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "C",
-        "RW",
-        "Util"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 9277,
-        "name": "Matt Savoie",
-        "position_type": "P",
-        "G": 7.0,
-        "A": 6.0,
-        "+/-": 1.0,
-        "PIM": 12.0,
-        "PPP": 4.0,
-        "SHP": 1.0,
-        "GWG": 1.0,
-        "SOG": 52.0,
-        "FW": 18.0,
-        "HIT": 6.0,
-        "BLK": 19.0,
-        "PPT": 0.0,
-        "Avg-PPT": 0.0,
-        "SHT": 0.0,
-        "Avg-SHT": 0.0,
-        "COR": 0.0,
-        "FEN": 0.0,
-        "Off-ZS": 0.0,
-        "Def-ZS": 0.0,
-        "ZS-Pct": 0.0,
-        "GStr": 0.0,
-        "Shifts": 0.0
-      }
-    },
-    {
-      "player_id": 4901,
-      "name": "Sergei Bobrovsky",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "G"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 4901,
-        "name": "Sergei Bobrovsky",
-        "position_type": "G",
-        "W": 17.0,
-        "GA": 74.0,
-        "GAA": 2.8,
-        "SV": 587.0,
-        "SA": 661.0,
-        "SV%": 0.888,
-        "SHO": 3.0
-      }
-    },
-    {
-      "player_id": 5820,
-      "name": "Connor Hellebuyck",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "G"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 5820,
-        "name": "Connor Hellebuyck",
-        "position_type": "G",
-        "W": 9.0,
-        "GA": 53.0,
-        "GAA": 2.53,
-        "SV": 520.0,
-        "SA": 573.0,
-        "SV%": 0.908,
-        "SHO": 0.0
-      }
-    },
-    {
-      "player_id": 7156,
-      "name": "Carter Hart",
-      "team_key": "465.l.33140.t.13",
-      "positions": [
-        "G"
-      ],
-      "status": "",
-      "editorial_team": "",
-      "season_stats": {
-        "player_id": 7156,
-        "name": "Carter Hart",
-        "position_type": "G",
-        "W": 4.0,
-        "GA": 28.0,
-        "GAA": 3.18,
-        "SV": 211.0,
-        "SA": 239.0,
-        "SV%": 0.883,
-        "SHO": 0.0
-      }
-    }
-  ],
+  "generated": "2026-01-01T01:08:19.221029+00:00",
   "trade_analysis": {
     "weak_categories": [
-      "FW",
+      "G",
       "A",
-      "PPP"
+      "PPP",
+      "SOG",
+      "FW"
+    ],
+    "strong_categories": [
+      "HIT",
+      "BLK"
     ],
     "my_totals": {
       "G": 147.0,
@@ -626,126 +23,210 @@
       "BLK": 455.0
     },
     "league_averages": {
-      "BLK": 454.64285714285717,
-      "G": 152.5,
+      "G": 152.21428571428572,
+      "A": 245.5,
+      "PPP": 112.78571428571429,
+      "SOG": 1187.7142857142858,
       "FW": 1161.357142857143,
-      "A": 246.42857142857142,
-      "SOG": 1190.2857142857142,
-      "PPP": 113.5,
-      "HIT": 537.7857142857143
+      "HIT": 536.9285714285714,
+      "BLK": 453.07142857142856
     },
     "recommended_targets": [
       {
-        "team_key": "465.l.33140.t.9",
-        "player_id": 3737,
-        "name": "Sidney Crosby",
-        "boost_score": 477.0,
+        "team_key": "465.l.33140.t.14",
+        "player_id": 5980,
+        "name": "Nathan MacKinnon",
+        "boost_score": 615.0,
         "helps": [
-          "FW",
+          "G",
           "A",
-          "PPP"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.12",
-        "player_id": 7516,
-        "name": "Nico Hischier",
-        "boost_score": 472.0,
-        "helps": [
-          "FW",
-          "A",
-          "PPP"
+          "PPP",
+          "SOG",
+          "FW"
         ]
       },
       {
         "team_key": "465.l.33140.t.9",
         "player_id": 6381,
         "name": "Dylan Larkin",
-        "boost_score": 469.0,
+        "boost_score": 607.0,
         "helps": [
-          "FW",
+          "G",
           "A",
-          "PPP"
+          "PPP",
+          "SOG",
+          "FW"
         ]
       },
       {
-        "team_key": "465.l.33140.t.5",
-        "player_id": 6762,
-        "name": "Joel Eriksson Ek",
-        "boost_score": 447.0,
+        "team_key": "465.l.33140.t.9",
+        "player_id": 3737,
+        "name": "Sidney Crosby",
+        "boost_score": 589.0,
         "helps": [
-          "FW",
+          "G",
           "A",
-          "PPP"
+          "PPP",
+          "SOG",
+          "FW"
         ]
       },
       {
         "team_key": "465.l.33140.t.8",
         "player_id": 6369,
         "name": "Leon Draisaitl",
-        "boost_score": 417.0,
+        "boost_score": 545.0,
         "helps": [
-          "FW",
+          "G",
           "A",
-          "PPP"
+          "PPP",
+          "SOG",
+          "FW"
         ]
       },
       {
-        "team_key": "465.l.33140.t.5",
-        "player_id": 3980,
-        "name": "Jordan Staal",
-        "boost_score": 411.0,
+        "team_key": "465.l.33140.t.4",
+        "player_id": 5988,
+        "name": "Bo Horvat",
+        "boost_score": 534.0,
         "helps": [
-          "FW",
+          "G",
           "A",
-          "PPP"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.14",
-        "player_id": 5980,
-        "name": "Nathan MacKinnon",
-        "boost_score": 410.0,
-        "helps": [
-          "FW",
-          "A",
-          "PPP"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.1",
-        "player_id": 3788,
-        "name": "Anze Kopitar",
-        "boost_score": 405.0,
-        "helps": [
-          "FW",
-          "A",
-          "PPP"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.1",
-        "player_id": 6745,
-        "name": "Dylan Strome",
-        "boost_score": 397.0,
-        "helps": [
-          "FW",
-          "A",
-          "PPP"
+          "PPP",
+          "SOG",
+          "FW"
         ]
       },
       {
         "team_key": "465.l.33140.t.6",
         "player_id": 4681,
         "name": "John Tavares",
-        "boost_score": 394.0,
+        "boost_score": 514.0,
         "helps": [
-          "FW",
+          "G",
           "A",
-          "PPP"
+          "PPP",
+          "SOG",
+          "FW"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.7",
+        "player_id": 7109,
+        "name": "Auston Matthews",
+        "boost_score": 489.0,
+        "helps": [
+          "G",
+          "A",
+          "PPP",
+          "SOG",
+          "FW"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.1",
+        "player_id": 7528,
+        "name": "Nick Suzuki",
+        "boost_score": 487.0,
+        "helps": [
+          "G",
+          "A",
+          "PPP",
+          "SOG",
+          "FW"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.11",
+        "player_id": 32763,
+        "name": "Macklin Celebrini",
+        "boost_score": 484.0,
+        "helps": [
+          "G",
+          "A",
+          "PPP",
+          "SOG",
+          "FW"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.1",
+        "player_id": 5697,
+        "name": "Tomas Hertl",
+        "boost_score": 481.0,
+        "helps": [
+          "G",
+          "A",
+          "PPP",
+          "SOG",
+          "FW"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.1",
+        "player_id": 6745,
+        "name": "Dylan Strome",
+        "boost_score": 471.0,
+        "helps": [
+          "G",
+          "A",
+          "PPP",
+          "SOG",
+          "FW"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.1",
+        "player_id": 3788,
+        "name": "Anze Kopitar",
+        "boost_score": 460.0,
+        "helps": [
+          "G",
+          "A",
+          "PPP",
+          "SOG",
+          "FW"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.6",
+        "player_id": 4786,
+        "name": "Ryan O'Reilly",
+        "boost_score": 459.0,
+        "helps": [
+          "G",
+          "A",
+          "PPP",
+          "SOG",
+          "FW"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.11",
+        "player_id": 6743,
+        "name": "Connor McDavid",
+        "boost_score": 436.0,
+        "helps": [
+          "G",
+          "A",
+          "PPP",
+          "SOG",
+          "FW"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.10",
+        "player_id": 4990,
+        "name": "Brock Nelson",
+        "boost_score": 436.0,
+        "helps": [
+          "G",
+          "A",
+          "PPP",
+          "SOG",
+          "FW"
         ]
       }
-    ],
-    "generated": "2025-12-31T21:20:37.254014+00:00"
+    ]
   }
 }
