@@ -1,33 +1,29 @@
 {
   "league": "The Liberties Invitational",
-  "generated": "2026-01-01T05:02:01.651880+00:00",
+  "generated": "2026-01-01T05:33:37.172772+00:00",
   "my_team": "465.l.33140.t.13",
   "trade_analysis": {
-    "weak_categories": [
+    "weak_categories": [],
+    "strong_categories": [
+      "G",
       "A",
       "PPP",
-      "FW"
+      "SOG",
+      "FW",
+      "HIT",
+      "BLK"
     ],
-    "strong_categories": [],
-    "my_totals": {
-      "G": 147.0,
-      "A": 199.0,
-      "PPP": 95.0,
-      "SOG": 1173.0,
-      "FW": 995.0,
-      "HIT": 576.0,
-      "BLK": 455.0
-    },
+    "my_totals": {},
     "league_averages": {
-      "G": 152.71428571428572,
-      "A": 245.92857142857142,
-      "PPP": 112.78571428571429,
-      "SOG": 1191.2142857142858,
-      "FW": 1171.5,
-      "HIT": 542.0,
-      "BLK": 454.42857142857144
+      "G": 0.0,
+      "A": 0.0,
+      "PPP": 0.0,
+      "SOG": 0.0,
+      "FW": 0.0,
+      "HIT": 0.0,
+      "BLK": 0.0
     },
-    "safe_trade_bait": [],
-    "recommended_trades": []
+    "recommended_targets": [],
+    "safe_trade_bait": []
   }
 }
