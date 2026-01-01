@@ -1,18 +1,14 @@
 {
   "league": "The Liberties Invitational",
-  "generated": "2026-01-01T01:08:19.221029+00:00",
+  "generated": "2026-01-01T01:16:42.470558+00:00",
+  "my_team": "465.l.33140.t.13",
   "trade_analysis": {
     "weak_categories": [
-      "G",
       "A",
       "PPP",
-      "SOG",
       "FW"
     ],
-    "strong_categories": [
-      "HIT",
-      "BLK"
-    ],
+    "strong_categories": [],
     "my_totals": {
       "G": 147.0,
       "A": 199.0,
@@ -31,202 +27,7 @@
       "HIT": 536.9285714285714,
       "BLK": 453.07142857142856
     },
-    "recommended_targets": [
-      {
-        "team_key": "465.l.33140.t.14",
-        "player_id": 5980,
-        "name": "Nathan MacKinnon",
-        "boost_score": 615.0,
-        "helps": [
-          "G",
-          "A",
-          "PPP",
-          "SOG",
-          "FW"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.9",
-        "player_id": 6381,
-        "name": "Dylan Larkin",
-        "boost_score": 607.0,
-        "helps": [
-          "G",
-          "A",
-          "PPP",
-          "SOG",
-          "FW"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.9",
-        "player_id": 3737,
-        "name": "Sidney Crosby",
-        "boost_score": 589.0,
-        "helps": [
-          "G",
-          "A",
-          "PPP",
-          "SOG",
-          "FW"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.8",
-        "player_id": 6369,
-        "name": "Leon Draisaitl",
-        "boost_score": 545.0,
-        "helps": [
-          "G",
-          "A",
-          "PPP",
-          "SOG",
-          "FW"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.4",
-        "player_id": 5988,
-        "name": "Bo Horvat",
-        "boost_score": 534.0,
-        "helps": [
-          "G",
-          "A",
-          "PPP",
-          "SOG",
-          "FW"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.6",
-        "player_id": 4681,
-        "name": "John Tavares",
-        "boost_score": 514.0,
-        "helps": [
-          "G",
-          "A",
-          "PPP",
-          "SOG",
-          "FW"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.7",
-        "player_id": 7109,
-        "name": "Auston Matthews",
-        "boost_score": 489.0,
-        "helps": [
-          "G",
-          "A",
-          "PPP",
-          "SOG",
-          "FW"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.1",
-        "player_id": 7528,
-        "name": "Nick Suzuki",
-        "boost_score": 487.0,
-        "helps": [
-          "G",
-          "A",
-          "PPP",
-          "SOG",
-          "FW"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.11",
-        "player_id": 32763,
-        "name": "Macklin Celebrini",
-        "boost_score": 484.0,
-        "helps": [
-          "G",
-          "A",
-          "PPP",
-          "SOG",
-          "FW"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.1",
-        "player_id": 5697,
-        "name": "Tomas Hertl",
-        "boost_score": 481.0,
-        "helps": [
-          "G",
-          "A",
-          "PPP",
-          "SOG",
-          "FW"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.1",
-        "player_id": 6745,
-        "name": "Dylan Strome",
-        "boost_score": 471.0,
-        "helps": [
-          "G",
-          "A",
-          "PPP",
-          "SOG",
-          "FW"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.1",
-        "player_id": 3788,
-        "name": "Anze Kopitar",
-        "boost_score": 460.0,
-        "helps": [
-          "G",
-          "A",
-          "PPP",
-          "SOG",
-          "FW"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.6",
-        "player_id": 4786,
-        "name": "Ryan O'Reilly",
-        "boost_score": 459.0,
-        "helps": [
-          "G",
-          "A",
-          "PPP",
-          "SOG",
-          "FW"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.11",
-        "player_id": 6743,
-        "name": "Connor McDavid",
-        "boost_score": 436.0,
-        "helps": [
-          "G",
-          "A",
-          "PPP",
-          "SOG",
-          "FW"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.10",
-        "player_id": 4990,
-        "name": "Brock Nelson",
-        "boost_score": 436.0,
-        "helps": [
-          "G",
-          "A",
-          "PPP",
-          "SOG",
-          "FW"
-        ]
-      }
-    ]
+    "recommended_targets": [],
+    "safe_trade_bait": []
   }
 }
