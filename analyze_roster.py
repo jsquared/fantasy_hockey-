@@ -2,7 +2,6 @@ import json
 import os
 from datetime import datetime, timezone
 from collections import defaultdict
-
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
@@ -15,7 +14,7 @@ GAME_CODE = "nhl"
 STAT_KEYS = ["G", "A", "PPP", "SOG", "FW", "HIT", "BLK"]
 
 # =========================
-# OAuth (GitHub-safe)
+# OAuth
 # =========================
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
@@ -30,160 +29,154 @@ game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
 
 my_team_key = league.team_key()
-teams_meta = league.teams()
+teams = league.teams()
 
 # =========================
-# HELPERS
+# Helpers
 # =========================
 def safe_float(v):
     try:
         return float(v)
-    except (TypeError, ValueError):
+    except Exception:
         return 0.0
-
 
 def get_team_roster(team_key):
     """
-    Uses yahoo_fantasy_api Team object (stable path)
+    Pull roster + SEASON stats using raw Yahoo response.
+    This structure is stable and already proven working.
     """
-    team = yfa.Team(oauth, team_key)
-    roster = []
+    raw = league.yhandler.get_roster_raw(team_key, "season")
+    players = []
 
-    for p in team.roster():
-        stats = p.stats() or {}
+    roster_block = raw["fantasy_content"]["team"][1]["roster"]["0"]["players"]
 
-        season_stats = {}
-        for k in STAT_KEYS:
-            season_stats[k] = safe_float(stats.get(k))
+    for _, item in roster_block.items():
+        if _ == "count":
+            continue
 
-        roster.append({
+        pdata = item["player"]
+        meta = pdata[0]
+
+        player_id = int(meta[1]["player_id"])
+        name = meta[2]["name"]["full"]
+
+        season_stats = {k: 0.0 for k in STAT_KEYS}
+
+        stats_block = pdata[1]["player_stats"]["stats"]
+        for s in stats_block:
+            stat = s["stat"]
+            stat_name = stat["name"]
+            if stat_name in STAT_KEYS:
+                season_stats[stat_name] = safe_float(stat["value"])
+
+        players.append({
+            "player_id": player_id,
+            "name": name,
             "team_key": team_key,
-            "player_id": p.player_id,
-            "name": p.name,
-            "positions": p.position,
             "season_stats": season_stats
         })
 
-    return roster
-
-
-def compute_team_totals(roster):
-    totals = {k: 0.0 for k in STAT_KEYS}
-    for player in roster:
-        for k in STAT_KEYS:
-            totals[k] += safe_float(player["season_stats"].get(k))
-    return totals
-
+    return players
 
 # =========================
-# COLLECT ALL ROSTERS
+# Pull All Rosters
 # =========================
-all_rosters = {}
-for tk in teams_meta.keys():
-    all_rosters[tk] = get_team_roster(tk)
-
+all_rosters = {tk: get_team_roster(tk) for tk in teams}
 my_roster = all_rosters[my_team_key]
 
 # =========================
-# TEAM TOTALS
+# Team Totals
 # =========================
-my_totals = compute_team_totals(my_roster)
+def team_totals(roster):
+    totals = {k: 0.0 for k in STAT_KEYS}
+    for p in roster:
+        for k in STAT_KEYS:
+            totals[k] += p["season_stats"].get(k, 0.0)
+    return totals
+
+my_totals = team_totals(my_roster)
 
 league_totals = {k: 0.0 for k in STAT_KEYS}
 for roster in all_rosters.values():
-    team_totals = compute_team_totals(roster)
+    t = team_totals(roster)
     for k in STAT_KEYS:
-        league_totals[k] += team_totals[k]
+        league_totals[k] += t[k]
 
-num_teams = len(all_rosters)
 league_averages = {
-    k: league_totals[k] / num_teams for k in STAT_KEYS
+    k: round(league_totals[k] / len(all_rosters), 2)
+    for k in STAT_KEYS
 }
 
 # =========================
-# CATEGORY STRENGTH
+# Strength Analysis
 # =========================
-weak_categories = []
-strong_categories = []
+weak_categories = [
+    k for k in STAT_KEYS if my_totals[k] < league_averages[k]
+]
 
-for k in STAT_KEYS:
-    if my_totals[k] < league_averages[k]:
-        weak_categories.append(k)
-    elif my_totals[k] > league_averages[k]:
-        strong_categories.append(k)
+strong_categories = [
+    k for k in STAT_KEYS if my_totals[k] > league_averages[k]
+]
 
 # =========================
-# SAFE TRADE BAIT
+# Safe Trade Bait
 # =========================
 safe_trade_bait = []
+per_player_avg = {
+    k: my_totals[k] / max(len(my_roster), 1) for k in STAT_KEYS
+}
 
 for p in my_roster:
-    contribution = 0
-    helps = []
-
-    for k in strong_categories:
-        v = p["season_stats"].get(k, 0)
-        if v > 0:
-            contribution += v
-            helps.append(k)
-
-    if contribution > 0:
+    strong_hits = [
+        k for k in strong_categories
+        if p["season_stats"][k] > per_player_avg[k]
+    ]
+    if len(strong_hits) >= 2:
         safe_trade_bait.append({
             "player_id": p["player_id"],
             "name": p["name"],
-            "contribution_score": round(contribution, 2),
-            "helps": helps
+            "strengths": strong_hits
         })
 
-safe_trade_bait = sorted(
-    safe_trade_bait,
-    key=lambda x: x["contribution_score"],
-    reverse=True
-)[:10]
-
 # =========================
-# FIND TRADE TARGETS
+# Trade Targets (Mutual Benefit)
 # =========================
-recommended_targets = []
+recommended_trades = []
 
 for team_key, roster in all_rosters.items():
     if team_key == my_team_key:
         continue
 
-    team_totals = compute_team_totals(roster)
+    opp_totals = team_totals(roster)
 
-    team_strong = [
+    opp_strong_vs_me = [
         k for k in weak_categories
-        if team_totals[k] > league_averages[k]
+        if opp_totals[k] > league_averages[k]
     ]
 
-    if not team_strong:
+    if not opp_strong_vs_me:
         continue
 
     for p in roster:
-        boost = 0
-        helps = []
-
-        for k in team_strong:
-            v = p["season_stats"].get(k, 0)
-            if v > 0:
-                boost += v
-                helps.append(k)
-
-        if boost > 0:
-            recommended_targets.append({
-                "team_key": team_key,
+        helps = [
+            k for k in opp_strong_vs_me
+            if p["season_stats"][k] > 0
+        ]
+        if helps:
+            score = sum(p["season_stats"][k] for k in helps)
+            recommended_trades.append({
+                "from_team": team_key,
                 "player_id": p["player_id"],
                 "name": p["name"],
-                "boost_score": round(boost, 2),
-                "helps": helps
+                "helps": helps,
+                "score": round(score, 1)
             })
 
-recommended_targets = sorted(
-    recommended_targets,
-    key=lambda x: x["boost_score"],
+recommended_trades = sorted(
+    recommended_trades,
+    key=lambda x: x["score"],
     reverse=True
-)[:15]
+)[:10]
 
 # =========================
 # OUTPUT
@@ -198,7 +191,7 @@ payload = {
         "my_totals": my_totals,
         "league_averages": league_averages,
         "safe_trade_bait": safe_trade_bait,
-        "recommended_targets": recommended_targets
+        "recommended_trades": recommended_trades
     }
 }
 
@@ -206,4 +199,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("docs/roster.json updated with league-aware trade recommendations")
+print("✅ docs/roster.json updated with trade recommendations")
