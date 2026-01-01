@@ -1,7 +1,6 @@
 import json
 import os
 from datetime import datetime, timezone
-from collections import defaultdict
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
@@ -10,7 +9,6 @@ import yahoo_fantasy_api as yfa
 # =========================
 LEAGUE_ID = "465.l.33140"
 GAME_CODE = "nhl"
-
 STAT_KEYS = ["G", "A", "PPP", "SOG", "FW", "HIT", "BLK"]
 
 # =========================
@@ -41,17 +39,34 @@ def safe_float(v):
         return 0.0
 
 def get_team_roster(team_key):
-    """Pull roster + season stats using Yahoo Fantasy API player stats."""
-    roster = league.roster(team_key)
+    """Get roster + season stats from raw Yahoo API."""
+    raw = league.yhandler.get_roster_raw(team_key)
     players = []
 
-    for p in roster:
-        season_stats = {k: safe_float(p["season_stats"].get(k, 0)) for k in STAT_KEYS}
+    roster_block = raw["fantasy_content"]["team"][1]["roster"]["0"]["players"]
+    for k, item in roster_block.items():
+        if k == "count":
+            continue
+
+        pdata = item["player"]
+        meta = pdata[0]  # Player meta
+        stats = {}
+
+        # Pull season stats if present
+        if len(pdata) > 1 and "player_stats" in pdata[1]:
+            stats_block = pdata[1]["player_stats"]["stats"]
+            for s in stats_block:
+                name = s["stat"]["name"]
+                if name in STAT_KEYS:
+                    stats[name] = safe_float(s["stat"]["value"])
+        else:
+            stats = {k: 0.0 for k in STAT_KEYS}
+
         players.append({
-            "player_id": p["player_id"],
-            "name": p["name"]["full"],
+            "player_id": int(meta[1]["player_id"]),
+            "name": meta[2]["name"]["full"],
             "team_key": team_key,
-            "season_stats": season_stats
+            "season_stats": stats
         })
 
     return players
@@ -80,10 +95,10 @@ for roster in all_rosters.values():
     for k in STAT_KEYS:
         league_totals[k] += t[k]
 
-league_averages = {k: league_totals[k] / len(all_rosters) for k in STAT_KEYS}
+league_averages = {k: league_totals[k]/len(all_rosters) for k in STAT_KEYS}
 
 # =========================
-# Strength Analysis
+# Weak/Strong Categories
 # =========================
 weak_categories = [k for k in STAT_KEYS if my_totals[k] < league_averages[k]]
 strong_categories = [k for k in STAT_KEYS if my_totals[k] > league_averages[k]]
@@ -94,10 +109,10 @@ strong_categories = [k for k in STAT_KEYS if my_totals[k] > league_averages[k]]
 safe_trade_bait = []
 for p in my_roster:
     contributes = sum(
-        p["season_stats"].get(k, 0) > league_averages[k] / len(my_roster)
+        p["season_stats"].get(k,0) > league_averages[k]/len(my_roster)
         for k in strong_categories
     )
-    if contributes >= 2:  # player contributes to 2+ strong categories
+    if contributes >= 2:
         safe_trade_bait.append({
             "player_id": p["player_id"],
             "name": p["name"],
@@ -105,7 +120,7 @@ for p in my_roster:
         })
 
 # =========================
-# Trade Targets
+# Recommended Trades
 # =========================
 recommended_trades = []
 for team_key, roster in all_rosters.items():
@@ -119,21 +134,21 @@ for team_key, roster in all_rosters.items():
         continue
 
     for p in roster:
-        helps = [k for k in opp_strong_in_my_weak if p["season_stats"].get(k, 0) > 0]
+        helps = [k for k in opp_strong_in_my_weak if p["season_stats"].get(k,0)>0]
         if helps:
-            score = sum(p["season_stats"].get(k, 0) for k in helps)
+            score = sum(p["season_stats"].get(k,0) for k in helps)
             recommended_trades.append({
                 "team_key": team_key,
                 "player_id": p["player_id"],
                 "name": p["name"],
                 "helps": helps,
-                "score": round(score, 1)
+                "score": round(score,1)
             })
 
 recommended_trades = sorted(recommended_trades, key=lambda x: x["score"], reverse=True)[:10]
 
 # =========================
-# OUTPUT
+# Output
 # =========================
 payload = {
     "league": league.settings()["name"],
@@ -153,4 +168,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("docs/roster.json updated with full trade analysis")
+print("docs/roster.json updated with trade analysis")
