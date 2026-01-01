@@ -12,16 +12,9 @@ import yahoo_fantasy_api as yfa
 LEAGUE_ID = "465.l.33140"
 GAME_CODE = "nhl"
 
-# Categories to analyze (skater only)
 CATEGORIES = ["G", "A", "PPP", "SOG", "FW", "HIT", "BLK"]
-
-# Categories where lower is better (excluded from skater logic)
-LOWER_IS_BETTER = set()
-
-# Thresholds
-WEAK_THRESHOLD = 0.90   # < 90% of league avg = weak
-SURPLUS_THRESHOLD = 1.10  # > 110% of league avg = surplus
-SAFE_OFFER_PCT = 0.05  # player contributes <5% of team total = safe to trade
+WEAK_THRESHOLD = 0.90   # 10% below league average
+STRONG_THRESHOLD = 1.10 # 10% above league average
 
 # =========================
 # OAuth (GitHub-safe)
@@ -50,150 +43,116 @@ def safe_float(v):
     except (TypeError, ValueError):
         return 0.0
 
+def sum_stats(stats):
+    return {k: safe_float(stats.get(k)) for k in CATEGORIES}
+
 # =========================
-# STEP 1: Pull all rosters
+# COLLECT ALL ROSTERS + STATS
 # =========================
-team_rosters = defaultdict(list)
-all_player_ids = set()
+team_totals = defaultdict(lambda: defaultdict(float))
+player_pool = []
 
 for team_key in teams.keys():
-    raw = league.yhandler.get_team_roster_raw(team_key)
-    players = raw["fantasy_content"]["team"][1]["roster"]["0"]["players"]
+    roster_raw = league.yhandler.get_roster_raw(team_key)
+
+    players = roster_raw["fantasy_content"]["team"][1]["roster"]["0"]["players"]
 
     for _, p in players.items():
         if _ == "count":
             continue
+
         pdata = p["player"][0]
-        pid = int(pdata[0]["player_id"])
+        player_id = int(pdata[1]["player_id"])
+        name = pdata[2]["name"]["full"]
 
-        team_rosters[team_key].append({
-            "player_id": pid,
-            "name": pdata[2]["name"]["full"],
-            "positions": pdata[4]["eligible_positions"],
-            "status": pdata[1].get("status", "")
+        positions = [pos["position"] for pos in pdata if isinstance(pos, dict) and "position" in pos]
+        status = pdata[1].get("status", "")
+
+        # Fetch season stats by PLAYER ID
+        stats_resp = league.player_stats([player_id], "season")
+        stats = stats_resp[0] if stats_resp else {}
+
+        cleaned = sum_stats(stats)
+
+        for cat, val in cleaned.items():
+            team_totals[team_key][cat] += val
+
+        player_pool.append({
+            "team_key": team_key,
+            "player_id": player_id,
+            "name": name,
+            "positions": positions,
+            "status": status,
+            "stats": cleaned
         })
-        all_player_ids.add(pid)
 
 # =========================
-# STEP 2: Pull season stats
+# LEAGUE AVERAGES
 # =========================
-player_stats = {}
-BATCH = 25
-ids = list(all_player_ids)
-
-for i in range(0, len(ids), BATCH):
-    batch = ids[i:i+BATCH]
-    stats = league.player_stats(batch, "season")
-    for p in stats:
-        player_stats[p["player_id"]] = p
-
-# =========================
-# STEP 3: Team totals
-# =========================
-team_totals = defaultdict(lambda: defaultdict(float))
-
-for team_key, roster in team_rosters.items():
-    for p in roster:
-        stats = player_stats.get(p["player_id"])
-        if not stats:
-            continue
-        for cat in CATEGORIES:
-            team_totals[team_key][cat] += safe_float(stats.get(cat))
-
-# =========================
-# STEP 4: League averages
-# =========================
-league_averages = {}
+league_avg = {}
 for cat in CATEGORIES:
-    league_averages[cat] = sum(
-        team_totals[t][cat] for t in team_totals
-    ) / len(team_totals)
+    league_avg[cat] = sum(team_totals[t][cat] for t in team_totals) / len(team_totals)
 
-# =========================
-# STEP 5: Weak & surplus cats
-# =========================
 my_totals = team_totals[my_team_key]
 
+# =========================
+# WEAK / STRONG CATEGORIES
+# =========================
 weak_cats = [
     c for c in CATEGORIES
-    if my_totals[c] < league_averages[c] * WEAK_THRESHOLD
+    if my_totals[c] < league_avg[c] * WEAK_THRESHOLD
 ]
 
-surplus_cats = [
+strong_cats = [
     c for c in CATEGORIES
-    if my_totals[c] > league_averages[c] * SURPLUS_THRESHOLD
+    if my_totals[c] > league_avg[c] * STRONG_THRESHOLD
 ]
 
 # =========================
-# STEP 6: Identify safe-to-offer players
+# FIND TRADE TARGETS (HELP YOU)
 # =========================
-safe_offers = []
+targets = []
 
-for p in team_rosters[my_team_key]:
-    stats = player_stats.get(p["player_id"])
-    if not stats:
+for p in player_pool:
+    if p["team_key"] == my_team_key:
         continue
 
-    contribution = 0
-    for cat in surplus_cats:
-        contribution += safe_float(stats.get(cat))
+    helps = [c for c in weak_cats if p["stats"][c] > league_avg[c]]
 
-    total_surplus = sum(my_totals[c] for c in surplus_cats) or 1
+    if not helps:
+        continue
 
-    if contribution / total_surplus < SAFE_OFFER_PCT:
-        safe_offers.append({
+    boost = sum(p["stats"][c] for c in helps)
+
+    targets.append({
+        "team_key": p["team_key"],
+        "player_id": p["player_id"],
+        "name": p["name"],
+        "boost_score": round(boost, 1),
+        "helps": helps
+    })
+
+targets = sorted(targets, key=lambda x: x["boost_score"], reverse=True)[:15]
+
+# =========================
+# IDENTIFY SAFE TRADE BAIT (FROM YOUR TEAM)
+# =========================
+trade_bait = []
+
+for p in player_pool:
+    if p["team_key"] != my_team_key:
+        continue
+
+    contributes = [c for c in strong_cats if p["stats"][c] > league_avg[c]]
+    hurts = [c for c in weak_cats if p["stats"][c] > 0]
+
+    if contributes and not hurts:
+        trade_bait.append({
             "player_id": p["player_id"],
             "name": p["name"],
-            "contribution": round(contribution, 1)
+            "surplus_categories": contributes,
+            "stats": p["stats"]
         })
-
-# =========================
-# STEP 7: Find trade partners
-# =========================
-trade_targets = []
-
-for team_key, totals in team_totals.items():
-    if team_key == my_team_key:
-        continue
-
-    # They are strong where I'm weak
-    helps = [
-        c for c in weak_cats
-        if totals[c] > league_averages[c]
-    ]
-
-    # They are weak where I'm strong
-    needs = [
-        c for c in surplus_cats
-        if totals[c] < league_averages[c]
-    ]
-
-    if not helps or not needs:
-        continue
-
-    # Rank players on their team by impact
-    for p in team_rosters[team_key]:
-        stats = player_stats.get(p["player_id"])
-        if not stats:
-            continue
-
-        boost = sum(
-            safe_float(stats.get(c)) for c in helps
-        )
-
-        if boost <= 0:
-            continue
-
-        trade_targets.append({
-            "team_key": team_key,
-            "player_id": p["player_id"],
-            "name": p["name"],
-            "boost_score": round(boost, 1),
-            "helps": helps,
-            "they_need": needs
-        })
-
-trade_targets.sort(key=lambda x: x["boost_score"], reverse=True)
 
 # =========================
 # OUTPUT
@@ -202,12 +161,15 @@ payload = {
     "league": league.settings()["name"],
     "generated": datetime.now(timezone.utc).isoformat(),
     "my_team": my_team_key,
-    "my_totals": dict(my_totals),
-    "league_averages": league_averages,
-    "weak_categories": weak_cats,
-    "surplus_categories": surplus_cats,
-    "safe_trade_offers": safe_offers,
-    "recommended_trades": trade_targets[:15]
+
+    "trade_analysis": {
+        "weak_categories": weak_cats,
+        "strong_categories": strong_cats,
+        "my_totals": my_totals,
+        "league_averages": league_avg,
+        "recommended_targets": targets,
+        "safe_trade_bait": trade_bait
+    }
 }
 
 os.makedirs("docs", exist_ok=True)
