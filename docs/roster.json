@@ -1,29 +1,144 @@
 {
   "league": "The Liberties Invitational",
-  "generated": "2026-01-02T04:40:44.407095+00:00",
+  "generated": "2026-01-02T04:50:03.343281+00:00",
   "my_team": "465.l.33140.t.13",
   "trade_analysis": {
-    "weak_categories": [],
-    "strong_categories": [],
-    "my_totals": {
-      "G": 0.0,
-      "A": 0.0,
-      "PPP": 0.0,
-      "SOG": 0.0,
-      "FW": 0.0,
-      "HIT": 0.0,
-      "BLK": 0.0
+    "strong_categories": [
+      "FW",
+      "HIT",
+      "BLK"
+    ],
+    "weak_categories": [
+      "G",
+      "A",
+      "PPP",
+      "SOG"
+    ],
+    "my_team_averages": {
+      "G": 11.0,
+      "A": 15.333333333333334,
+      "PPP": 7.333333333333333,
+      "SOG": 90.83333333333333,
+      "FW": 93.66666666666667,
+      "HIT": 47.166666666666664,
+      "BLK": 36.416666666666664
     },
     "league_averages": {
-      "G": 0.0,
-      "A": 0.0,
-      "PPP": 0.0,
-      "SOG": 0.0,
-      "FW": 0.0,
-      "HIT": 0.0,
-      "BLK": 0.0
+      "G": 11.214285714285712,
+      "A": 18.732142857142858,
+      "PPP": 8.672619047619047,
+      "SOG": 91.66071428571426,
+      "FW": 90.1011904761905,
+      "HIT": 40.92261904761905,
+      "BLK": 35.59523809523809
     },
-    "safe_trade_bait": [],
-    "recommended_trades": []
+    "recommended_trade_partners": [
+      {
+        "team_key": "465.l.33140.t.14",
+        "they_help_us_in": [
+          "G",
+          "A",
+          "PPP",
+          "SOG"
+        ],
+        "they_need_from_us": [
+          "FW",
+          "HIT",
+          "BLK"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.1",
+        "they_help_us_in": [
+          "A",
+          "PPP"
+        ],
+        "they_need_from_us": [
+          "HIT",
+          "BLK"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.11",
+        "they_help_us_in": [
+          "G",
+          "A",
+          "PPP",
+          "SOG"
+        ],
+        "they_need_from_us": [
+          "FW",
+          "HIT"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.12",
+        "they_help_us_in": [
+          "A",
+          "SOG"
+        ],
+        "they_need_from_us": [
+          "HIT"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.3",
+        "they_help_us_in": [
+          "G",
+          "SOG"
+        ],
+        "they_need_from_us": [
+          "FW"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.9",
+        "they_help_us_in": [
+          "G",
+          "A",
+          "PPP",
+          "SOG"
+        ],
+        "they_need_from_us": [
+          "HIT",
+          "BLK"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.6",
+        "they_help_us_in": [
+          "A",
+          "PPP"
+        ],
+        "they_need_from_us": [
+          "HIT",
+          "BLK"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.4",
+        "they_help_us_in": [
+          "G",
+          "SOG"
+        ],
+        "they_need_from_us": [
+          "FW",
+          "HIT",
+          "BLK"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.8",
+        "they_help_us_in": [
+          "G",
+          "PPP"
+        ],
+        "they_need_from_us": [
+          "FW",
+          "HIT",
+          "BLK"
+        ]
+      }
+    ]
   }
 }
