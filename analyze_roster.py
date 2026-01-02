@@ -7,9 +7,8 @@ import yahoo_fantasy_api as yfa
 # =========================
 # CONFIG
 # =========================
-GAME_CODE = "nhl"
 LEAGUE_ID = "465.l.33140"
-
+GAME_CODE = "nhl"
 STAT_KEYS = ["G", "A", "PPP", "SOG", "FW", "HIT", "BLK"]
 
 # =========================
@@ -39,39 +38,30 @@ def safe_float(v):
     except Exception:
         return 0.0
 
-# =========================
-# Roster + Season Stats
-# =========================
+def get_player_season_stats(player_key):
+    """Pull season stats for a single player."""
+    p = yfa.Player(oauth, player_key)
+    raw = p.stats("season")
+
+    stats = {k: 0.0 for k in STAT_KEYS}
+    for s in raw:
+        if s["stat"]["name"] in STAT_KEYS:
+            stats[s["stat"]["name"]] = safe_float(s["stat"]["value"])
+
+    return stats
+
 def get_team_roster(team_key):
-    raw = league.yhandler.get_roster_raw(team_key)
+    """Get roster + season stats (CORRECT WAY)."""
+    roster = league.team_roster(team_key)
     players = []
 
-    roster_block = raw["fantasy_content"]["team"][1]["roster"]["0"]["players"]
-
-    for k, item in roster_block.items():
-        if k == "count":
-            continue
-
-        pdata = item["player"]
-        meta = pdata[0]
-
-        player_id = int(meta[1]["player_id"])
-        name = meta[2]["name"]["full"]
-
-        season_stats = {k: 0.0 for k in STAT_KEYS}
-
-        if len(pdata) > 1 and "player_stats" in pdata[1]:
-            for s in pdata[1]["player_stats"]["stats"]:
-                stat = s["stat"]
-                stat_name = stat["name"]
-                if stat_name in STAT_KEYS:
-                    season_stats[stat_name] = safe_float(stat["value"])
-
+    for p in roster:
+        stats = get_player_season_stats(p["player_key"])
         players.append({
-            "player_id": player_id,
-            "name": name,
+            "player_id": int(p["player_id"]),
+            "name": p["name"],
             "team_key": team_key,
-            "season_stats": season_stats
+            "season_stats": stats
         })
 
     return players
@@ -101,38 +91,30 @@ for roster in all_rosters.values():
         league_totals[k] += t[k]
 
 league_averages = {
-    k: round(league_totals[k] / len(all_rosters), 2)
+    k: league_totals[k] / len(all_rosters)
     for k in STAT_KEYS
 }
 
 # =========================
 # Strength Analysis
 # =========================
-weak_categories = [
-    k for k in STAT_KEYS if my_totals[k] < league_averages[k]
-]
-
-strong_categories = [
-    k for k in STAT_KEYS if my_totals[k] > league_averages[k]
-]
+weak_categories = [k for k in STAT_KEYS if my_totals[k] < league_averages[k]]
+strong_categories = [k for k in STAT_KEYS if my_totals[k] > league_averages[k]]
 
 # =========================
 # Safe Trade Bait
 # =========================
 safe_trade_bait = []
-
 for p in my_roster:
-    impact = sum(
-        p["season_stats"].get(k, 0) >
-        (league_averages[k] / max(len(my_roster), 1))
+    contributes = sum(
+        p["season_stats"][k] > league_averages[k] / len(my_roster)
         for k in strong_categories
     )
-
-    if impact >= 2:
+    if contributes >= 2:
         safe_trade_bait.append({
             "player_id": p["player_id"],
             "name": p["name"],
-            "strong_categories": strong_categories
+            "strengths": strong_categories
         })
 
 # =========================
@@ -145,18 +127,10 @@ for team_key, roster in all_rosters.items():
         continue
 
     opp_totals = team_totals(roster)
-
-    opp_strengths = [
-        k for k in weak_categories if opp_totals[k] > league_averages[k]
-    ]
-
-    if not opp_strengths:
-        continue
+    opp_strong = [k for k in weak_categories if opp_totals[k] > league_averages[k]]
 
     for p in roster:
-        helps = [
-            k for k in opp_strengths if p["season_stats"].get(k, 0) > 0
-        ]
+        helps = [k for k in opp_strong if p["season_stats"][k] > 0]
         if helps:
             score = sum(p["season_stats"][k] for k in helps)
             recommended_trades.append({
@@ -164,7 +138,7 @@ for team_key, roster in all_rosters.items():
                 "player_id": p["player_id"],
                 "name": p["name"],
                 "helps": helps,
-                "score": round(score, 2)
+                "score": round(score, 1)
             })
 
 recommended_trades = sorted(
@@ -194,4 +168,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json updated with full trade analysis")
+print("✅ docs/roster.json updated with season-based trade analysis")
