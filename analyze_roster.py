@@ -84,7 +84,7 @@ league_stat_pool = defaultdict(list)
 
 for team_key in league.teams():  # ← strings only
     team = yfa.Team(oauth, team_key)
-    teams[team_key] = team.name
+    teams[team_key] = team.team_info()["name"]
 
     for p in team.roster():
         player_key = p["player_key"]
