@@ -63,18 +63,21 @@ team_obj = league.to_team(my_team_key)
 team_roster = {}
 goalie_values = defaultdict(list)
 
-for p in team_obj.roster():  # each p is a dict with player info
-    pid = p["player_id"]
-    name = p["name"]["full"]
-    pos = p.get("selected_position", {}).get("position", "NA")
+# Use yfa.Team.roster() with `format="raw"` to get full dict
+for p in team_obj.roster(format="raw"):  # raw returns dicts for each player
+    player_data = p["player"][0]  # the first element contains meta
+    pid = player_data["player_id"]
+    name = player_data["name"]["full"]
+    pos = player_data.get("selected_position", {}).get("position", "NA")
 
-    # Pull stats directly from roster
+    # Extract stats
+    stats_block = p["player"][1].get("player_stats", {}).get("stats", [])
     stats = {}
-    for stat_entry in p.get("player_stats", {}).get("stats", []):
+    for stat_entry in stats_block:
         sid = str(stat_entry["stat"]["stat_id"])
         try:
             stats[STAT_MAP[sid]] = float(stat_entry["stat"]["value"])
-        except (TypeError, ValueError, KeyError):
+        except (KeyError, TypeError, ValueError):
             continue
 
     team_roster[pid] = {
