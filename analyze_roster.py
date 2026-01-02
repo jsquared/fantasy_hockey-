@@ -1,16 +1,16 @@
 import json
 import os
 from datetime import datetime, timezone
+from collections import defaultdict
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
-from itertools import combinations
-from collections import defaultdict
 
 # =========================
 # CONFIG
 # =========================
 LEAGUE_ID = "465.l.33140"
 GAME_CODE = "nhl"
+MIN_NET_GAIN = 0.05
 
 # =========================
 # STAT MAP
@@ -24,22 +24,18 @@ STAT_MAP = {
     "11": "SHP",
     "12": "GWG",
     "14": "SOG",
-    "16": "FW",
     "31": "Hits",
     "32": "Blocks",
     "19": "Wins",
-    "22": "GA",
     "23": "GAA",
-    "24": "Shots Against",
-    "25": "Saves",
     "26": "SV%",
     "27": "Shutouts"
 }
 
-LOWER_IS_BETTER = {"GA", "GAA", "Shots Against"}
+LOWER_IS_BETTER = {"GAA"}
 
 # =========================
-# OAUTH
+# OAuth
 # =========================
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
@@ -48,93 +44,100 @@ if "YAHOO_OAUTH_JSON" in os.environ:
 oauth = OAuth2(None, None, from_file="oauth2.json")
 
 # =========================
-# LEAGUE
+# Yahoo Objects
 # =========================
 game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
+
 my_team_key = league.team_key()
 
 # =========================
-# HELPERS
-# =========================
-def normalize(val, min_v, max_v, invert=False):
-    if val is None or min_v == max_v:
-        return 0.5
-    n = (val - min_v) / (max_v - min_v)
-    return 1 - n if invert else n
-
-def get_player_stats(player):
-    stats = {}
-    pdata = player.stats()
-    for item in pdata:
-        sid = str(item["stat_id"])
-        if sid in STAT_MAP:
-            try:
-                stats[STAT_MAP[sid]] = float(item["value"])
-            except (TypeError, ValueError):
-                stats[STAT_MAP[sid]] = None
-    return stats
-
-# =========================
-# COLLECT ALL TEAMS & PLAYERS
+# TEAM NAMES (FIXED)
 # =========================
 teams = {}
-players_by_team = defaultdict(dict)
-league_stat_pool = defaultdict(list)
-
-for team_key in league.teams():  # ← strings only
+for team_key in league.teams():
     team = yfa.Team(oauth, team_key)
-    teams[team_key] = team.team_info()["name"]
+    teams[team_key] = team.name()   # ✅ METHOD, NOT ATTRIBUTE
 
-    for p in team.roster():
-        player_key = p["player_key"]
-        player = yfa.Player(oauth, player_key)
+# =========================
+# PLAYER DATA
+# =========================
+players_by_team = defaultdict(dict)
 
-        stats = get_player_stats(player)
-        players_by_team[team_key][player_key] = {
-            "name": p["name"]["full"],
+for team_key in teams:
+    team = yfa.Team(oauth, team_key)
+    roster = team.roster()
+
+    for player in roster:
+        pid = player["player_id"]
+        name = player["name"]["full"]
+
+        p = yfa.Player(oauth, pid)
+        stats_raw = p.stats()
+
+        stats = {}
+        for s in stats_raw:
+            sid = str(s["stat_id"])
+            if sid in STAT_MAP:
+                try:
+                    stats[STAT_MAP[sid]] = float(s["value"])
+                except (TypeError, ValueError):
+                    stats[STAT_MAP[sid]] = 0.0
+
+        players_by_team[team_key][pid] = {
+            "name": name,
             "stats": stats
         }
 
-        for stat, val in stats.items():
-            if val is not None:
-                league_stat_pool[stat].append(val)
+# =========================
+# TEAM STRENGTHS / WEAKNESSES
+# =========================
+team_totals = defaultdict(lambda: defaultdict(float))
 
-# =========================
-# NORMALIZATION BOUNDS
-# =========================
-stat_bounds = {
-    stat: (min(vals), max(vals))
-    for stat, vals in league_stat_pool.items()
-}
+for team_key, players in players_by_team.items():
+    for p in players.values():
+        for stat, val in p["stats"].items():
+            team_totals[team_key][stat] += val
+
+def rank_stat(stat):
+    vals = {t: team_totals[t].get(stat, 0) for t in teams}
+    reverse = stat not in LOWER_IS_BETTER
+    ranked = sorted(vals.items(), key=lambda x: x[1], reverse=reverse)
+    return {t: i + 1 for i, (t, _) in enumerate(ranked)}
+
+ranks = {stat: rank_stat(stat) for stat in STAT_MAP.values()}
+
+my_strengths = [s for s in STAT_MAP.values() if ranks[s][my_team_key] <= 4]
+my_weaknesses = [s for s in STAT_MAP.values() if ranks[s][my_team_key] >= len(teams) - 3]
 
 # =========================
 # TRADE ENGINE
 # =========================
-trade_recs = []
-my_players = players_by_team[my_team_key]
+def player_value(player):
+    score = 0
+    for stat, val in player["stats"].items():
+        r = ranks[stat][team_key]
+        score += val / r
+    return score
 
-for opp_key, opp_players in players_by_team.items():
+trade_recs = []
+
+for opp_key in teams:
     if opp_key == my_team_key:
         continue
 
-    # ---------- 1-for-1 ----------
-    for my_p in my_players.values():
-        for opp_p in opp_players.values():
-            net = 0
-            for stat in STAT_MAP.values():
-                if stat not in stat_bounds:
-                    continue
+    for my_pid, my_p in players_by_team[my_team_key].items():
+        my_val = sum(
+            my_p["stats"].get(w, 0) for w in my_strengths
+        )
 
-                min_v, max_v = stat_bounds[stat]
-                invert = stat in LOWER_IS_BETTER
+        for opp_pid, opp_p in players_by_team[opp_key].items():
+            opp_val = sum(
+                opp_p["stats"].get(w, 0) for w in my_weaknesses
+            )
 
-                net += (
-                    normalize(opp_p["stats"].get(stat), min_v, max_v, invert)
-                    - normalize(my_p["stats"].get(stat), min_v, max_v, invert)
-                )
-
-            if net > 0:
+            net = opp_val - my_val
+            if net >= MIN_NET_GAIN:
                 trade_recs.append({
                     "partner": teams[opp_key],
                     "type": "1-for-1",
@@ -143,32 +146,29 @@ for opp_key, opp_players in players_by_team.items():
                     "net_gain": round(net, 3)
                 })
 
-    # ---------- 2-for-1 ----------
-    for my_pair in combinations(my_players.values(), 2):
-        for opp_p in opp_players.values():
-            net = 0
-            for stat in STAT_MAP.values():
-                if stat not in stat_bounds:
-                    continue
+        # 2-for-1
+        for my_pid2, my_p2 in players_by_team[my_team_key].items():
+            if my_pid2 <= my_pid:
+                continue
 
-                min_v, max_v = stat_bounds[stat]
-                invert = stat in LOWER_IS_BETTER
+            my_val2 = my_val + sum(
+                my_p2["stats"].get(w, 0) for w in my_strengths
+            )
 
-                my_sum = sum(p["stats"].get(stat, 0) or 0 for p in my_pair)
-
-                net += (
-                    normalize(opp_p["stats"].get(stat), min_v, max_v, invert)
-                    - normalize(my_sum, min_v, max_v, invert)
+            for opp_pid, opp_p in players_by_team[opp_key].items():
+                opp_val = sum(
+                    opp_p["stats"].get(w, 0) for w in my_weaknesses
                 )
 
-            if net > 0:
-                trade_recs.append({
-                    "partner": teams[opp_key],
-                    "type": "2-for-1",
-                    "i_give": [p["name"] for p in my_pair],
-                    "i_get": opp_p["name"],
-                    "net_gain": round(net, 3)
-                })
+                net = opp_val - my_val2
+                if net >= MIN_NET_GAIN:
+                    trade_recs.append({
+                        "partner": teams[opp_key],
+                        "type": "2-for-1",
+                        "i_give": [my_p["name"], my_p2["name"]],
+                        "i_get": opp_p["name"],
+                        "net_gain": round(net, 3)
+                    })
 
 # =========================
 # OUTPUT
@@ -176,7 +176,11 @@ for opp_key, opp_players in players_by_team.items():
 payload = {
     "league": league.settings()["name"],
     "my_team": my_team_key,
-    "trade_recommendations": sorted(trade_recs, key=lambda x: -x["net_gain"]),
+    "strengths": my_strengths,
+    "weaknesses": my_weaknesses,
+    "trade_recommendations": sorted(
+        trade_recs, key=lambda x: x["net_gain"], reverse=True
+    ),
     "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
@@ -184,4 +188,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json updated with player-level trade recommendations")
+print("docs/roster.json written with PLAYER-LEVEL trade recommendations")
