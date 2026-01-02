@@ -1,7 +1,7 @@
 import json
 import os
+import statistics
 from datetime import datetime, timezone
-from collections import defaultdict
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
@@ -10,12 +10,10 @@ import yahoo_fantasy_api as yfa
 # =========================
 LEAGUE_ID = "465.l.33140"
 GAME_CODE = "nhl"
-MY_TEAM_KEY = "465.l.33140.t.13"
 
-# Skater stats
-SKATER_STATS = {
-    "1": "G",
-    "2": "A",
+STAT_MAP = {
+    "1": "G",    # Goals
+    "2": "A",    # Assists
     "4": "+/-",
     "5": "PIM",
     "8": "PPP",
@@ -24,26 +22,20 @@ SKATER_STATS = {
     "14": "SOG",
     "16": "FW",
     "31": "HIT",
-    "32": "BLK"
-}
-
-# Goalie stats
-GOALIE_STATS = {
+    "32": "BLK",
     "19": "W",
     "22": "GA",
     "23": "GAA",
     "24": "SA",
     "25": "SV",
     "26": "SV%",
-    "27": "SHO"
+    "27": "SHO",
 }
 
-LOWER_IS_BETTER = {"22", "23"}  # GA, GAA
-
-STAT_NAMES = {**SKATER_STATS, **GOALIE_STATS}
+GOALIE_STATS = ["W", "GA", "GAA", "SV", "SA", "SV%", "SHO"]
 
 # =========================
-# OAuth (GitHub-safe)
+# OAUTH
 # =========================
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
@@ -57,92 +49,163 @@ oauth = OAuth2(None, None, from_file="oauth2.json")
 game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
 
-current_week = league.current_week()
+current_week = int(league.current_week())
 weeks = list(range(1, current_week + 1))
 
-# =========================
-# DATA STRUCTURES
-# =========================
-league_week_stats = defaultdict(lambda: defaultdict(dict))
-my_week_ranks = defaultdict(lambda: defaultdict(int))
-stat_rank_history = defaultdict(list)
+teams_raw = league.teams()
+teams = {t["team_key"]: {"name": t["name"], "team_id": t["team_id"]} for t in teams_raw}
 
 # =========================
-# FETCH LEAGUE DATA
+# STORAGE
+# =========================
+weekly_team_stats = {}
+weekly_team_ranks = {}
+
+# =========================
+# FETCH WEEKLY DATA
 # =========================
 for week in weeks:
     raw = league.yhandler.get_scoreboard_raw(league.league_id, week)
-    scoreboard = raw["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
+    league_data = raw["fantasy_content"]["league"][1]
+    scoreboard = league_data["scoreboard"]["0"]
+    matchups = scoreboard["matchups"]
 
-    for _, matchup_block in scoreboard.items():
-        if _ == "count":
+    weekly_team_stats[str(week)] = {}
+
+    for matchup_key, matchup_data in matchups.items():
+        if matchup_key == "count":
             continue
 
-        teams = matchup_block["matchup"]["0"]["teams"]
+        teams_block = matchup_data["matchup"]["0"]["teams"]
 
-        for _, team_block in teams.items():
-            if _ == "count":
+        for team_key, team_data in teams_block.items():
+            if team_key == "count":
                 continue
 
-            team_key = team_block["team"][0][0]["team_key"]
-            stats = team_block["team"][1]["team_stats"]["stats"]
+            team = team_data["team"]
+            meta = team[0]
+            stats_block = team[1]["team_stats"]["stats"]
 
-            for stat_item in stats:
-                stat = stat_item["stat"]
+            t_key = meta[0]["team_key"]
+            weekly_team_stats[str(week)][t_key] = {}
+
+            for item in stats_block:
+                stat = item["stat"]
                 stat_id = stat["stat_id"]
-                value = stat.get("value")
+                value = stat["value"]
 
+                if stat_id not in STAT_MAP:
+                    continue
                 try:
                     value = float(value)
                 except (TypeError, ValueError):
                     continue
 
-                league_week_stats[week][stat_id][team_key] = value
+                weekly_team_stats[str(week)][t_key][STAT_MAP[stat_id]] = value
 
 # =========================
-# RANKING ENGINE
+# WEEKLY RANKINGS
 # =========================
-for week, stats_by_cat in league_week_stats.items():
-    for stat_id, team_values in stats_by_cat.items():
+for week, team_stats in weekly_team_stats.items():
+    weekly_team_ranks[week] = {}
+    for stat_name in STAT_MAP.values():
+        stat_values = []
+        for team_key, stats in team_stats.items():
+            if stat_name in stats:
+                stat_values.append((team_key, stats[stat_name]))
 
-        reverse = stat_id not in LOWER_IS_BETTER
-        ranked = sorted(team_values.items(), key=lambda x: x[1], reverse=reverse)
+        # For goalies, GA, GAA lower is better
+        reverse = stat_name not in ["GA", "GAA", "SA"]
 
-        for rank, (team_key, _) in enumerate(ranked, start=1):
-            if team_key == MY_TEAM_KEY:
-                my_week_ranks[stat_id][week] = rank
-                stat_rank_history[stat_id].append(rank)
+        stat_values.sort(key=lambda x: x[1], reverse=reverse)
+
+        for rank, (team_key, _) in enumerate(stat_values, start=1):
+            weekly_team_ranks[week].setdefault(team_key, {})
+            weekly_team_ranks[week][team_key][stat_name] = rank
 
 # =========================
 # AVERAGE RANKS
 # =========================
-avg_ranks = {
-    stat_id: round(sum(ranks) / len(ranks), 2)
-    for stat_id, ranks in stat_rank_history.items()
-}
+avg_team_ranks = {}
+for team_key in teams.keys():
+    avg_team_ranks[team_key] = {}
+    for stat_name in STAT_MAP.values():
+        ranks = []
+        for week in weekly_team_ranks:
+            rank = weekly_team_ranks[week].get(team_key, {}).get(stat_name)
+            if rank is not None:
+                ranks.append(rank)
+        if ranks:
+            avg_team_ranks[team_key][stat_name] = round(sum(ranks)/len(ranks), 3)
 
+# =========================
+# TREND DETECTION
+# =========================
+team_trends = {}
+for team_key in teams.keys():
+    team_trends[team_key] = {}
+    for stat_name in STAT_MAP.values():
+        weekly = {}
+        for week in weekly_team_ranks:
+            rank = weekly_team_ranks[week].get(team_key, {}).get(stat_name)
+            if rank is not None:
+                weekly[int(week)] = rank
+        if len(weekly) < 2:
+            continue
+
+        weeks_sorted = sorted(weekly.keys())
+        ranks = [weekly[w] for w in weeks_sorted]
+
+        # Delta week over week
+        deltas = {str(weeks_sorted[i]): ranks[i-1]-ranks[i] for i in range(1, len(weeks_sorted))}
+        avg_delta = sum(deltas.values()) / len(deltas)
+
+        # Linear trend slope
+        x = list(range(len(ranks)))
+        x_mean = sum(x)/len(x)
+        y_mean = sum(ranks)/len(ranks)
+        num = sum((x[i]-x_mean)*(ranks[i]-y_mean) for i in range(len(x)))
+        den = sum((x[i]-x_mean)**2 for i in range(len(x)))
+        slope = num/den if den else 0
+
+        team_trends[team_key][stat_name] = {
+            "weekly_ranks": weekly,
+            "week_over_week_delta": deltas,
+            "avg_delta": round(avg_delta,3),
+            "trend_slope": round(slope,3),
+            "stdev": round(statistics.stdev(ranks),3)
+        }
+
+# =========================
+# GOALIE TRADE LOGIC
+# =========================
+# Identify strong and weak goalie stats based on avg rank
+my_team_key = [k for k in teams.keys() if "13" in k][0]  # update as needed
+goalie_strengths, goalie_weaknesses = [], []
+for stat in GOALIE_STATS:
+    rank = avg_team_ranks[my_team_key][stat]
+    if rank <= len(teams_raw)/2:
+        goalie_strengths.append(stat)
+    else:
+        goalie_weaknesses.append(stat)
 # =========================
 # OUTPUT
 # =========================
-output = {
-    "league": league.settings().get("name", "Unknown League"),
-    "generated": datetime.now(timezone.utc).isoformat(),
-    "my_team": MY_TEAM_KEY,
+payload = {
+    "league": league.settings().get("name"),
     "weeks_analyzed": weeks,
-    "average_ranks": {
-        STAT_NAMES.get(stat_id, stat_id): avg
-        for stat_id, avg in avg_ranks.items()
-    },
-    "weekly_ranks": {
-        STAT_NAMES.get(stat_id, stat_id): {
-            str(week): rank for week, rank in week_ranks.items()
-        }
-        for stat_id, week_ranks in my_week_ranks.items()
-    }
+    "teams": teams,
+    "weekly_team_stats": weekly_team_stats,
+    "weekly_team_ranks": weekly_team_ranks,
+    "average_team_ranks": avg_team_ranks,
+    "trend_analysis": team_trends,
+    "goalie_strengths": goalie_strengths,
+    "goalie_weaknesses": goalie_weaknesses,
+    "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
 os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
-    json.dump(output, f, indent=2)
+    json.dump(payload, f, indent=2)
 
-print("✅ League-wide normalized rankings written to docs/roster.json")
+print("✅ docs/roster.json updated with goalie logic")
