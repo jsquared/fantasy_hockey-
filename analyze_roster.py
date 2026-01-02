@@ -55,7 +55,7 @@ game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
 
 my_team_key = league.team_key()
-team_obj = league.to_team(my_team_key)
+team_obj = league.teams()[my_team_key]  # yfa.League.teams() returns dict keyed by team_key
 
 # =========================
 # PLAYER DATA COLLECTION
@@ -63,20 +63,17 @@ team_obj = league.to_team(my_team_key)
 team_roster = {}
 goalie_values = defaultdict(list)
 
-# Use yfa.Team.roster() with `format="raw"` to get full dict
-for p in team_obj.roster(format="raw"):  # raw returns dicts for each player
-    player_data = p["player"][0]  # the first element contains meta
-    pid = player_data["player_id"]
-    name = player_data["name"]["full"]
-    pos = player_data.get("selected_position", {}).get("position", "NA")
+for player in team_obj.roster():  # returns list of dicts with 'player_id', 'name', 'position', 'selected_position', 'editorial_team_abbr', 'player_stats'
+    pid = player["player_id"]
+    name = player["name"]
+    pos = player.get("selected_position", {}).get("position", "NA")
 
-    # Extract stats
-    stats_block = p["player"][1].get("player_stats", {}).get("stats", [])
+    stats_block = player.get("player_stats", {}).get("stats", [])
     stats = {}
     for stat_entry in stats_block:
-        sid = str(stat_entry["stat"]["stat_id"])
+        sid = str(stat_entry["stat_id"])
         try:
-            stats[STAT_MAP[sid]] = float(stat_entry["stat"]["value"])
+            stats[STAT_MAP[sid]] = float(stat_entry["value"])
         except (KeyError, TypeError, ValueError):
             continue
 
