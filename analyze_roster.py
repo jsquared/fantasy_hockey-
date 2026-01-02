@@ -33,6 +33,8 @@ STAT_MAP = {
     "27": "Shutouts"
 }
 
+LOWER_IS_BETTER = {"GA", "GAA", "Shots Against"}
+
 # =========================
 # HELPERS
 # =========================
@@ -61,22 +63,19 @@ team_obj = league.to_team(my_team_key)
 team_roster = {}
 goalie_values = defaultdict(list)
 
-for p in team_obj.roster():
-    # p can be either player_id string or dict, handle both
-    pid = p if isinstance(p, str) else p["player_id"]
-    player_info = league.player(pid)
+for p in team_obj.roster():  # each p is a dict with player info
+    pid = p["player_id"]
+    name = p["name"]["full"]
+    pos = p.get("selected_position", {}).get("position", "NA")
 
-    name = player_info["name"]["full"]
-    pos = player_info.get("selected_position", {}).get("position", "NA")
-
-    # Pull stats for current season (weeks 1-current_week)
-    raw_stats = league.player_stats(pid, 1, league.current_week())
+    # Pull stats directly from roster
     stats = {}
-    for sid, sname in STAT_MAP.items():
+    for stat_entry in p.get("player_stats", {}).get("stats", []):
+        sid = str(stat_entry["stat"]["stat_id"])
         try:
-            stats[sname] = float(raw_stats.get(sid, 0))
-        except (TypeError, ValueError):
-            stats[sname] = 0
+            stats[STAT_MAP[sid]] = float(stat_entry["stat"]["value"])
+        except (TypeError, ValueError, KeyError):
+            continue
 
     team_roster[pid] = {
         "name": name,
@@ -84,10 +83,10 @@ for p in team_obj.roster():
         "stats": stats
     }
 
-    # Track goalies separately for normalization
+    # Track goalies for normalization
     if pos == "G":
         for gs in GOALIE_STATS:
-            if stats.get(gs) is not None:
+            if gs in stats:
                 goalie_values[gs].append(stats[gs])
 
 # =========================
