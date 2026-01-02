@@ -12,10 +12,18 @@ LEAGUE_ID = "465.l.33140"
 GAME_CODE = "nhl"
 WEEKS = 12
 
-STAT_KEYS = ["G", "A", "PPP", "SOG", "FW", "HIT", "BLK"]
+STAT_MAP = {
+    "G": "1",
+    "A": "2",
+    "PPP": "8",
+    "SOG": "14",
+    "FW": "16",
+    "HIT": "31",
+    "BLK": "32",
+}
 
 # =========================
-# OAuth (GitHub-safe)
+# OAuth
 # =========================
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
@@ -30,7 +38,8 @@ game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
 
 my_team_key = league.team_key()
-teams_meta = league.teams()
+teams = league.teams()
+current_week = league.current_week()
 
 # =========================
 # Helpers
@@ -41,10 +50,17 @@ def safe_float(v):
     except Exception:
         return 0.0
 
+def extract_team_week_stats(team_block):
+    stats = {}
+    for item in team_block[1]["team_stats"]["stats"]:
+        stat_id = str(item["stat"]["stat_id"])
+        stats[stat_id] = safe_float(item["stat"]["value"])
+    return stats
+
 # =========================
-# TEAM WEEKLY STATS (KNOWN GOOD)
+# WEEKLY TEAM STATS
 # =========================
-weekly_totals = defaultdict(lambda: defaultdict(float))
+weekly = defaultdict(dict)
 
 for week in range(1, WEEKS + 1):
     raw = league.yhandler.get_scoreboard_raw(league.league_id, week)
@@ -53,147 +69,108 @@ for week in range(1, WEEKS + 1):
     for _, matchup in matchups.items():
         if _ == "count":
             continue
-
-        teams = matchup["matchup"]["0"]["teams"]
-        for _, team_entry in teams.items():
+        teams_block = matchup["matchup"]["0"]["teams"]
+        for _, team_entry in teams_block.items():
             if _ == "count":
                 continue
-
-            team_block = team_entry["team"]
-            team_key = team_block[0][0]["team_key"]
-
-            stats = team_block[1]["team_stats"]["stats"]
-            for s in stats:
-                name = s["stat"]["name"]
-                if name in STAT_KEYS:
-                    weekly_totals[team_key][name] += safe_float(s["stat"]["value"])
+            team = team_entry["team"]
+            team_key = team[0][0]["team_key"]
+            weekly[team_key].setdefault("weeks", []).append(
+                extract_team_week_stats(team)
+            )
 
 # =========================
 # AVERAGES
 # =========================
-team_averages = {}
-for team_key, stats in weekly_totals.items():
-    team_averages[team_key] = {
-        k: stats[k] / WEEKS for k in STAT_KEYS
-    }
+team_avgs = defaultdict(dict)
 
-league_averages = {
-    k: sum(team_averages[t][k] for t in team_averages) / len(team_averages)
-    for k in STAT_KEYS
+for team_key, data in weekly.items():
+    for cat, stat_id in STAT_MAP.items():
+        vals = [w.get(stat_id, 0) for w in data["weeks"]]
+        team_avgs[team_key][cat] = sum(vals) / len(vals) if vals else 0.0
+
+league_avgs = {
+    cat: sum(team_avgs[t][cat] for t in team_avgs) / len(team_avgs)
+    for cat in STAT_MAP
 }
 
-my_avgs = team_averages[my_team_key]
+my_avgs = team_avgs[my_team_key]
 
-# =========================
-# CATEGORY ANALYSIS
-# =========================
-strong_categories = [
-    k for k in STAT_KEYS if my_avgs[k] > league_averages[k]
-]
-
-weak_categories = [
-    k for k in STAT_KEYS if my_avgs[k] < league_averages[k]
-]
+strong_cats = [c for c in STAT_MAP if my_avgs[c] > league_avgs[c]]
+weak_cats = [c for c in STAT_MAP if my_avgs[c] < league_avgs[c]]
 
 # =========================
 # TRADE PARTNERS
 # =========================
 trade_partners = []
 
-for team_key, avgs in team_averages.items():
+for team_key, avgs in team_avgs.items():
     if team_key == my_team_key:
         continue
 
-    helps_us = [k for k in weak_categories if avgs[k] > league_averages[k]]
-    needs_us = [k for k in strong_categories if avgs[k] < league_averages[k]]
+    helps_us = [c for c in weak_cats if avgs[c] > league_avgs[c]]
+    needs_from_us = [c for c in strong_cats if avgs[c] < league_avgs[c]]
 
-    if helps_us and needs_us:
+    if helps_us and needs_from_us:
         trade_partners.append({
             "team_key": team_key,
             "they_help_us_in": helps_us,
-            "they_need_from_us": needs_us
+            "they_need_from_us": needs_from_us
         })
 
 # =========================
-# ROSTER (NAMES ONLY – SAFE)
+# PLAYER POOLS (RAW ROSTERS)
 # =========================
-def get_team_players(team_key):
+def get_roster(team_key):
     raw = league.yhandler.get_roster_raw(team_key)
     players = []
 
     for _, item in raw["fantasy_content"]["team"][1]["roster"]["0"]["players"].items():
         if _ == "count":
             continue
-
-        pdata = item["player"][0]
-        name = pdata[2]["name"]["full"]
-        pos = pdata[4].get("display_position", "")
-
+        meta = item["player"][0]
         players.append({
-            "name": name,
-            "position": pos
+            "player_id": int(meta[1]["player_id"]),
+            "name": meta[2]["name"]["full"]
         })
 
     return players
 
-my_players = get_team_players(my_team_key)
+my_players = get_roster(my_team_key)
+all_rosters = {tk: get_roster(tk) for tk in teams}
 
 # =========================
-# PLAYER ARCHETYPES
+# SAFE TRADE BAIT
 # =========================
-def player_profile(player):
-    pos = player["position"]
-    if "D" in pos:
-        return ["HIT", "BLK"]
-    if "C" in pos:
-        return ["A", "FW"]
-    if "LW" in pos or "RW" in pos:
-        return ["G", "SOG", "PPP"]
-    return []
+safe_trade_bait = my_players[:5]  # conservative: top 5 movable assets
 
 # =========================
-# TRADE SUGGESTIONS
+# TRADE IDEAS
 # =========================
-trade_suggestions = []
+trade_ideas = []
 
 for partner in trade_partners:
-    opp_key = partner["team_key"]
-    opp_players = get_team_players(opp_key)
+    tk = partner["team_key"]
+    targets = all_rosters[tk][:5]
 
     # 1-for-1
-    for give in my_players:
-        give_cats = player_profile(give)
-        if not any(c in strong_categories for c in give_cats):
-            continue
-
-        for get in opp_players:
-            get_cats = player_profile(get)
-            if any(c in weak_categories for c in get_cats):
-                trade_suggestions.append({
-                    "type": "1-for-1",
-                    "partner": opp_key,
-                    "we_give": give["name"],
-                    "we_get": get["name"],
-                    "addresses": get_cats
-                })
+    for give in safe_trade_bait[:3]:
+        for get in targets[:3]:
+            trade_ideas.append({
+                "type": "1-for-1",
+                "give": [give["name"]],
+                "get": [get["name"]],
+                "partner": tk
+            })
 
     # 2-for-1
-    give_pool = [
-        p for p in my_players
-        if any(c in strong_categories for c in player_profile(p))
-    ]
-
-    if len(give_pool) >= 2:
-        for get in opp_players:
-            get_cats = player_profile(get)
-            if any(c in weak_categories for c in get_cats):
-                trade_suggestions.append({
-                    "type": "2-for-1",
-                    "partner": opp_key,
-                    "we_give": [give_pool[0]["name"], give_pool[1]["name"]],
-                    "we_get": get["name"],
-                    "addresses": get_cats
-                })
+    if len(safe_trade_bait) >= 2:
+        trade_ideas.append({
+            "type": "2-for-1",
+            "give": [safe_trade_bait[0]["name"], safe_trade_bait[1]["name"]],
+            "get": [targets[0]["name"]],
+            "partner": tk
+        })
 
 # =========================
 # OUTPUT
@@ -203,12 +180,13 @@ payload = {
     "generated": datetime.now(timezone.utc).isoformat(),
     "my_team": my_team_key,
     "trade_analysis": {
-        "strong_categories": strong_categories,
-        "weak_categories": weak_categories,
+        "strong_categories": strong_cats,
+        "weak_categories": weak_cats,
         "my_team_averages": my_avgs,
-        "league_averages": league_averages,
+        "league_averages": league_avgs,
         "recommended_trade_partners": trade_partners,
-        "trade_suggestions": trade_suggestions[:15]
+        "safe_trade_bait": safe_trade_bait,
+        "trade_ideas": trade_ideas[:15]
     }
 }
 
@@ -216,4 +194,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json updated with full trade recommendations")
+print("✅ docs/roster.json updated with player-level trade recommendations")
