@@ -10,10 +10,9 @@ import yahoo_fantasy_api as yfa
 # =========================
 LEAGUE_ID = "465.l.33140"
 GAME_CODE = "nhl"
-
 MY_TEAM_KEY = "465.l.33140.t.13"
 
-# Stat definitions
+# Skater stats
 SKATER_STATS = {
     "1": "G",
     "2": "A",
@@ -28,6 +27,7 @@ SKATER_STATS = {
     "32": "BLK"
 }
 
+# Goalie stats
 GOALIE_STATS = {
     "19": "W",
     "22": "GA",
@@ -39,6 +39,8 @@ GOALIE_STATS = {
 }
 
 LOWER_IS_BETTER = {"22", "23"}  # GA, GAA
+
+STAT_NAMES = {**SKATER_STATS, **GOALIE_STATS}
 
 # =========================
 # OAuth (GitHub-safe)
@@ -115,7 +117,7 @@ for week, stats_by_cat in league_week_stats.items():
 # AVERAGE RANKS
 # =========================
 avg_ranks = {
-    stat_id: sum(ranks) / len(ranks)
+    stat_id: round(sum(ranks) / len(ranks), 2)
     for stat_id, ranks in stat_rank_history.items()
 }
 
@@ -128,11 +130,11 @@ output = {
     "my_team": MY_TEAM_KEY,
     "weeks_analyzed": weeks,
     "average_ranks": {
-        (SKATER_STATS | GOALIE_STATS).get(stat_id, stat_id): round(avg, 2)
+        STAT_NAMES.get(stat_id, stat_id): avg
         for stat_id, avg in avg_ranks.items()
     },
     "weekly_ranks": {
-        (SKATER_STATS | GOALIE_STATS).get(stat_id, stat_id): {
+        STAT_NAMES.get(stat_id, stat_id): {
             str(week): rank for week, rank in week_ranks.items()
         }
         for stat_id, week_ranks in my_week_ranks.items()
@@ -140,7 +142,7 @@ output = {
 }
 
 os.makedirs("docs", exist_ok=True)
-with open("docs/team_analysis.json", "w") as f:
+with open("docs/roster.json", "w") as f:
     json.dump(output, f, indent=2)
 
-print("✅ League-wide goalie-normalized analysis complete")
+print("✅ League-wide normalized rankings written to docs/roster.json")
