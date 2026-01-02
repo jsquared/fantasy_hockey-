@@ -37,7 +37,6 @@ STAT_MAP = {
 }
 
 LOWER_IS_BETTER = {"GA", "GAA", "Shots Against"}
-GOALIE_STATS = {"Wins", "GA", "GAA", "Saves", "SV%", "Shutouts"}
 
 # =========================
 # OAUTH
@@ -77,18 +76,17 @@ def get_player_stats(player):
     return stats
 
 # =========================
-# COLLECT ALL PLAYERS
+# COLLECT ALL TEAMS & PLAYERS
 # =========================
 teams = {}
 players_by_team = defaultdict(dict)
 league_stat_pool = defaultdict(list)
 
-for team in league.teams():
-    team_key = team.team_key
+for team_key in league.teams():  # ← strings only
+    team = yfa.Team(oauth, team_key)
     teams[team_key] = team.name
 
-    roster = team.roster()
-    for p in roster:
+    for p in team.roster():
         player_key = p["player_key"]
         player = yfa.Player(oauth, player_key)
 
@@ -105,9 +103,10 @@ for team in league.teams():
 # =========================
 # NORMALIZATION BOUNDS
 # =========================
-stat_bounds = {}
-for stat, vals in league_stat_pool.items():
-    stat_bounds[stat] = (min(vals), max(vals))
+stat_bounds = {
+    stat: (min(vals), max(vals))
+    for stat, vals in league_stat_pool.items()
+}
 
 # =========================
 # TRADE ENGINE
@@ -119,18 +118,21 @@ for opp_key, opp_players in players_by_team.items():
     if opp_key == my_team_key:
         continue
 
-    # -------- 1-for-1 --------
+    # ---------- 1-for-1 ----------
     for my_p in my_players.values():
         for opp_p in opp_players.values():
             net = 0
             for stat in STAT_MAP.values():
-                min_v, max_v = stat_bounds.get(stat, (0, 1))
+                if stat not in stat_bounds:
+                    continue
+
+                min_v, max_v = stat_bounds[stat]
                 invert = stat in LOWER_IS_BETTER
 
-                my_v = my_p["stats"].get(stat)
-                opp_v = opp_p["stats"].get(stat)
-
-                net += normalize(opp_v, min_v, max_v, invert) - normalize(my_v, min_v, max_v, invert)
+                net += (
+                    normalize(opp_p["stats"].get(stat), min_v, max_v, invert)
+                    - normalize(my_p["stats"].get(stat), min_v, max_v, invert)
+                )
 
             if net > 0:
                 trade_recs.append({
@@ -141,18 +143,23 @@ for opp_key, opp_players in players_by_team.items():
                     "net_gain": round(net, 3)
                 })
 
-    # -------- 2-for-1 --------
+    # ---------- 2-for-1 ----------
     for my_pair in combinations(my_players.values(), 2):
         for opp_p in opp_players.values():
             net = 0
             for stat in STAT_MAP.values():
-                min_v, max_v = stat_bounds.get(stat, (0, 1))
+                if stat not in stat_bounds:
+                    continue
+
+                min_v, max_v = stat_bounds[stat]
                 invert = stat in LOWER_IS_BETTER
 
                 my_sum = sum(p["stats"].get(stat, 0) or 0 for p in my_pair)
-                opp_v = opp_p["stats"].get(stat)
 
-                net += normalize(opp_v, min_v, max_v, invert) - normalize(my_sum, min_v, max_v, invert)
+                net += (
+                    normalize(opp_p["stats"].get(stat), min_v, max_v, invert)
+                    - normalize(my_sum, min_v, max_v, invert)
+                )
 
             if net > 0:
                 trade_recs.append({
