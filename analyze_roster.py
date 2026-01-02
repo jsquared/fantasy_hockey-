@@ -4,14 +4,15 @@ from datetime import datetime, timezone
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 from collections import defaultdict
+import itertools
 
 # =========================
 # CONFIG
 # =========================
 LEAGUE_ID = "465.l.33140"
 GAME_CODE = "nhl"
-WEEKS = 12
-SWING_THRESHOLD = 0.10  # 10%
+FAIR_VALUE_TOLERANCE = 0.10  # ±10% player value difference
+MIN_CATEGORY_GAIN = 2       # minimum categories improved for both teams
 
 # =========================
 # STAT MAP
@@ -54,181 +55,164 @@ oauth = OAuth2(None, None, from_file="oauth2.json")
 game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
 
-my_team_key = league.team_key()
-current_week = int(league.current_week())
-
-# league.teams() returns RAW METADATA (dict)
 teams_meta = league.teams()
-
-teams = {
-    team_key: team_data["name"]
-    for team_key, team_data in teams_meta.items()
-}
+my_team_key = league.team_key()
 
 # =========================
 # Helpers
 # =========================
-def extract_team_stats(team_block):
-    stats = {}
-    for item in team_block[1]["team_stats"]["stats"]:
-        stat_id = str(item["stat"]["stat_id"])
-        raw = item["stat"]["value"]
-        try:
-            stats[stat_id] = float(raw)
-        except (TypeError, ValueError):
-            stats[stat_id] = None
-    return stats
-
 def normalize(value, min_v, max_v):
     if max_v == min_v:
         return 0.5
     return (value - min_v) / (max_v - min_v)
 
 # =========================
-# DATA COLLECTION
+# ROSTERS + PLAYER STATS
 # =========================
-weekly_stats = defaultdict(dict)
-weekly_ranks = defaultdict(dict)
+team_rosters = defaultdict(list)
+player_stats = {}
+stat_pool = defaultdict(list)
 
-for week in range(1, WEEKS + 1):
-    raw = league.yhandler.get_scoreboard_raw(league.league_id, week)
-    matchups = raw["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
+for team_key in teams_meta:
+    team = yfa.Team(oauth, team_key)
+    roster = team.roster()
 
-    for _, matchup_block in matchups.items():
-        if _ == "count":
+    for p in roster:
+        pid = p["player_id"]
+        team_rosters[team_key].append(pid)
+
+        if pid in player_stats:
             continue
 
-        teams_block = matchup_block["matchup"]["0"]["teams"]
-        for _, team_entry in teams_block.items():
-            if _ == "count":
+        stats = {}
+        for s in p["player_stats"]["stats"]:
+            stat_id = str(s["stat"]["stat_id"])
+            try:
+                val = float(s["stat"]["value"])
+                stats[stat_id] = val
+                stat_pool[stat_id].append(val)
+            except (TypeError, ValueError):
                 continue
 
-            team_block = team_entry["team"]
-            team_key = team_block[0][0]["team_key"]
-            weekly_stats[week][team_key] = extract_team_stats(team_block)
-
-    for stat_id, stat_name in STAT_MAP.items():
-        values = {
-            t: s.get(stat_id)
-            for t, s in weekly_stats[week].items()
-            if s.get(stat_id) is not None
+        player_stats[pid] = {
+            "name": p["name"]["full"],
+            "team": team_key,
+            "stats": stats
         }
 
-        reverse = stat_name not in LOWER_IS_BETTER
-        ranked = sorted(values.items(), key=lambda x: x[1], reverse=reverse)
-
-        for rank, (team_key, _) in enumerate(ranked, start=1):
-            weekly_ranks[week].setdefault(team_key, {})[stat_name] = rank
-
 # =========================
-# AVERAGES + TRENDS
+# PLAYER VALUE MODEL
 # =========================
-avg_stats = defaultdict(dict)
-avg_ranks = defaultdict(dict)
-trends = defaultdict(dict)
+player_values = {}
 
-for team_key in teams.keys():
+for pid, pdata in player_stats.items():
+    total = 0
+    contributing = 0
+
     for stat_id, stat_name in STAT_MAP.items():
-        values = []
-        ranks = []
+        if stat_id not in pdata["stats"]:
+            continue
 
-        for week in range(1, WEEKS + 1):
-            v = weekly_stats[week].get(team_key, {}).get(stat_id)
-            r = weekly_ranks[week].get(team_key, {}).get(stat_name)
-            if v is not None:
-                values.append(v)
-            if r is not None:
-                ranks.append(r)
+        vals = stat_pool.get(stat_id)
+        if not vals:
+            continue
 
-        avg_stats[team_key][stat_name] = sum(values) / len(values) if values else None
-        avg_ranks[team_key][stat_name] = sum(ranks) / len(ranks) if ranks else None
+        v = pdata["stats"][stat_id]
+        min_v, max_v = min(vals), max(vals)
+        norm = normalize(v, min_v, max_v)
 
-        if len(values) >= 6:
-            recent = sum(values[-3:]) / 3
-            earlier = sum(values[:-3]) / (len(values) - 3)
-            trends[team_key][stat_name] = round(recent - earlier, 3)
-        else:
-            trends[team_key][stat_name] = 0
+        if stat_name in LOWER_IS_BETTER:
+            norm = 1 - norm
+
+        total += norm
+        contributing += 1
+
+    if contributing:
+        player_values[pid] = round(total / contributing, 4)
 
 # =========================
-# CURRENT MATCHUP
+# TEAM CATEGORY TOTALS
 # =========================
-raw = league.yhandler.get_scoreboard_raw(league.league_id, current_week)
-matchups = raw["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
+team_category_totals = defaultdict(lambda: defaultdict(float))
 
-opp_key = None
-for _, matchup in matchups.items():
-    if _ == "count":
+for team_key, pids in team_rosters.items():
+    for pid in pids:
+        for stat_id, stat_name in STAT_MAP.items():
+            team_category_totals[team_key][stat_name] += \
+                player_stats[pid]["stats"].get(stat_id, 0)
+
+# =========================
+# TRADE SIMULATION
+# =========================
+trade_recommendations = []
+
+my_players = team_rosters[my_team_key]
+
+for opp_key in teams_meta:
+    if opp_key == my_team_key:
         continue
 
-    teams_block = matchup["matchup"]["0"]["teams"]
-    keys = [
-        team_entry["team"][0][0]["team_key"]
-        for tk, team_entry in teams_block.items()
-        if tk != "count"
-    ]
+    opp_players = team_rosters[opp_key]
 
-    if my_team_key in keys:
-        opp_key = next(k for k in keys if k != my_team_key)
-        break
+    for my_pid, opp_pid in itertools.product(my_players, opp_players):
+        my_val = player_values.get(my_pid)
+        opp_val = player_values.get(opp_pid)
+
+        if not my_val or not opp_val:
+            continue
+
+        # Fair value check
+        if abs(my_val - opp_val) / max(my_val, opp_val) > FAIR_VALUE_TOLERANCE:
+            continue
+
+        my_gain = 0
+        opp_gain = 0
+
+        for stat_id, stat_name in STAT_MAP.items():
+            my_before = team_category_totals[my_team_key][stat_name]
+            opp_before = team_category_totals[opp_key][stat_name]
+
+            my_after = (
+                my_before
+                - player_stats[my_pid]["stats"].get(stat_id, 0)
+                + player_stats[opp_pid]["stats"].get(stat_id, 0)
+            )
+
+            opp_after = (
+                opp_before
+                - player_stats[opp_pid]["stats"].get(stat_id, 0)
+                + player_stats[my_pid]["stats"].get(stat_id, 0)
+            )
+
+            if my_after > my_before:
+                my_gain += 1
+            if opp_after > opp_before:
+                opp_gain += 1
+
+        if my_gain >= MIN_CATEGORY_GAIN and opp_gain >= MIN_CATEGORY_GAIN:
+            trade_recommendations.append({
+                "give": player_stats[my_pid]["name"],
+                "receive": player_stats[opp_pid]["name"],
+                "opponent_team": opp_key,
+                "my_value": my_val,
+                "opp_value": opp_val,
+                "my_category_gains": my_gain,
+                "opp_category_gains": opp_gain
+            })
 
 # =========================
-# CATEGORY PREDICTIONS
+# OUTPUT (docs/roster.json)
 # =========================
-predictions = {}
+os.makedirs("docs", exist_ok=True)
 
-for stat_name in STAT_MAP.values():
-    my_val = avg_stats[my_team_key].get(stat_name)
-    opp_val = avg_stats[opp_key].get(stat_name)
-
-    my_rank = avg_ranks[my_team_key].get(stat_name)
-    opp_rank = avg_ranks[opp_key].get(stat_name)
-
-    if None in (my_val, opp_val, my_rank, opp_rank):
-        continue
-
-    vals = [
-        avg_stats[t][stat_name]
-        for t in avg_stats
-        if avg_stats[t][stat_name] is not None
-    ]
-
-    min_v, max_v = min(vals), max(vals)
-
-    my_score = normalize(my_val, min_v, max_v) + (1 / my_rank)
-    opp_score = normalize(opp_val, min_v, max_v) + (1 / opp_rank)
-
-    diff = my_score - opp_score
-    confidence = abs(diff) / max(my_score, opp_score)
-
-    predictions[stat_name] = {
-        "winner": "me" if diff > 0 else "opponent",
-        "confidence": round(confidence, 3),
-        "swing": confidence < SWING_THRESHOLD,
-        "trend": trends[my_team_key].get(stat_name, 0)
-    }
-
-# =========================
-# OUTPUT (CHANGED FILE NAME)
-# =========================
 payload = {
     "league": league.settings()["name"],
-    "weeks_analyzed": WEEKS,
-    "current_week": current_week,
+    "generated": datetime.now(timezone.utc).isoformat(),
     "my_team": my_team_key,
-    "my_team_name": teams.get(my_team_key),
-    "opponent": opp_key,
-    "opponent_name": teams.get(opp_key),
-    "teams": teams,
-    "average_stats": avg_stats,
-    "average_ranks": avg_ranks,
-    "trends": trends,
-    "predictions": predictions,
-    "lastUpdated": datetime.now(timezone.utc).isoformat()
+    "trade_recommendations": trade_recommendations
 }
 
-os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json updated successfully")
+print(f"docs/roster.json updated with {len(trade_recommendations)} fair 1-for-1 trade recommendations")
