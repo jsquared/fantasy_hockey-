@@ -14,33 +14,15 @@ MY_TEAM_KEY = "465.l.33140.t.13"
 SKATER_STATS = {
     "1": "G",
     "2": "A",
-    "4": "+/-",
-    "5": "PIM",
     "8": "PPP",
-    "11": "SHP",
-    "12": "GWG",
     "14": "SOG",
     "16": "FW",
     "31": "HIT",
     "32": "BLK",
 }
 
-GOALIE_STATS = {
-    "19": "W",
-    "22": "GA",
-    "23": "GAA",
-    "24": "SA",
-    "25": "SV",
-    "26": "SV%",
-    "27": "SHO",
-}
-
-ALL_STATS = {**SKATER_STATS, **GOALIE_STATS}
-
-LOWER_IS_BETTER = {"GA", "GAA"}
-
 # =========================
-# OAuth (GitHub-safe)
+# OAuth
 # =========================
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
@@ -58,23 +40,23 @@ current_week = int(league.current_week())
 weeks = list(range(1, current_week + 1))
 
 # =========================
-# Teams
+# TEAMS (FIXED)
 # =========================
 teams = {}
-for t in league.teams():
-    teams[t["team_key"]] = {
-        "name": t["name"],
-        "team_id": t["team_id"],
+for team_key in league.teams():
+    team_obj = league.to_team(team_key)
+    meta = team_obj.meta
+
+    teams[team_key] = {
+        "name": meta["name"],
+        "team_id": meta["team_id"]
     }
 
 # =========================
-# DATA STORAGE
+# WEEKLY STATS
 # =========================
 weekly_stats = {}
 
-# =========================
-# FETCH WEEKLY DATA
-# =========================
 for week in weeks:
     raw = league.yhandler.get_scoreboard_raw(league.league_id, week)
     scoreboard = raw["fantasy_content"]["league"][1]["scoreboard"]["0"]
@@ -85,126 +67,80 @@ for week in weeks:
         if m_key == "count":
             continue
 
-        for t_key, t_data in matchup["matchup"]["0"]["teams"].items():
-            if t_key == "count":
+        for _, tdata in matchup["matchup"]["0"]["teams"].items():
+            if _ == "count":
                 continue
 
-            team_meta = t_data["team"][0]
-            stats = t_data["team"][1]["team_stats"]["stats"]
+            team_key = tdata["team"][0][0]["team_key"]
+            stats = tdata["team"][1]["team_stats"]["stats"]
 
-            team_key = team_meta[0]["team_key"]
             weekly_stats[str(week)].setdefault(team_key, {})
 
             for s in stats:
                 sid = s["stat"]["stat_id"]
                 val = s["stat"]["value"]
 
-                if sid not in ALL_STATS:
+                if sid not in SKATER_STATS:
                     continue
 
                 try:
-                    val = float(val)
+                    weekly_stats[str(week)][team_key][SKATER_STATS[sid]] = float(val)
                 except:
                     continue
-
-                weekly_stats[str(week)][team_key][ALL_STATS[sid]] = val
 
 # =========================
 # AVERAGES
 # =========================
-def average_stats(stat_group):
-    league_avg = {}
-    my_avg = {}
+def compute_avg(team_key):
+    totals = {}
+    counts = {}
 
-    for stat in stat_group.values():
-        league_vals = []
-        my_vals = []
+    for week in weekly_stats.values():
+        stats = week.get(team_key, {})
+        for k, v in stats.items():
+            totals[k] = totals.get(k, 0) + v
+            counts[k] = counts.get(k, 0) + 1
 
-        for week in weekly_stats.values():
-            for team, stats in week.items():
-                if stat in stats:
-                    league_vals.append(stats[stat])
-                    if team == MY_TEAM_KEY:
-                        my_vals.append(stats[stat])
+    return {k: totals[k] / counts[k] for k in totals}
 
-        if league_vals:
-            league_avg[stat] = sum(league_vals) / len(league_vals)
-        if my_vals:
-            my_avg[stat] = sum(my_vals) / len(my_vals)
+my_avg = compute_avg(MY_TEAM_KEY)
 
-    return my_avg, league_avg
-
-my_skater_avg, league_skater_avg = average_stats(SKATER_STATS)
-my_goalie_avg, league_goalie_avg = average_stats(GOALIE_STATS)
+league_avg = {}
+for stat in SKATER_STATS.values():
+    vals = []
+    for team_key in teams:
+        avg = compute_avg(team_key)
+        if stat in avg:
+            vals.append(avg[stat])
+    league_avg[stat] = sum(vals) / len(vals)
 
 # =========================
 # STRENGTH / WEAKNESS
 # =========================
-def compare(my, league):
-    strong = []
-    weak = []
-
-    for stat, my_val in my.items():
-        lg = league.get(stat)
-        if lg is None:
-            continue
-
-        if stat in LOWER_IS_BETTER:
-            if my_val < lg:
-                strong.append(stat)
-            else:
-                weak.append(stat)
-        else:
-            if my_val > lg:
-                strong.append(stat)
-            else:
-                weak.append(stat)
-
-    return strong, weak
-
-skater_strong, skater_weak = compare(my_skater_avg, league_skater_avg)
-goalie_strong, goalie_weak = compare(my_goalie_avg, league_goalie_avg)
+strong = [s for s in my_avg if my_avg[s] > league_avg[s]]
+weak = [s for s in my_avg if my_avg[s] < league_avg[s]]
 
 # =========================
-# TRADE PARTNERS (LOGIC ONLY)
+# 1-FOR-1 TRADE IDEAS (RESTORED)
 # =========================
-trade_targets = []
+trade_ideas = []
 
 for team_key, team in teams.items():
     if team_key == MY_TEAM_KEY:
         continue
 
-    helps_us = []
-    they_need = []
+    their_avg = compute_avg(team_key)
 
-    for stat in skater_weak:
-        if stat in league_skater_avg:
-            helps_us.append(stat)
-
-    for stat in skater_strong:
-        they_need.append(stat)
+    helps_us = [s for s in weak if s in their_avg and their_avg[s] > league_avg[s]]
+    they_need = [s for s in strong if s in their_avg and their_avg[s] < league_avg[s]]
 
     if helps_us and they_need:
-        trade_targets.append({
-            "team_key": team_key,
+        trade_ideas.append({
+            "partner": team_key,
             "team_name": team["name"],
             "they_help_us_in": helps_us,
             "they_need_from_us": they_need,
-            "type": "skater"
-        })
-
-# goalie trades only if goalie weakness exists
-if goalie_weak:
-    for team_key, team in teams.items():
-        if team_key == MY_TEAM_KEY:
-            continue
-
-        trade_targets.append({
-            "team_key": team_key,
-            "team_name": team["name"],
-            "they_help_us_in": goalie_weak,
-            "they_need_from_us": goalie_strong,
-            "type": "goalie"
+            "type": "1-for-1"
         })
 
 # =========================
@@ -214,23 +150,15 @@ payload = {
     "league": league.settings()["name"],
     "generated": datetime.now(timezone.utc).isoformat(),
     "my_team": MY_TEAM_KEY,
-    "skater_analysis": {
-        "my_averages": my_skater_avg,
-        "league_averages": league_skater_avg,
-        "strengths": skater_strong,
-        "weaknesses": skater_weak,
-    },
-    "goalie_analysis": {
-        "my_averages": my_goalie_avg,
-        "league_averages": league_goalie_avg,
-        "strengths": goalie_strong,
-        "weaknesses": goalie_weak,
-    },
-    "trade_suggestions": trade_targets,
+    "my_averages": my_avg,
+    "league_averages": league_avg,
+    "strengths": strong,
+    "weaknesses": weak,
+    "trade_ideas": trade_ideas,
 }
 
 os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json written successfully")
+print("✅ docs/roster.json written (1-for-1 trades restored)")
