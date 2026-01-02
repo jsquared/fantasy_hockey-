@@ -38,7 +38,7 @@ STAT_MAP = {
 GOALIE_STATS = {"Wins", "GA", "GAA", "Shots Against", "Saves", "SV%", "Shutouts"}
 
 # =========================
-# OAuth (GitHub-safe)
+# OAuth
 # =========================
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
@@ -56,10 +56,9 @@ my_team_key = league.team_key()
 current_week = int(league.current_week())
 
 # =========================
-# HELPER FUNCTIONS
+# Helpers
 # =========================
 def normalize(value, min_v, max_v):
-    """Normalize a stat to 0-1 scale"""
     if value is None:
         return 0.0
     if max_v == min_v:
@@ -67,14 +66,13 @@ def normalize(value, min_v, max_v):
     return (value - min_v) / (max_v - min_v)
 
 def extract_player_stats(player_id):
-    """Fetch season stats for a single player"""
     raw = league.player_stats(player_id, 1, current_week)
     stats = {}
     for sid, sname in STAT_MAP.items():
         if sid in raw:
             try:
                 stats[sname] = float(raw[sid])
-            except (ValueError, TypeError):
+            except (TypeError, ValueError):
                 stats[sname] = None
         else:
             stats[sname] = None
@@ -83,27 +81,29 @@ def extract_player_stats(player_id):
 # =========================
 # FETCH ROSTER AND STATS
 # =========================
-team_data = {"team_key": my_team_key, "players": {}}
+team_obj = league.to_team(my_team_key)
+roster = team_obj.roster()
 
-team_info = league.to_team(my_team_key)
-roster = team_info.roster()
+team_data = {"team_key": my_team_key, "team_name": team_obj.name, "players": {}}
 
 for player in roster:
-    pid = player["player_id"]
-    name = player["name"]["full"]
+    pid = player if isinstance(player, str) else player["player_id"]
+    player_info = league.player(pid)
+    name = player_info["name"]["full"]
+    pos = player_info.get("selected_position", {}).get("position", "NA")
     stats = extract_player_stats(pid)
+
     team_data["players"][pid] = {
         "name": name,
-        "position": player.get("selected_position", {}).get("position", "NA"),
+        "position": pos,
         "stats": stats
     }
 
 # =========================
 # NORMALIZE GOALIES
 # =========================
-# Gather min/max for goalies to normalize
 goalie_values = defaultdict(list)
-for pid, pdata in team_data["players"].items():
+for pdata in team_data["players"].values():
     if pdata["position"] == "G":
         for stat in GOALIE_STATS:
             if pdata["stats"].get(stat) is not None:
@@ -111,7 +111,7 @@ for pid, pdata in team_data["players"].items():
 
 goalie_minmax = {stat: (min(vals), max(vals)) for stat, vals in goalie_values.items() if vals}
 
-for pid, pdata in team_data["players"].items():
+for pdata in team_data["players"].values():
     if pdata["position"] == "G":
         normalized = {}
         for stat in GOALIE_STATS:
@@ -125,7 +125,7 @@ for pid, pdata in team_data["players"].items():
 # =========================
 output = {
     "team_key": my_team_key,
-    "team_name": team_info.name,
+    "team_name": team_obj.name,
     "current_week": current_week,
     "players": team_data["players"],
     "lastUpdated": datetime.now(timezone.utc).isoformat()
