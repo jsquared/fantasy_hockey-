@@ -40,16 +40,16 @@ current_week = int(league.current_week())
 weeks = list(range(1, current_week + 1))
 
 # =========================
-# TEAMS (FIXED)
+# TEAMS (FIXED FOR YOUR VERSION)
 # =========================
 teams = {}
+
 for team_key in league.teams():
     team_obj = league.to_team(team_key)
-    meta = team_obj.meta
 
     teams[team_key] = {
-        "name": meta["name"],
-        "team_id": meta["team_id"]
+        "name": team_obj.name(),
+        "team_id": team_obj.team_id
     }
 
 # =========================
@@ -67,8 +67,8 @@ for week in weeks:
         if m_key == "count":
             continue
 
-        for _, tdata in matchup["matchup"]["0"]["teams"].items():
-            if _ == "count":
+        for t_key, tdata in matchup["matchup"]["0"]["teams"].items():
+            if t_key == "count":
                 continue
 
             team_key = tdata["team"][0][0]["team_key"]
@@ -121,7 +121,7 @@ strong = [s for s in my_avg if my_avg[s] > league_avg[s]]
 weak = [s for s in my_avg if my_avg[s] < league_avg[s]]
 
 # =========================
-# 1-FOR-1 TRADE IDEAS (RESTORED)
+# 1-FOR-1 TRADE IDEAS
 # =========================
 trade_ideas = []
 
@@ -131,8 +131,15 @@ for team_key, team in teams.items():
 
     their_avg = compute_avg(team_key)
 
-    helps_us = [s for s in weak if s in their_avg and their_avg[s] > league_avg[s]]
-    they_need = [s for s in strong if s in their_avg and their_avg[s] < league_avg[s]]
+    helps_us = [
+        s for s in weak
+        if s in their_avg and their_avg[s] > league_avg[s]
+    ]
+
+    they_need = [
+        s for s in strong
+        if s in their_avg and their_avg[s] < league_avg[s]
+    ]
 
     if helps_us and they_need:
         trade_ideas.append({
@@ -161,4 +168,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json written (1-for-1 trades restored)")
+print("✅ docs/roster.json written — 1-for-1 trade logic restored")
