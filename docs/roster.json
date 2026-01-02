@@ -1,6 +1,6 @@
 {
   "league": "The Liberties Invitational",
-  "generated": "2026-01-02T04:50:03.343281+00:00",
+  "generated": "2026-01-02T04:56:17.123869+00:00",
   "my_team": "465.l.33140.t.13",
   "trade_analysis": {
     "strong_categories": [
@@ -24,80 +24,20 @@
       "BLK": 36.416666666666664
     },
     "league_averages": {
-      "G": 11.214285714285712,
+      "G": 11.214285714285714,
       "A": 18.732142857142858,
-      "PPP": 8.672619047619047,
-      "SOG": 91.66071428571426,
-      "FW": 90.1011904761905,
-      "HIT": 40.92261904761905,
-      "BLK": 35.59523809523809
+      "PPP": 8.67261904761905,
+      "SOG": 91.66071428571429,
+      "FW": 90.10119047619048,
+      "HIT": 40.922619047619044,
+      "BLK": 35.595238095238095
     },
     "recommended_trade_partners": [
-      {
-        "team_key": "465.l.33140.t.14",
-        "they_help_us_in": [
-          "G",
-          "A",
-          "PPP",
-          "SOG"
-        ],
-        "they_need_from_us": [
-          "FW",
-          "HIT",
-          "BLK"
-        ]
-      },
       {
         "team_key": "465.l.33140.t.1",
         "they_help_us_in": [
           "A",
           "PPP"
-        ],
-        "they_need_from_us": [
-          "HIT",
-          "BLK"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.11",
-        "they_help_us_in": [
-          "G",
-          "A",
-          "PPP",
-          "SOG"
-        ],
-        "they_need_from_us": [
-          "FW",
-          "HIT"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.12",
-        "they_help_us_in": [
-          "A",
-          "SOG"
-        ],
-        "they_need_from_us": [
-          "HIT"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.3",
-        "they_help_us_in": [
-          "G",
-          "SOG"
-        ],
-        "they_need_from_us": [
-          "FW"
-        ]
-      },
-      {
-        "team_key": "465.l.33140.t.9",
-        "they_help_us_in": [
-          "G",
-          "A",
-          "PPP",
-          "SOG"
         ],
         "they_need_from_us": [
           "HIT",
@@ -116,6 +56,26 @@
         ]
       },
       {
+        "team_key": "465.l.33140.t.3",
+        "they_help_us_in": [
+          "G",
+          "SOG"
+        ],
+        "they_need_from_us": [
+          "FW"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.12",
+        "they_help_us_in": [
+          "A",
+          "SOG"
+        ],
+        "they_need_from_us": [
+          "HIT"
+        ]
+      },
+      {
         "team_key": "465.l.33140.t.4",
         "they_help_us_in": [
           "G",
@@ -125,6 +85,19 @@
           "FW",
           "HIT",
           "BLK"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.11",
+        "they_help_us_in": [
+          "G",
+          "A",
+          "PPP",
+          "SOG"
+        ],
+        "they_need_from_us": [
+          "FW",
+          "HIT"
         ]
       },
       {
@@ -138,6 +111,208 @@
           "HIT",
           "BLK"
         ]
+      },
+      {
+        "team_key": "465.l.33140.t.14",
+        "they_help_us_in": [
+          "G",
+          "A",
+          "PPP",
+          "SOG"
+        ],
+        "they_need_from_us": [
+          "FW",
+          "HIT",
+          "BLK"
+        ]
+      },
+      {
+        "team_key": "465.l.33140.t.9",
+        "they_help_us_in": [
+          "G",
+          "A",
+          "PPP",
+          "SOG"
+        ],
+        "they_need_from_us": [
+          "HIT",
+          "BLK"
+        ]
+      }
+    ],
+    "safe_trade_bait": [
+      {
+        "player_id": 8652,
+        "name": "Anton Lundell"
+      },
+      {
+        "player_id": 4471,
+        "name": "Steven Stamkos"
+      },
+      {
+        "player_id": 5391,
+        "name": "Rickard Rakell"
+      },
+      {
+        "player_id": 5928,
+        "name": "Anders Lee"
+      },
+      {
+        "player_id": 32779,
+        "name": "Beckett Sennecke"
+      }
+    ],
+    "trade_ideas": [
+      {
+        "type": "1-for-1",
+        "give": [
+          "Anton Lundell"
+        ],
+        "get": [
+          "Dylan Strome"
+        ],
+        "partner": "465.l.33140.t.1"
+      },
+      {
+        "type": "1-for-1",
+        "give": [
+          "Anton Lundell"
+        ],
+        "get": [
+          "Nick Suzuki"
+        ],
+        "partner": "465.l.33140.t.1"
+      },
+      {
+        "type": "1-for-1",
+        "give": [
+          "Anton Lundell"
+        ],
+        "get": [
+          "Juraj Slafkovsk\u00fd"
+        ],
+        "partner": "465.l.33140.t.1"
+      },
+      {
+        "type": "1-for-1",
+        "give": [
+          "Steven Stamkos"
+        ],
+        "get": [
+          "Dylan Strome"
+        ],
+        "partner": "465.l.33140.t.1"
+      },
+      {
+        "type": "1-for-1",
+        "give": [
+          "Steven Stamkos"
+        ],
+        "get": [
+          "Nick Suzuki"
+        ],
+        "partner": "465.l.33140.t.1"
+      },
+      {
+        "type": "1-for-1",
+        "give": [
+          "Steven Stamkos"
+        ],
+        "get": [
+          "Juraj Slafkovsk\u00fd"
+        ],
+        "partner": "465.l.33140.t.1"
+      },
+      {
+        "type": "1-for-1",
+        "give": [
+          "Rickard Rakell"
+        ],
+        "get": [
+          "Dylan Strome"
+        ],
+        "partner": "465.l.33140.t.1"
+      },
+      {
+        "type": "1-for-1",
+        "give": [
+          "Rickard Rakell"
+        ],
+        "get": [
+          "Nick Suzuki"
+        ],
+        "partner": "465.l.33140.t.1"
+      },
+      {
+        "type": "1-for-1",
+        "give": [
+          "Rickard Rakell"
+        ],
+        "get": [
+          "Juraj Slafkovsk\u00fd"
+        ],
+        "partner": "465.l.33140.t.1"
+      },
+      {
+        "type": "2-for-1",
+        "give": [
+          "Anton Lundell",
+          "Steven Stamkos"
+        ],
+        "get": [
+          "Dylan Strome"
+        ],
+        "partner": "465.l.33140.t.1"
+      },
+      {
+        "type": "1-for-1",
+        "give": [
+          "Anton Lundell"
+        ],
+        "get": [
+          "John Tavares"
+        ],
+        "partner": "465.l.33140.t.6"
+      },
+      {
+        "type": "1-for-1",
+        "give": [
+          "Anton Lundell"
+        ],
+        "get": [
+          "Ryan O'Reilly"
+        ],
+        "partner": "465.l.33140.t.6"
+      },
+      {
+        "type": "1-for-1",
+        "give": [
+          "Anton Lundell"
+        ],
+        "get": [
+          "Tim Stutzle"
+        ],
+        "partner": "465.l.33140.t.6"
+      },
+      {
+        "type": "1-for-1",
+        "give": [
+          "Steven Stamkos"
+        ],
+        "get": [
+          "John Tavares"
+        ],
+        "partner": "465.l.33140.t.6"
+      },
+      {
+        "type": "1-for-1",
+        "give": [
+          "Steven Stamkos"
+        ],
+        "get": [
+          "Ryan O'Reilly"
+        ],
+        "partner": "465.l.33140.t.6"
       }
     ]
   }
