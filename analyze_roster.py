@@ -3,23 +3,42 @@ import os
 from datetime import datetime, timezone
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
+from collections import defaultdict
+import itertools
 
 # =========================
 # CONFIG
 # =========================
 LEAGUE_ID = "465.l.33140"
 GAME_CODE = "nhl"
-MY_TEAM_KEY = "465.l.33140.t.13"
+WEEKS = 12
 
-SKATER_STATS = {
-    "1": "G",
-    "2": "A",
+# =========================
+# STAT MAP
+# =========================
+STAT_MAP = {
+    "1": "Goals",
+    "2": "Assists",
+    "4": "+/-",
+    "5": "PIM",
     "8": "PPP",
+    "11": "SHP",
+    "12": "GWG",
     "14": "SOG",
     "16": "FW",
-    "31": "HIT",
-    "32": "BLK",
+    "31": "Hits",
+    "32": "Blocks",
+    "19": "Wins",
+    "22": "GA",
+    "23": "GAA",
+    "24": "Shots Against",
+    "25": "Saves",
+    "26": "SV%",
+    "27": "Shutouts"
 }
+
+LOWER_IS_BETTER = {"GA", "GAA", "Shots Against"}
+GOALIE_STATS = {"Wins", "GA", "GAA", "Saves", "Shots Against", "SV%", "Shutouts"}
 
 # =========================
 # OAuth
@@ -36,136 +55,160 @@ oauth = OAuth2(None, None, from_file="oauth2.json")
 game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
 
-current_week = int(league.current_week())
-weeks = list(range(1, current_week + 1))
+my_team_key = league.team_key()
+teams_meta = league.teams()
 
 # =========================
-# TEAMS (FIXED FOR YOUR VERSION)
+# Helpers
 # =========================
-teams = {}
+def normalize(val, min_v, max_v):
+    if max_v == min_v:
+        return 0.5
+    return (val - min_v) / (max_v - min_v)
 
-for team_key in league.teams():
-    team_obj = league.to_team(team_key)
-
-    teams[team_key] = {
-        "name": team_obj.name(),
-        "team_id": team_obj.team_id
-    }
+def invert(val):
+    return -val
 
 # =========================
-# WEEKLY STATS
+# DATA COLLECTION
 # =========================
-weekly_stats = {}
+weekly_stats = defaultdict(dict)
 
-for week in weeks:
+for week in range(1, WEEKS + 1):
     raw = league.yhandler.get_scoreboard_raw(league.league_id, week)
-    scoreboard = raw["fantasy_content"]["league"][1]["scoreboard"]["0"]
+    matchups = raw["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
 
-    weekly_stats[str(week)] = {}
-
-    for m_key, matchup in scoreboard["matchups"].items():
-        if m_key == "count":
+    for _, matchup in matchups.items():
+        if _ == "count":
             continue
 
-        for t_key, tdata in matchup["matchup"]["0"]["teams"].items():
-            if t_key == "count":
+        teams_block = matchup["matchup"]["0"]["teams"]
+        for _, team_entry in teams_block.items():
+            if _ == "count":
                 continue
 
-            team_key = tdata["team"][0][0]["team_key"]
-            stats = tdata["team"][1]["team_stats"]["stats"]
+            team_block = team_entry["team"]
+            team_key = team_block[0][0]["team_key"]
 
-            weekly_stats[str(week)].setdefault(team_key, {})
-
-            for s in stats:
-                sid = s["stat"]["stat_id"]
-                val = s["stat"]["value"]
-
-                if sid not in SKATER_STATS:
+            stats = {}
+            for item in team_block[1]["team_stats"]["stats"]:
+                stat_id = str(item["stat"]["stat_id"])
+                if stat_id not in STAT_MAP:
                     continue
-
                 try:
-                    weekly_stats[str(week)][team_key][SKATER_STATS[sid]] = float(val)
+                    stats[STAT_MAP[stat_id]] = float(item["stat"]["value"])
                 except:
-                    continue
+                    pass
+
+            weekly_stats[week][team_key] = stats
 
 # =========================
 # AVERAGES
 # =========================
-def compute_avg(team_key):
-    totals = {}
-    counts = {}
+avg_stats = defaultdict(dict)
 
-    for week in weekly_stats.values():
-        stats = week.get(team_key, {})
-        for k, v in stats.items():
-            totals[k] = totals.get(k, 0) + v
-            counts[k] = counts.get(k, 0) + 1
-
-    return {k: totals[k] / counts[k] for k in totals}
-
-my_avg = compute_avg(MY_TEAM_KEY)
-
-league_avg = {}
-for stat in SKATER_STATS.values():
-    vals = []
-    for team_key in teams:
-        avg = compute_avg(team_key)
-        if stat in avg:
-            vals.append(avg[stat])
-    league_avg[stat] = sum(vals) / len(vals)
+for team in teams_meta.keys():
+    for stat in STAT_MAP.values():
+        vals = [
+            weekly_stats[w][team][stat]
+            for w in weekly_stats
+            if stat in weekly_stats[w].get(team, {})
+        ]
+        avg_stats[team][stat] = sum(vals) / len(vals) if vals else None
 
 # =========================
-# STRENGTH / WEAKNESS
+# NORMALIZED CATEGORY SCORES
 # =========================
-strong = [s for s in my_avg if my_avg[s] > league_avg[s]]
-weak = [s for s in my_avg if my_avg[s] < league_avg[s]]
+team_scores = defaultdict(dict)
 
-# =========================
-# 1-FOR-1 TRADE IDEAS
-# =========================
-trade_ideas = []
+for stat in STAT_MAP.values():
+    vals = {
+        t: avg_stats[t][stat]
+        for t in avg_stats
+        if avg_stats[t][stat] is not None
+    }
 
-for team_key, team in teams.items():
-    if team_key == MY_TEAM_KEY:
+    if not vals:
         continue
 
-    their_avg = compute_avg(team_key)
+    min_v, max_v = min(vals.values()), max(vals.values())
 
-    helps_us = [
-        s for s in weak
-        if s in their_avg and their_avg[s] > league_avg[s]
-    ]
+    for team, v in vals.items():
+        score = normalize(v, min_v, max_v)
+        if stat in LOWER_IS_BETTER:
+            score = 1 - score
 
-    they_need = [
-        s for s in strong
-        if s in their_avg and their_avg[s] < league_avg[s]
-    ]
+        # goalie stats weighted slightly higher
+        weight = 1.15 if stat in GOALIE_STATS else 1.0
+        team_scores[team][stat] = score * weight
 
-    if helps_us and they_need:
-        trade_ideas.append({
-            "partner": team_key,
-            "team_name": team["name"],
-            "they_help_us_in": helps_us,
-            "they_need_from_us": they_need,
-            "type": "1-for-1"
-        })
+# =========================
+# SURPLUS / WEAKNESS
+# =========================
+my_scores = team_scores[my_team_key]
+
+sorted_stats = sorted(my_scores.items(), key=lambda x: x[1], reverse=True)
+strengths = {s for s, _ in sorted_stats[:4]}
+weaknesses = {s for s, _ in sorted_stats[-4:]}
+
+# =========================
+# TRADE ENGINE
+# =========================
+trade_suggestions = []
+
+for other_team in teams_meta.keys():
+    if other_team == my_team_key:
+        continue
+
+    other_scores = team_scores[other_team]
+
+    # 1-for-1 logic
+    for give, get in itertools.product(strengths, weaknesses):
+        delta_me = other_scores.get(get, 0) - my_scores.get(give, 0)
+        delta_them = my_scores.get(get, 0) - other_scores.get(give, 0)
+
+        if delta_me > 0 and delta_them > 0:
+            trade_suggestions.append({
+                "partner": teams_meta[other_team]["name"],
+                "type": "1-for-1",
+                "i_give": give,
+                "i_get": get,
+                "net_gain": round(delta_me, 3)
+            })
+
+    # 2-for-1 logic
+    for give_pair in itertools.combinations(strengths, 2):
+        for get in weaknesses:
+            give_val = sum(my_scores.get(s, 0) for s in give_pair)
+            get_val = other_scores.get(get, 0)
+
+            if get_val > give_val * 0.9:
+                trade_suggestions.append({
+                    "partner": teams_meta[other_team]["name"],
+                    "type": "2-for-1",
+                    "i_give": list(give_pair),
+                    "i_get": get,
+                    "net_gain": round(get_val - give_val, 3)
+                })
 
 # =========================
 # OUTPUT
 # =========================
 payload = {
     "league": league.settings()["name"],
-    "generated": datetime.now(timezone.utc).isoformat(),
-    "my_team": MY_TEAM_KEY,
-    "my_averages": my_avg,
-    "league_averages": league_avg,
-    "strengths": strong,
-    "weaknesses": weak,
-    "trade_ideas": trade_ideas,
+    "my_team": my_team_key,
+    "strengths": sorted(strengths),
+    "weaknesses": sorted(weaknesses),
+    "trade_recommendations": sorted(
+        trade_suggestions,
+        key=lambda x: x["net_gain"],
+        reverse=True
+    ),
+    "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
 os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json written — 1-for-1 trade logic restored")
+print("✅ docs/roster.json updated with trade recommendations")
