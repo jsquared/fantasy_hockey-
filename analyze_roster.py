@@ -57,10 +57,9 @@ league = game.to_league(LEAGUE_ID)
 my_team_key = league.team_key()
 current_week = int(league.current_week())
 
-# IMPORTANT: league.teams() RETURNS RAW METADATA (DICT)
+# league.teams() returns RAW METADATA (dict)
 teams_meta = league.teams()
 
-# Safe team name map (THIS IS THE FIX)
 teams = {
     team_key: team_data["name"]
     for team_key, team_data in teams_meta.items()
@@ -108,7 +107,6 @@ for week in range(1, WEEKS + 1):
             team_key = team_block[0][0]["team_key"]
             weekly_stats[week][team_key] = extract_team_stats(team_block)
 
-    # Weekly ranking
     for stat_id, stat_name in STAT_MAP.items():
         values = {
             t: s.get(stat_id)
@@ -145,7 +143,6 @@ for team_key in teams.keys():
         avg_stats[team_key][stat_name] = sum(values) / len(values) if values else None
         avg_ranks[team_key][stat_name] = sum(ranks) / len(ranks) if ranks else None
 
-        # Trend: last 3 weeks vs prior
         if len(values) >= 6:
             recent = sum(values[-3:]) / 3
             earlier = sum(values[:-3]) / (len(values) - 3)
@@ -212,7 +209,7 @@ for stat_name in STAT_MAP.values():
     }
 
 # =========================
-# OUTPUT
+# OUTPUT (CHANGED FILE NAME)
 # =========================
 payload = {
     "league": league.settings()["name"],
@@ -231,7 +228,7 @@ payload = {
 }
 
 os.makedirs("docs", exist_ok=True)
-with open("docs/team_analysis.json", "w") as f:
+with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/team_analysis.json updated successfully")
+print("✅ docs/roster.json updated successfully")
