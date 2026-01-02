@@ -1,25 +1,22 @@
 import json
 import os
-import itertools
 from datetime import datetime, timezone
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 from collections import defaultdict
+from itertools import combinations
 
 # =========================
 # CONFIG
 # =========================
 LEAGUE_ID = "465.l.33140"
 GAME_CODE = "nhl"
-WEEKS = 12  # number of weeks to average over
-MAX_TRADE_PLAYERS = 2  # 1-for-1 and 2-for-1 only
+SWING_THRESHOLD = 0.10  # 10% swing for confidence
+MAX_PLAYERS_FOR_2_FOR_1 = 2
 
-# =========================
-# STAT MAP
-# =========================
 STAT_MAP = {
-    "1": "Goals",
-    "2": "Assists",
+    "1": "G",
+    "2": "A",
     "4": "+/-",
     "5": "PIM",
     "8": "PPP",
@@ -27,21 +24,21 @@ STAT_MAP = {
     "12": "GWG",
     "14": "SOG",
     "16": "FW",
-    "31": "Hits",
-    "32": "Blocks",
-    "19": "Wins",
+    "31": "HIT",
+    "32": "BLK",
+    "19": "W",
     "22": "GA",
     "23": "GAA",
-    "24": "Shots Against",
-    "25": "Saves",
+    "24": "SA",
+    "25": "SV",
     "26": "SV%",
-    "27": "Shutouts"
+    "27": "SHO",
 }
 
-LOWER_IS_BETTER = {"GA", "GAA", "Shots Against"}
+LOWER_IS_BETTER = {"GA", "GAA", "SA"}
 
 # =========================
-# Setup OAuth
+# OAUTH
 # =========================
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
@@ -50,163 +47,121 @@ if "YAHOO_OAUTH_JSON" in os.environ:
 oauth = OAuth2(None, None, from_file="oauth2.json")
 
 # =========================
-# Yahoo fantasy objects
+# SETUP LEAGUE
 # =========================
 game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
-
 my_team_key = league.team_key()
-all_team_keys = league.teams()
+teams = {t["team_key"]: t["name"] for t in league.teams()}
 
 # =========================
-# ROSTERS
+# FETCH ROSTERS & PLAYER STATS
 # =========================
-rosters = {}
-players_info = {}
+team_players = {}
+player_averages = {}
 
-for team_key in all_team_keys:
-    team_obj = league.to_team(team_key)
-    roster = team_obj.roster()
-    rosters[team_key] = []
-
-    for p in roster:
-        pid = p["player_id"]
-        rosters[team_key].append(pid)
-        players_info[pid] = {
-            "name": p["name"],
-            "positions": p.get("eligible_positions", [])
-        }
-
-# =========================
-# WEEKLY STATS (per player NOT team)
-# =========================
-player_weekly = defaultdict(lambda: defaultdict(list))
-
-for week in range(1, WEEKS + 1):
-    raw = league.yhandler.get_scoreboard_raw(league.league_id, week)
-    matchups = raw["fantasy_content"]["league"][1]["scoreboard"]["0"]["matchups"]
-
-    for _, matchup_data in matchups.items():
-        if _ == "count":
-            continue
-        teams_block = matchup_data["matchup"]["0"]["teams"]
-        for tk, team_data in teams_block.items():
-            if tk == "count":
-                continue
-            for pstat in team_data["team"][1]["player_stats"]["stats"]:
-                pid = pstat["player_id"]
-                for stat_item in pstat["stats"]:
-                    stat_id = stat_item["stat_id"]
-                    if stat_id in STAT_MAP:
-                        try:
-                            player_weekly[pid][STAT_MAP[stat_id]].append(float(stat_item["value"]))
-                        except:
-                            pass
+for team_key in teams.keys():
+    roster = league.team(team_key).roster()
+    team_players[team_key] = roster
+    for player in roster:
+        pid = player["player_id"]
+        player_averages[pid] = {}
+        stats = player.stats("season")  # season averages
+        for stat_id, stat_name in STAT_MAP.items():
+            value = stats.get(stat_id)
+            if value is not None:
+                player_averages[pid][stat_name] = value
 
 # =========================
-# PLAYER AVERAGES (per stat)
+# COMPUTE TEAM TOTALS
 # =========================
-player_avg = {}
-
-for pid, stats in player_weekly.items():
-    player_avg[pid] = {}
-    for stat, vals in stats.items():
-        if vals:
-            player_avg[pid][stat] = sum(vals) / len(vals)
-
-# =========================
-# TEAM CATEGORY AVERAGES
-# =========================
-team_category_avg = defaultdict(lambda: defaultdict(float))
-
-for team_key, pids in rosters.items():
-    for pid in pids:
-        for stat, avg in player_avg.get(pid, {}).items():
-            team_category_avg[team_key][stat] += avg
+team_totals = {}
+for team_key, players in team_players.items():
+    totals = defaultdict(float)
+    for player in players:
+        pid = player["player_id"]
+        for stat_name, val in player_averages.get(pid, {}).items():
+            totals[stat_name] += val
+    team_totals[team_key] = totals
 
 # =========================
-# CATEGORY SURPLUS / WEAKNESS
+# NORMALIZATION FUNCTION
 # =========================
-league_category_avg = defaultdict(list)
-
-for team_key in team_category_avg:
-    for stat, val in team_category_avg[team_key].items():
-        league_category_avg[stat].append(val)
-
-league_category_avg = {stat: sum(vals)/len(vals) for stat, vals in league_category_avg.items()}
-
-my_cat = team_category_avg[my_team_key]
-strengths = [s for s,v in my_cat.items() if v > league_category_avg.get(s, 0)]
-weaknesses = [s for s,v in my_cat.items() if v < league_category_avg.get(s, 0)]
+def normalize(value, min_v, max_v):
+    if max_v == min_v:
+        return 0.5
+    return (value - min_v) / (max_v - min_v)
 
 # =========================
-# PLAYER MARGINAL VALUE
+# CALCULATE TRADE VALUE
 # =========================
-player_marginal = {}
+def trade_value(i_give, i_get, team_totals_dict):
+    """Compute net gain of a trade in normalized category points."""
+    values = []
+    for stat in STAT_MAP.values():
+        stat_vals = [team_totals_dict[t][stat] for t in team_totals_dict if stat in team_totals_dict[t]]
+        values.append((stat, min(stat_vals), max(stat_vals)))
 
-for team_key, pids in rosters.items():
-    player_marginal[team_key] = {}
-    for pid in pids:
-        base = team_category_avg[team_key]
-        without = base.copy()
-        for stat, avg in player_avg.get(pid, {}).items():
-            without[stat] = without.get(stat,0) - avg
-        marginal = {stat: base.get(stat,0) - without.get(stat,0) for stat in STAT_MAP.values()}
-        player_marginal[team_key][pid] = marginal
+    def score(team, stats_to_consider):
+        s = 0
+        for stat, min_v, max_v in values:
+            val = team.get(stat, 0)
+            n = normalize(val, min_v, max_v)
+            if stat in LOWER_IS_BETTER:
+                n = 1 - n
+            if stat in stats_to_consider:
+                s += n
+        return s
+
+    my_score = score(team_totals_dict[my_team_key], i_get)
+    opp_score = score(team_totals_dict[my_team_key], i_give)
+    return my_score - opp_score
 
 # =========================
-# TRADE SIMULATION
+# GENERATE TRADE RECOMMENDATIONS
 # =========================
-trade_results = []
+trade_recommendations = []
 
-def score_trade(my_give, other_give):
-    delta_me = 0
-    delta_them = 0
-    for stat in weaknesses:
-        delta_me += player_marginal[other_team][other_give].get(stat, 0) - player_marginal[my_team_key][my_give].get(stat, 0)
-    for stat in strengths:
-        delta_them += player_marginal[my_team_key][my_give].get(stat, 0) - player_marginal[other_team][other_give].get(stat, 0)
-    return round(delta_me + delta_them,3)
-
-for other_team in all_team_keys:
-    if other_team == my_team_key:
+for partner_key, partner_name in teams.items():
+    if partner_key == my_team_key:
         continue
 
-    # 1-for-1
-    for my_pid, their_pid in itertools.product(rosters[my_team_key], rosters[other_team]):
-        score = score_trade(my_pid, their_pid)
-        if score > 0:
-            trade_results.append({
-                "partner": other_team,
+    my_players = team_players[my_team_key]
+    partner_players = team_players[partner_key]
+
+    # 1-for-1 trades
+    for mine in my_players:
+        for theirs in partner_players:
+            net_gain = trade_value([mine["player_id"]], [theirs["player_id"]], player_averages)
+            trade_recommendations.append({
+                "partner": partner_name,
                 "type": "1-for-1",
-                "give": players_info[my_pid]["name"],
-                "get": players_info[their_pid]["name"],
-                "score": score
+                "i_give": mine["name"],
+                "i_get": theirs["name"],
+                "net_gain": round(net_gain, 3)
             })
 
-    # 2-for-1
-    for my_combo in itertools.combinations(rosters[my_team_key],2):
-        for their_pid in rosters[other_team]:
-            my_loss = sum(player_avg.get(pid,{}).get(stat,0) for pid in my_combo for stat in weaknesses)
-            their_gain = player_avg.get(their_pid,{}).get(stat,0)
-            if their_gain > my_loss:
-                trade_results.append({
-                    "partner": other_team,
-                    "type": "2-for-1",
-                    "give": [players_info[pid]["name"] for pid in my_combo],
-                    "get": players_info[their_pid]["name"],
-                    "score": round(their_gain - my_loss,3)
-                })
+    # 2-for-1 trades
+    for combo in combinations(my_players, 2):
+        for theirs in partner_players:
+            net_gain = trade_value([p["player_id"] for p in combo], [theirs["player_id"]], player_averages)
+            trade_recommendations.append({
+                "partner": partner_name,
+                "type": "2-for-1",
+                "i_give": [p["name"] for p in combo],
+                "i_get": theirs["name"],
+                "net_gain": round(net_gain, 3)
+            })
 
 # =========================
-# OUTPUT
+# OUTPUT TO JSON
 # =========================
 payload = {
     "league": league.settings()["name"],
     "my_team": my_team_key,
-    "strengths": strengths,
-    "weaknesses": weaknesses,
-    "trade_suggestions": sorted(trade_results, key=lambda x: x["score"], reverse=True),
+    "teams": teams,
+    "team_totals": team_totals,
+    "trade_recommendations": sorted(trade_recommendations, key=lambda x: -x["net_gain"]),
     "lastUpdated": datetime.now(timezone.utc).isoformat()
 }
 
@@ -214,4 +169,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json updated with player-level trade ideas")
+print("✅ docs/roster.json updated with player-level trade recommendations")
