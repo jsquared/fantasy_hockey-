@@ -7,6 +7,7 @@ import yahoo_fantasy_api as yfa
 GAME_CODE = "nhl"
 LEAGUE_ID = "465.l.33140"
 
+# OAuth bootstrap (CI-safe)
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
         json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
@@ -21,21 +22,18 @@ team = league.to_team(team_key)
 
 roster_output = []
 
-# ✅ roster() is supported
 for p in team.roster():
     pid = p["player_id"]
 
-    # ✅ THIS is the correct stats call
+    # ✅ returns dict {stat_id: value}
     raw_stats = league.player_stats(pid, "season")
 
     stats = {}
-    for stat in raw_stats:
-        sid = str(stat["stat_id"])
-        val = stat["value"]
+    for sid, val in raw_stats.items():
         try:
-            stats[sid] = float(val)
+            stats[str(sid)] = float(val)
         except (TypeError, ValueError):
-            stats[sid] = val
+            stats[str(sid)] = val
 
     roster_output.append({
         "player_id": pid,
