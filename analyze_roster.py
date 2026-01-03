@@ -25,19 +25,37 @@ roster_output = []
 for p in team.roster():
     pid = p["player_id"]
 
-    # ✅ returns dict {stat_id: value}
-    raw_stats = league.player_stats(pid, "season")
+    try:
+        raw_stats = league.player_stats(pid, "season")
+    except Exception:
+        raw_stats = None
 
     stats = {}
-    for sid, val in raw_stats.items():
-        try:
-            stats[str(sid)] = float(val)
-        except (TypeError, ValueError):
-            stats[str(sid)] = val
+
+    # ---- NORMALIZE STAT SHAPES ----
+    if isinstance(raw_stats, dict):
+        for sid, val in raw_stats.items():
+            try:
+                stats[str(sid)] = float(val)
+            except (TypeError, ValueError):
+                stats[str(sid)] = val
+
+    elif isinstance(raw_stats, list):
+        for entry in raw_stats:
+            if not isinstance(entry, dict):
+                continue
+            sid = entry.get("stat_id")
+            val = entry.get("value")
+            if sid is None:
+                continue
+            try:
+                stats[str(sid)] = float(val)
+            except (TypeError, ValueError):
+                stats[str(sid)] = val
 
     roster_output.append({
         "player_id": pid,
-        "name": p["name"],
+        "name": p.get("name"),
         "position": p.get("position"),
         "selected_position": p.get("selected_position"),
         "editorial_team": p.get("editorial_team_abbr"),
@@ -45,7 +63,7 @@ for p in team.roster():
     })
 
 payload = {
-    "league": league.settings()["name"],
+    "league": league.settings().get("name"),
     "team_key": team_key,
     "generated": datetime.now(timezone.utc).isoformat(),
     "roster": roster_output
