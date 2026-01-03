@@ -43,11 +43,11 @@ def extract_stats(stats_block):
     return stats
 
 # =========================
-# ROSTER + STATS
+# ROSTER + PLAYER STATS
 # =========================
 roster_output = []
 
-roster = team.roster()  # metadata only
+roster = team.roster()  # ✅ THIS PART WAS ALWAYS WORKING
 
 for p in roster:
     player_id = p["player_id"]
@@ -56,11 +56,11 @@ for p in roster:
 
     player_key = f"{GAME_CODE}.p.{player_id}"
 
-    # 🔑 CORRECT RAW CALL (POSITIONAL ARGS)
+    # ✅ STRING PARAMS (THIS IS THE FIX)
     raw = league.yhandler.get_players_raw(
         league.league_id,
-        [player_key],
-        ["stats"]
+        player_key,
+        "stats"
     )
 
     stats = {}
