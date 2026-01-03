@@ -29,7 +29,7 @@ my_team_key = league.team_key()
 team = league.to_team(my_team_key)
 
 # =========================
-# Helper: Extract stats block
+# Helpers
 # =========================
 def extract_stats(stats_block):
     stats = {}
@@ -47,8 +47,7 @@ def extract_stats(stats_block):
 # =========================
 roster_output = []
 
-# Team roster (NO stats here — metadata only)
-roster = team.roster()
+roster = team.roster()  # metadata only
 
 for p in roster:
     player_id = p["player_id"]
@@ -57,18 +56,19 @@ for p in roster:
 
     player_key = f"{GAME_CODE}.p.{player_id}"
 
-    # RAW stats call (THIS IS THE KEY FIX)
+    # 🔑 CORRECT RAW CALL (POSITIONAL ARGS)
     raw = league.yhandler.get_players_raw(
         league.league_id,
-        player_keys=[player_key],
-        subresources=["stats"]
+        [player_key],
+        ["stats"]
     )
 
     stats = {}
 
     try:
         stats_block = (
-            raw["fantasy_content"]["league"][1]["players"]["0"]["player"][1]
+            raw["fantasy_content"]["league"][1]
+            ["players"]["0"]["player"][1]
             ["player_stats"]["stats"]
         )
         stats = extract_stats(stats_block)
@@ -97,4 +97,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json written with player season stats")
+print("✅ docs/roster.json written successfully")
