@@ -29,57 +29,31 @@ my_team_key = league.team_key()
 team = league.to_team(my_team_key)
 
 # =========================
-# Helpers
-# =========================
-def extract_stats(stats_block):
-    stats = {}
-    for item in stats_block:
-        stat_id = str(item["stat"]["stat_id"])
-        val = item["stat"]["value"]
-        try:
-            stats[stat_id] = float(val)
-        except (TypeError, ValueError):
-            stats[stat_id] = val
-    return stats
-
-# =========================
 # ROSTER + PLAYER STATS
 # =========================
 roster_output = []
 
-roster = team.roster()  # ✅ THIS PART WAS ALWAYS WORKING
+# ✅ THIS IS THE CRITICAL CALL
+roster = team.roster(stats_type="season")
 
 for p in roster:
-    player_id = p["player_id"]
-    name = p["name"]
-    position = p.get("position")
-
-    player_key = f"{GAME_CODE}.p.{player_id}"
-
-    # ✅ STRING PARAMS (THIS IS THE FIX)
-    raw = league.yhandler.get_players_raw(
-        league.league_id,
-        player_key,
-        "stats"
-    )
-
     stats = {}
 
-    try:
-        stats_block = (
-            raw["fantasy_content"]["league"][1]
-            ["players"]["0"]["player"][1]
-            ["player_stats"]["stats"]
-        )
-        stats = extract_stats(stats_block)
-    except Exception:
-        stats = {}
+    if "player_stats" in p:
+        for item in p["player_stats"]["stats"]:
+            stat_id = str(item["stat"]["stat_id"])
+            val = item["stat"]["value"]
+            try:
+                stats[stat_id] = float(val)
+            except (TypeError, ValueError):
+                stats[stat_id] = val
 
     roster_output.append({
-        "player_id": player_id,
-        "player_key": player_key,
-        "name": name,
-        "position": position,
+        "player_id": p["player_id"],
+        "name": p["name"],
+        "position": p.get("position"),
+        "selected_position": p.get("selected_position"),
+        "editorial_team": p.get("editorial_team_abbr"),
         "stats": stats
     })
 
