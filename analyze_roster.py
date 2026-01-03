@@ -33,23 +33,25 @@ team = league.to_team(my_team_key)
 # =========================
 roster_output = []
 
-# ✅ THIS IS THE CRITICAL CALL
-roster = team.roster(stats_type="season")
+roster = team.roster()  # ✅ NO arguments supported in your version
 
 for p in roster:
-    stats = {}
+    pid = p["player_id"]
 
-    if "player_stats" in p:
-        for item in p["player_stats"]["stats"]:
-            stat_id = str(item["stat"]["stat_id"])
-            val = item["stat"]["value"]
-            try:
-                stats[stat_id] = float(val)
-            except (TypeError, ValueError):
-                stats[stat_id] = val
+    # pull season stats separately (THIS IS THE KEY)
+    raw_stats = team.player_stats(pid, "season")
+
+    stats = {}
+    for item in raw_stats:
+        stat_id = str(item["stat_id"])
+        val = item["value"]
+        try:
+            stats[stat_id] = float(val)
+        except (TypeError, ValueError):
+            stats[stat_id] = val
 
     roster_output.append({
-        "player_id": p["player_id"],
+        "player_id": pid,
         "name": p["name"],
         "position": p.get("position"),
         "selected_position": p.get("selected_position"),
