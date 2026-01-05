@@ -7,39 +7,45 @@ import yahoo_fantasy_api as yfa
 GAME_CODE = "nhl"
 LEAGUE_ID = "465.l.33140"
 
-# OAuth bootstrap
+# ---- OAuth bootstrap (CI-safe) ----
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
         json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
 
 oauth = OAuth2(None, None, from_file="oauth2.json")
+
+# ---- Connect to league ----
 game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
 team_key = league.team_key()
+team = league.to_team(team_key)
 
-# Fetch raw roster + season stats
-raw = league.yhandler.get(f"team/{team_key}/roster/players/stats;type=season")
-
+# ---- Prepare roster output ----
 roster_output = []
 
-# Navigate to the roster block
-players_block = raw["fantasy_content"]["team"][1]["roster"]["0"]["players"]
+raw = league.yhandler.get(f"/team/{team_key}/roster/players/stats;type=season")
+
+# Navigate to players block safely
+players_block = raw.get("fantasy_content", {}).get("team", [])[1].get("roster", {}).get("0", {}).get("players", {})
 
 for pid_str, pdata in players_block.items():
+    if not isinstance(pdata, dict):
+        continue  # skip invalid entries
+
     player_data = pdata.get("player")
     if not player_data or not isinstance(player_data, list):
-        continue  # skip malformed or placeholder entries
+        continue
 
-    player_list = player_data[0]  # The actual player data list
+    player_list = player_data[0]  # actual player data list
+    stats = {}
+
+    # ---- Extract season stats ----
     player_stats_block = None
-
-    # Extract stats if present
     for item in player_list:
         if isinstance(item, dict) and "player_stats" in item:
             player_stats_block = item["player_stats"]
             break
 
-    stats = {}
     if player_stats_block:
         for stat_entry in player_stats_block.get("stats", []):
             stat = stat_entry.get("stat", {})
@@ -51,7 +57,7 @@ for pid_str, pdata in players_block.items():
                 except (TypeError, ValueError):
                     stats[str(sid)] = val
 
-    # Extract basic info
+    # ---- Extract basic info ----
     player_id = None
     player_name = None
     selected_position = None
@@ -76,14 +82,16 @@ for pid_str, pdata in players_block.items():
         "stats": stats
     })
 
-# Write output to JSON
+# ---- Write JSON output ----
+payload = {
+    "league": league.settings().get("name"),
+    "team_key": team_key,
+    "generated": datetime.now(timezone.utc).isoformat(),
+    "roster": roster_output
+}
+
 os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
-    json.dump({
-        "league": league.settings().get("name"),
-        "team_key": team_key,
-        "generated": datetime.now(timezone.utc).isoformat(),
-        "roster": roster_output
-    }, f, indent=2)
+    json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json written successfully with season stats")
+print("✅ docs/roster.json written successfully")
