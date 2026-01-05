@@ -26,7 +26,11 @@ roster_output = []
 players_block = raw["fantasy_content"]["team"][1]["roster"]["0"]["players"]
 
 for pid_str, pdata in players_block.items():
-    player_list = pdata["player"][0]  # The actual player data list
+    player_data = pdata.get("player")
+    if not player_data or not isinstance(player_data, list):
+        continue  # skip malformed or placeholder entries
+
+    player_list = player_data[0]  # The actual player data list
     player_stats_block = None
 
     # Extract stats if present
