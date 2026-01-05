@@ -18,14 +18,11 @@ game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
 
 team_key = league.team_key()
-team = league.to_team(team_key)
 
-# ---------- RAW TEAM ROSTER STATS ----------
-raw = team.roster_stats("season")
+# ---------- RAW ROSTER STATS (SEASON) ----------
+raw = league.yhandler.get_team_roster_stats(team_key, "season")
 
-# Yahoo shape: ['team', {...}]
-team_block = raw[1]
-
+team_block = raw["team"][1]
 players = (
     team_block
     .get("roster", {})
@@ -36,12 +33,10 @@ players = (
 roster_output = []
 
 for p in players.values():
-    pdata = p.get("player", [None, {}])[1]
+    pdata = p["player"][1]
 
     stats = {}
-    stat_block = pdata.get("player_stats", {}).get("stats", [])
-
-    for s in stat_block:
+    for s in pdata.get("player_stats", {}).get("stats", []):
         stat = s.get("stat", {})
         sid = stat.get("stat_id")
         val = stat.get("value")
@@ -74,4 +69,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json written with SEASON player stats")
+print("✅ docs/roster.json written with SEASON stats")
