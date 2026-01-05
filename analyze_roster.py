@@ -7,7 +7,7 @@ import yahoo_fantasy_api as yfa
 GAME_CODE = "nhl"
 LEAGUE_ID = "465.l.33140"
 
-# ---------- OAuth bootstrap (CI-safe) ----------
+# ---------- OAuth bootstrap ----------
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
         json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
@@ -19,15 +19,15 @@ league = game.to_league(LEAGUE_ID)
 
 team_key = league.team_key()
 
-# ---------- RAW ROSTER STATS (SEASON) ----------
-raw = league.yhandler.get_team_roster_stats(team_key, "season")
+# ---------- RAW API CALL (VERSION SAFE) ----------
+raw = league.yhandler.get(
+    f"team/{team_key}/roster/players/stats;type=season",
+    {}
+)
 
 team_block = raw["team"][1]
 players = (
-    team_block
-    .get("roster", {})
-    .get("0", {})
-    .get("players", {})
+    team_block["roster"]["0"]["players"]
 )
 
 roster_output = []
