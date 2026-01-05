@@ -1,76 +1,91 @@
 import json
 import os
 from datetime import datetime, timezone
+
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
-GAME_CODE = "nhl"
-LEAGUE_ID = "465.l.33140"
 
-# OAuth bootstrap (CI-safe)
-if "YAHOO_OAUTH_JSON" in os.environ:
-    with open("oauth2.json", "w") as f:
-        json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
+# ---------- CONFIG ----------
+GAME_KEY = "nhl"
+OUTPUT_PATH = "docs/roster.json"
+# ----------------------------
 
-oauth = OAuth2(None, None, from_file="oauth2.json")
 
-game = yfa.Game(oauth, GAME_CODE)
-league = game.to_league(LEAGUE_ID)
+# OAuth (uses oauth.json)
+oauth = OAuth2(None, None, from_file="oauth.json")
+gm = yfa.Game(oauth, GAME_KEY)
 
-team_key = league.team_key()
-team = league.to_team(team_key)
+# Get current league
+league_ids = gm.league_ids()
+if not league_ids:
+    raise RuntimeError("No leagues found for this game.")
 
-roster_output = []
+league = gm.league(league_ids[0])
 
-for p in team.roster():
+# Get your team
+teams = league.teams()
+my_team_key = list(teams.keys())[0]
+team = league.team(my_team_key)
+
+# Get roster (THIS PART WAS WORKING)
+roster = team.roster()
+
+# Build player keys (CRITICAL)
+player_keys = []
+player_map = {}
+
+for p in roster:
     pid = p["player_id"]
+    pkey = f"{league.league_key}.p.{pid}"
+    player_keys.append(pkey)
 
-    try:
-        raw_stats = league.player_stats(pid, "season")
-    except Exception:
-        raw_stats = None
-
-    stats = {}
-
-    # ---- NORMALIZE STAT SHAPES ----
-    if isinstance(raw_stats, dict):
-        for sid, val in raw_stats.items():
-            try:
-                stats[str(sid)] = float(val)
-            except (TypeError, ValueError):
-                stats[str(sid)] = val
-
-    elif isinstance(raw_stats, list):
-        for entry in raw_stats:
-            if not isinstance(entry, dict):
-                continue
-            sid = entry.get("stat_id")
-            val = entry.get("value")
-            if sid is None:
-                continue
-            try:
-                stats[str(sid)] = float(val)
-            except (TypeError, ValueError):
-                stats[str(sid)] = val
-
-    roster_output.append({
+    player_map[pkey] = {
         "player_id": pid,
-        "name": p.get("name"),
+        "name": p["name"],
         "position": p.get("position"),
         "selected_position": p.get("selected_position"),
         "editorial_team": p.get("editorial_team_abbr"),
-        "stats": stats
-    })
+        "stats": {}
+    }
 
-payload = {
-    "league": league.settings().get("name"),
-    "team_key": team_key,
+# ---- Yahoo Players API call (THIS IS THE FIX) ----
+# This is the ONLY reliable way to get NHL season stats
+raw = league.yhandler.get(
+    f"/league/{league.league_key}/players;player_keys={','.join(player_keys)}/stats"
+)
+
+players = (
+    raw["fantasy_content"]["league"][1]["players"]
+)
+
+# Normalize Yahoo response
+for item in players:
+    player = item["player"]
+    pkey = player["player_key"]
+
+    if "player_stats" not in player:
+        continue
+
+    stats_block = player["player_stats"]["stats"]
+
+    if isinstance(stats_block, list):
+        for stat in stats_block:
+            stat_id = stat.get("stat_id")
+            value = stat.get("value")
+            if stat_id is not None:
+                player_map[pkey]["stats"][str(stat_id)] = value
+
+# Final output
+output = {
+    "league": league.settings()["name"],
+    "team_key": my_team_key,
     "generated": datetime.now(timezone.utc).isoformat(),
-    "roster": roster_output
+    "roster": list(player_map.values())
 }
 
 os.makedirs("docs", exist_ok=True)
-with open("docs/roster.json", "w") as f:
-    json.dump(payload, f, indent=2)
+with open(OUTPUT_PATH, "w") as f:
+    json.dump(output, f, indent=2)
 
-print("✅ docs/roster.json written successfully")
+print(f"Wrote roster with season stats → {OUTPUT_PATH}")
