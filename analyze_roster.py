@@ -1,91 +1,106 @@
 import json
 import os
 from datetime import datetime, timezone
-
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
 
+# =========================
+# CONFIG
+# =========================
+GAME_CODE = "nhl"
+LEAGUE_ID = "465.l.33140"
 
-# ---------- CONFIG ----------
-GAME_KEY = "nhl"
-OUTPUT_PATH = "docs/roster.json"
-# ----------------------------
+# =========================
+# OAuth bootstrap (CI-safe)
+# =========================
+if "YAHOO_OAUTH_JSON" in os.environ:
+    with open("oauth2.json", "w") as f:
+        json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
 
+oauth = OAuth2(None, None, from_file="oauth2.json")
 
-# OAuth (uses oauth.json)
-oauth = OAuth2(None, None, from_file="oauth.json")
-gm = yfa.Game(oauth, GAME_KEY)
+# =========================
+# Yahoo Objects
+# =========================
+game = yfa.Game(oauth, GAME_CODE)
+league = game.to_league(LEAGUE_ID)
 
-# Get current league
-league_ids = gm.league_ids()
-if not league_ids:
-    raise RuntimeError("No leagues found for this game.")
+team_key = league.team_key()
+team = league.to_team(team_key)
 
-league = gm.league(league_ids[0])
+# =========================
+# Helpers
+# =========================
+def extract_player_stats(player_block):
+    stats = {}
 
-# Get your team
-teams = league.teams()
-my_team_key = list(teams.keys())[0]
-team = league.team(my_team_key)
+    player_stats = (
+        player_block
+        .get("player", {})
+        .get("player_stats", {})
+        .get("stats", [])
+    )
 
-# Get roster (THIS PART WAS WORKING)
-roster = team.roster()
+    for entry in player_stats:
+        stat = entry.get("stat", {})
+        sid = stat.get("stat_id")
+        val = stat.get("value")
 
-# Build player keys (CRITICAL)
-player_keys = []
-player_map = {}
+        if sid is None:
+            continue
 
-for p in roster:
+        try:
+            stats[str(sid)] = float(val)
+        except (TypeError, ValueError):
+            stats[str(sid)] = val
+
+    return stats
+
+# =========================
+# ROSTER + STATS
+# =========================
+roster_output = []
+
+for p in team.roster():
     pid = p["player_id"]
-    pkey = f"{league.league_key}.p.{pid}"
-    player_keys.append(pkey)
+    player_key = f"{GAME_CODE}.p.{pid}"
 
-    player_map[pkey] = {
+    try:
+        raw = league.yhandler.get(
+            f"league/{LEAGUE_ID}/players;player_keys={player_key}/stats"
+        )
+
+        player_block = (
+            raw["fantasy_content"]["league"][1]
+               ["players"]["0"]
+        )
+
+        stats = extract_player_stats(player_block)
+
+    except Exception as e:
+        stats = {}
+
+    roster_output.append({
         "player_id": pid,
-        "name": p["name"],
+        "name": p.get("name"),
         "position": p.get("position"),
         "selected_position": p.get("selected_position"),
         "editorial_team": p.get("editorial_team_abbr"),
-        "stats": {}
-    }
+        "stats": stats
+    })
 
-# ---- Yahoo Players API call (THIS IS THE FIX) ----
-# This is the ONLY reliable way to get NHL season stats
-raw = league.yhandler.get(
-    f"/league/{league.league_key}/players;player_keys={','.join(player_keys)}/stats"
-)
-
-players = (
-    raw["fantasy_content"]["league"][1]["players"]
-)
-
-# Normalize Yahoo response
-for item in players:
-    player = item["player"]
-    pkey = player["player_key"]
-
-    if "player_stats" not in player:
-        continue
-
-    stats_block = player["player_stats"]["stats"]
-
-    if isinstance(stats_block, list):
-        for stat in stats_block:
-            stat_id = stat.get("stat_id")
-            value = stat.get("value")
-            if stat_id is not None:
-                player_map[pkey]["stats"][str(stat_id)] = value
-
-# Final output
-output = {
-    "league": league.settings()["name"],
-    "team_key": my_team_key,
+# =========================
+# OUTPUT
+# =========================
+payload = {
+    "league": league.settings().get("name"),
+    "team_key": team_key,
     "generated": datetime.now(timezone.utc).isoformat(),
-    "roster": list(player_map.values())
+    "roster": roster_output
 }
 
 os.makedirs("docs", exist_ok=True)
-with open(OUTPUT_PATH, "w") as f:
-    json.dump(output, f, indent=2)
+with open("docs/roster.json", "w") as f:
+    json.dump(payload, f, indent=2)
 
-print(f"Wrote roster with season stats → {OUTPUT_PATH}")
+print("✅ docs/roster.json written successfully with season-to-date stats")
