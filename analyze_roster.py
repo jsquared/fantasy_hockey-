@@ -19,16 +19,13 @@ league = game.to_league(LEAGUE_ID)
 
 team_key = league.team_key()
 
-# ---------- RAW API CALL (VERSION SAFE) ----------
+# ---------- RAW YAHOO API CALL (VERSION SAFE) ----------
 raw = league.yhandler.get(
-    f"team/{team_key}/roster/players/stats;type=season",
-    {}
+    f"team/{team_key}/roster/players/stats;type=season"
 )
 
 team_block = raw["team"][1]
-players = (
-    team_block["roster"]["0"]["players"]
-)
+players = team_block["roster"]["0"]["players"]
 
 roster_output = []
 
