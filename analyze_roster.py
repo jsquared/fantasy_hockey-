@@ -34,9 +34,9 @@ team = league.to_team(team_key)
 def extract_player_stats(player_block):
     stats = {}
 
+    player = player_block.get("player", {})
     player_stats = (
-        player_block
-        .get("player", {})
+        player
         .get("player_stats", {})
         .get("stats", [])
     )
@@ -65,9 +65,12 @@ for p in team.roster():
     pid = p["player_id"]
     player_key = f"{GAME_CODE}.p.{pid}"
 
+    stats = {}
+
     try:
         raw = league.yhandler.get(
-            f"league/{LEAGUE_ID}/players;player_keys={player_key}/stats"
+            f"league/{LEAGUE_ID}/players;"
+            f"player_keys={player_key}/stats;type=season"
         )
 
         player_block = (
@@ -103,4 +106,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json written successfully with season-to-date stats")
+print("✅ docs/roster.json written with SEASON-TO-DATE player stats")
