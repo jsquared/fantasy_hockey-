@@ -7,7 +7,7 @@ import yahoo_fantasy_api as yfa
 GAME_CODE = "nhl"
 LEAGUE_ID = "465.l.33140"
 
-# --- OAuth bootstrap ---
+# OAuth bootstrap (CI-safe)
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
         json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
@@ -28,13 +28,12 @@ for p in team.roster():
     try:
         raw_stats = league.player_stats(pid, "season")
     except Exception:
-        raw_stats = {}
+        raw_stats = None
 
     stats = {}
 
-    # --- NORMALIZE STATS ---
+    # ---- NORMALIZE STAT SHAPES ----
     if isinstance(raw_stats, dict):
-        # dict: {stat_id: value}
         for sid, val in raw_stats.items():
             try:
                 stats[str(sid)] = float(val)
@@ -42,7 +41,6 @@ for p in team.roster():
                 stats[str(sid)] = val
 
     elif isinstance(raw_stats, list):
-        # list: [{"stat_id": X, "value": Y}]
         for entry in raw_stats:
             if not isinstance(entry, dict):
                 continue
