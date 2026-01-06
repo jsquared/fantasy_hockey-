@@ -7,7 +7,7 @@ import yahoo_fantasy_api as yfa
 GAME_CODE = "nhl"
 LEAGUE_ID = "465.l.33140"
 
-# ---- OAuth bootstrap (CI-safe) ----
+# OAuth bootstrap
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
         json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
@@ -17,61 +17,54 @@ game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
 
 team_key = league.team_key()
-team = league.to_team(team_key)
+
+# ---- RAW TEAM ROSTER WITH SEASON STATS ----
+raw = league.yhandler.get(
+    f"team/{team_key}/roster/players/stats",
+    {"type": "season"}
+)
+
+team_block = raw["fantasy_content"]["team"][1]
+players = team_block["roster"]["0"]["players"]
 
 roster_output = []
 
-for p in team.roster():
-    pid = p["player_id"]
+for _, pdata in players.items():
+    player = pdata["player"]
+
+    # ---- PLAYER METADATA ----
+    meta = player[0]
+    pid = int(meta[1]["player_id"])
+    name = meta[2]["name"]["full"]
+    team_abbr = meta[7]["editorial_team_abbr"]
+
+    # ---- SELECTED POSITION ----
+    selected_position = None
+    if len(player) > 1 and "selected_position" in player[1]:
+        selected_position = player[1]["selected_position"][1]["position"]
+
+    # ---- STATS ----
     stats = {}
 
-    try:
-        # Pull raw player stats
-        raw_stats = league.player_stats(pid, "season")
-
-        # raw_stats is usually a nested list -> list -> dict containing "player_stats"
-        if isinstance(raw_stats, list):
-            for pdata in raw_stats:
-                if isinstance(pdata, list):
-                    for item in pdata:
-                        if isinstance(item, dict) and "player_stats" in item:
-                            # Regular stats
-                            season_block = item["player_stats"].get("0", {})
-                            for stat_entry in season_block.get("stats", []):
-                                stat = stat_entry.get("stat", {})
-                                sid = stat.get("stat_id")
-                                val = stat.get("value")
-                                if sid is not None:
-                                    try:
-                                        stats[str(sid)] = float(val)
-                                    except (TypeError, ValueError):
-                                        stats[str(sid)] = val
-
-                            # Advanced stats (optional)
-                            adv_block = item.get("player_advanced_stats", {}).get("0", {})
-                            for stat_entry in adv_block.get("stats", []):
-                                stat = stat_entry.get("stat", {})
-                                sid = stat.get("stat_id")
-                                val = stat.get("value")
-                                if sid is not None:
-                                    key = f"adv_{sid}"
-                                    try:
-                                        stats[key] = float(val)
-                                    except (TypeError, ValueError):
-                                        stats[key] = val
-
-    except Exception as e:
-        print(f"⚠️ Could not fetch stats for {p.get('name')}: {e}")
+    if len(player) > 3 and "player_stats" in player[3]:
+        stat_block = player[3]["player_stats"]["stats"]
+        for entry in stat_block:
+            stat = entry["stat"]
+            sid = stat["stat_id"]
+            val = stat["value"]
+            try:
+                stats[sid] = float(val)
+            except ValueError:
+                stats[sid] = val
 
     roster_output.append({
         "player_id": pid,
-        "name": p.get("name"),
-        "selected_position": p.get("selected_position"),
-        "editorial_team": p.get("editorial_team_abbr"),
+        "name": name,
+        "selected_position": selected_position,
+        "editorial_team": team_abbr,
         "stats": stats
     })
 
-# ---- Final payload ----
 payload = {
     "league": league.settings().get("name"),
     "team_key": team_key,
@@ -79,7 +72,6 @@ payload = {
     "roster": roster_output
 }
 
-# ---- Save to docs/roster.json ----
 os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
