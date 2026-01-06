@@ -1,18 +1,18 @@
 {
   "league": "The Liberties Invitational",
   "team_key": "465.l.33140.t.13",
-  "generated": "2026-01-05T06:04:40.346667+00:00",
+  "generated": "2026-01-06T04:58:04.462184+00:00",
   "roster": [
     {
-      "player_id": 8652,
-      "name": "Anton Lundell",
+      "player_id": 6370,
+      "name": "Sam Bennett",
       "selected_position": "C",
       "editorial_team": null,
       "stats": {}
     },
     {
-      "player_id": 6370,
-      "name": "Sam Bennett",
+      "player_id": 4263,
+      "name": "Mikael Backlund",
       "selected_position": "C",
       "editorial_team": null,
       "stats": {}
@@ -32,15 +32,15 @@
       "stats": {}
     },
     {
-      "player_id": 8293,
-      "name": "Cole Caufield",
+      "player_id": 32779,
+      "name": "Beckett Sennecke",
       "selected_position": "RW",
       "editorial_team": null,
       "stats": {}
     },
     {
-      "player_id": 9277,
-      "name": "Matt Savoie",
+      "player_id": 8293,
+      "name": "Cole Caufield",
       "selected_position": "RW",
       "editorial_team": null,
       "stats": {}
@@ -81,6 +81,13 @@
       "stats": {}
     },
     {
+      "player_id": 8652,
+      "name": "Anton Lundell",
+      "selected_position": "BN",
+      "editorial_team": null,
+      "stats": {}
+    },
+    {
       "player_id": 7832,
       "name": "Mark Kastelic",
       "selected_position": "BN",
@@ -90,13 +97,6 @@
     {
       "player_id": 4471,
       "name": "Steven Stamkos",
-      "selected_position": "BN",
-      "editorial_team": null,
-      "stats": {}
-    },
-    {
-      "player_id": 32779,
-      "name": "Beckett Sennecke",
       "selected_position": "BN",
       "editorial_team": null,
       "stats": {}
@@ -119,6 +119,13 @@
       "player_id": 5820,
       "name": "Connor Hellebuyck",
       "selected_position": "BN",
+      "editorial_team": null,
+      "stats": {}
+    },
+    {
+      "player_id": 5985,
+      "name": "Sean Monahan",
+      "selected_position": "IR+",
       "editorial_team": null,
       "stats": {}
     }
