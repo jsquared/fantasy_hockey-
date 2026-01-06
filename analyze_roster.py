@@ -20,9 +20,9 @@ team_key = league.team_key()
 
 # ---- RAW TEAM ROSTER WITH SEASON STATS ----
 raw = league.yhandler.get(
-    f"team/{team_key}/roster/players/stats",
-    {"type": "season"}
+    f"team/{team_key}/roster/players/stats;type=season"
 )
+
 
 team_block = raw["fantasy_content"]["team"][1]
 players = team_block["roster"]["0"]["players"]
