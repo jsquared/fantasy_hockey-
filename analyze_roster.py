@@ -54,8 +54,12 @@ def extract_stats(stat_block):
 
 # ---- PARSE PLAYERS ----
 for _, pdata in players.items():
-    player = pdata["player"]
+    if not isinstance(pdata, dict):
+        continue
+    if "player" not in pdata:
+        continue
 
+    player = pdata["player"]
     meta = player[0]
     selected_pos = player[1]["selected_position"][1]["position"]
 
