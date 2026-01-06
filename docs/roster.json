@@ -1,133 +1,337 @@
 {
   "league": "The Liberties Invitational",
   "team_key": "465.l.33140.t.13",
-  "generated": "2026-01-06T04:58:04.462184+00:00",
+  "generated": "2026-01-06T05:08:32.526291+00:00",
   "roster": [
     {
       "player_id": 6370,
       "name": "Sam Bennett",
       "selected_position": "C",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "FLA",
+      "stats": {
+        "1": 14.0,
+        "2": 17.0,
+        "4": -3.0,
+        "5": 38.0,
+        "8": 8.0,
+        "11": 0.0,
+        "12": 4.0,
+        "14": 104.0,
+        "16": 284.0,
+        "31": 85.0,
+        "32": 19.0
+      }
     },
     {
       "player_id": 4263,
       "name": "Mikael Backlund",
       "selected_position": "C",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "CGY",
+      "stats": {
+        "1": 10.0,
+        "2": 16.0,
+        "4": 18.0,
+        "5": 8.0,
+        "8": 0.0,
+        "11": 2.0,
+        "12": 1.0,
+        "14": 95.0,
+        "16": 376.0,
+        "31": 17.0,
+        "32": 14.0
+      }
     },
     {
       "player_id": 5391,
       "name": "Rickard Rakell",
       "selected_position": "LW",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "PIT",
+      "stats": {
+        "1": 6.0,
+        "2": 9.0,
+        "4": 0.0,
+        "5": 2.0,
+        "8": 5.0,
+        "11": 1.0,
+        "12": 0.0,
+        "14": 59.0,
+        "16": 1.0,
+        "31": 32.0,
+        "32": 21.0
+      }
     },
     {
       "player_id": 8357,
       "name": "Pavel Dorofeyev",
       "selected_position": "LW",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "VGK",
+      "stats": {
+        "1": 16.0,
+        "2": 13.0,
+        "4": -8.0,
+        "5": 10.0,
+        "8": 16.0,
+        "11": 0.0,
+        "12": 1.0,
+        "14": 109.0,
+        "16": 0.0,
+        "31": 18.0,
+        "32": 18.0
+      }
     },
     {
       "player_id": 32779,
       "name": "Beckett Sennecke",
       "selected_position": "RW",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "ANA",
+      "stats": {
+        "1": 13.0,
+        "2": 18.0,
+        "4": -2.0,
+        "5": 32.0,
+        "8": 5.0,
+        "11": 1.0,
+        "12": 0.0,
+        "14": 82.0,
+        "16": 2.0,
+        "31": 41.0,
+        "32": 13.0
+      }
     },
     {
       "player_id": 8293,
       "name": "Cole Caufield",
       "selected_position": "RW",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "MTL",
+      "stats": {
+        "1": 20.0,
+        "2": 20.0,
+        "4": 9.0,
+        "5": 8.0,
+        "8": 14.0,
+        "11": 0.0,
+        "12": 5.0,
+        "14": 119.0,
+        "16": 3.0,
+        "31": 33.0,
+        "32": 11.0
+      }
     },
     {
       "player_id": 7124,
       "name": "Jakob Chychrun",
       "selected_position": "D",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "WSH",
+      "stats": {
+        "1": 15.0,
+        "2": 16.0,
+        "4": 25.0,
+        "5": 37.0,
+        "8": 8.0,
+        "11": 0.0,
+        "12": 4.0,
+        "14": 142.0,
+        "16": 0.0,
+        "31": 38.0,
+        "32": 52.0
+      }
     },
     {
       "player_id": 7117,
       "name": "Mikhail Sergachev",
       "selected_position": "D",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "UTA",
+      "stats": {
+        "1": 6.0,
+        "2": 23.0,
+        "4": -11.0,
+        "5": 26.0,
+        "8": 12.0,
+        "11": 1.0,
+        "12": 0.0,
+        "14": 89.0,
+        "16": 0.0,
+        "31": 22.0,
+        "32": 73.0
+      }
     },
     {
       "player_id": 5689,
       "name": "Jacob Trouba",
       "selected_position": "D",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "ANA",
+      "stats": {
+        "1": 6.0,
+        "2": 11.0,
+        "4": 8.0,
+        "5": 8.0,
+        "8": 0.0,
+        "11": 1.0,
+        "12": 1.0,
+        "14": 80.0,
+        "16": 0.0,
+        "31": 83.0,
+        "32": 71.0
+      }
     },
     {
       "player_id": 5992,
       "name": "Josh Morrissey",
       "selected_position": "D",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "WPG",
+      "stats": {
+        "1": 6.0,
+        "2": 26.0,
+        "4": 7.0,
+        "5": 14.0,
+        "8": 9.0,
+        "11": 0.0,
+        "12": 0.0,
+        "14": 70.0,
+        "16": 0.0,
+        "31": 21.0,
+        "32": 72.0
+      }
     },
     {
       "player_id": 5928,
       "name": "Anders Lee",
       "selected_position": "Util",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "NYI",
+      "stats": {
+        "1": 10.0,
+        "2": 15.0,
+        "4": 0.0,
+        "5": 25.0,
+        "8": 5.0,
+        "11": 0.0,
+        "12": 3.0,
+        "14": 101.0,
+        "16": 35.0,
+        "31": 33.0,
+        "32": 23.0
+      }
     },
     {
       "player_id": 8652,
       "name": "Anton Lundell",
       "selected_position": "BN",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "FLA",
+      "stats": {
+        "1": 13.0,
+        "2": 18.0,
+        "4": -4.0,
+        "5": 18.0,
+        "8": 8.0,
+        "11": 3.0,
+        "12": 3.0,
+        "14": 91.0,
+        "16": 375.0,
+        "31": 48.0,
+        "32": 28.0
+      }
     },
     {
       "player_id": 7832,
       "name": "Mark Kastelic",
       "selected_position": "BN",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "BOS",
+      "stats": {
+        "1": 6.0,
+        "2": 7.0,
+        "4": 5.0,
+        "5": 80.0,
+        "8": 1.0,
+        "11": 0.0,
+        "12": 2.0,
+        "14": 57.0,
+        "16": 179.0,
+        "31": 111.0,
+        "32": 38.0
+      }
     },
     {
       "player_id": 4471,
       "name": "Steven Stamkos",
       "selected_position": "BN",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "NSH",
+      "stats": {
+        "1": 18.0,
+        "2": 10.0,
+        "4": -7.0,
+        "5": 22.0,
+        "8": 7.0,
+        "11": 0.0,
+        "12": 7.0,
+        "14": 96.0,
+        "16": 153.0,
+        "31": 36.0,
+        "32": 17.0
+      }
     },
     {
       "player_id": 4901,
       "name": "Sergei Bobrovsky",
       "selected_position": "G",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "FLA",
+      "stats": {
+        "19": 17.0,
+        "22": 78.0,
+        "23": 2.84,
+        "25": 602.0,
+        "24": 680.0,
+        "26": 0.885,
+        "27": 3.0
+      }
     },
     {
       "player_id": 7156,
       "name": "Carter Hart",
       "selected_position": "G",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "VGK",
+      "stats": {
+        "19": 4.0,
+        "22": 32.0,
+        "23": 3.28,
+        "25": 226.0,
+        "24": 258.0,
+        "26": 0.876,
+        "27": 0.0
+      }
     },
     {
       "player_id": 5820,
       "name": "Connor Hellebuyck",
       "selected_position": "BN",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "WPG",
+      "stats": {
+        "19": 9.0,
+        "22": 59.0,
+        "23": 2.58,
+        "25": 560.0,
+        "24": 619.0,
+        "26": 0.905,
+        "27": 0.0
+      }
     },
     {
       "player_id": 5985,
       "name": "Sean Monahan",
       "selected_position": "IR+",
-      "editorial_team": null,
-      "stats": {}
+      "editorial_team": "CBJ",
+      "stats": {
+        "1": 5.0,
+        "2": 14.0,
+        "4": -3.0,
+        "5": 8.0,
+        "8": 8.0,
+        "11": 0.0,
+        "12": 2.0,
+        "14": 65.0,
+        "16": 358.0,
+        "31": 24.0,
+        "32": 16.0
+      }
     }
   ]
 }
