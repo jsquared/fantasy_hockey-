@@ -57,10 +57,9 @@ def fetch_stats(stat_type):
 
         player = pdata["player"]
         meta = player[0]
-
         pid = int(extract_value(meta, "player_id"))
-        stats = {}
 
+        stats = {}
         for block in player:
             if isinstance(block, dict) and "player_stats" in block:
                 stats = extract_stats(block["player_stats"]["stats"])
@@ -69,27 +68,19 @@ def fetch_stats(stat_type):
 
     return output
 
-def compute_avg(stats):
-    """
-    Yahoo-style per-game averages.
-    Skaters: GP = stat_id 31
-    Goalies: GP = stat_id 27
-    """
-    gp = stats.get("31") or stats.get("27")
-    if not gp or gp == 0:
+def compute_weekly_avg(stats, weeks):
+    if not weeks or weeks == 0:
         return {}
 
     avg = {}
     for sid, val in stats.items():
-        if sid in ("31", "27"):  # don't avg games played
-            continue
         try:
-            avg[sid] = round(val / gp, 3)
+            avg[sid] = round(float(val) / weeks, 2)
         except Exception:
             pass
     return avg
 
-# ---- FETCH ALL WINDOWS ----
+# ---- FETCH STAT WINDOWS ----
 today_str = date.today().isoformat()
 
 stat_windows = {
@@ -104,21 +95,20 @@ window_stats = {
     for key, val in stat_windows.items()
 }
 
-# ---- DERIVE LAST TWO WEEKS ----
+# ---- DERIVE LAST TWO WEEKS (Yahoo-style) ----
 last_two_weeks = {}
-
 for pid, lw_stats in window_stats["last_week"].items():
     combined = {}
-    for sid, val in lw_stats.items():
+    for stat_id, val in lw_stats.items():
         try:
-            combined[sid] = val * 2
+            combined[stat_id] = float(val) * 2
         except Exception:
-            combined[sid] = val
+            pass
     last_two_weeks[pid] = combined
 
 window_stats["last_two_weeks"] = last_two_weeks
 
-# ---- BASE ROSTER (metadata) ----
+# ---- BASE ROSTER (SEASON CALL FOR METADATA) ----
 raw = league.yhandler.get(
     f"team/{team_key}/roster/players/stats;type=season"
 )
@@ -127,6 +117,12 @@ team_block = raw["fantasy_content"]["team"][1]
 players = team_block["roster"]["0"]["players"]
 
 roster_output = []
+
+# ---- YAHOO MATCHUP WEEK CONSTANTS ----
+SEASON_WEEKS = 42
+LAST_WEEK_WEEKS = 1
+LAST_TWO_WEEKS = 2
+LAST_MONTH_WEEKS = 4.5  # Yahoo rolling month approximation
 
 for _, pdata in players.items():
     if not isinstance(pdata, dict) or "player" not in pdata:
@@ -149,13 +145,13 @@ for _, pdata in players.items():
 
     stats_bundle = {
         "season": season,
-        "season_avg": compute_avg(season),
+        "season_avg": compute_weekly_avg(season, SEASON_WEEKS),
         "last_week": last_week,
-        "last_week_avg": compute_avg(last_week),
+        "last_week_avg": compute_weekly_avg(last_week, LAST_WEEK_WEEKS),
         "last_two_weeks": last_two,
-        "last_two_weeks_avg": compute_avg(last_two),
+        "last_two_weeks_avg": compute_weekly_avg(last_two, LAST_TWO_WEEKS),
         "last_month": last_month,
-        "last_month_avg": compute_avg(last_month),
+        "last_month_avg": compute_weekly_avg(last_month, LAST_MONTH_WEEKS),
         "today": today
     }
 
@@ -179,4 +175,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json written with totals + averages")
+print("✅ docs/roster.json written with Yahoo-accurate stat windows and averages")
