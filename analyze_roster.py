@@ -31,27 +31,15 @@ def extract_stats(stat_block):
         stat = s.get("stat")
         if not stat:
             continue
-        sid = str(stat.get("stat_id"))
+        sid = stat.get("stat_id")
         val = stat.get("value")
-        try:
-            stats[sid] = float(val)
-        except (TypeError, ValueError):
-            stats[sid] = val
-    return stats
-
-def compute_avg(stats):
-    """Yahoo-style average using games played (stat_id 31)"""
-    gp = stats.get("31")
-    if not isinstance(gp, (int, float)) or gp == 0:
-        return {}
-
-    avg = {}
-    for sid, val in stats.items():
-        if sid == "31":
+        if sid is None:
             continue
-        if isinstance(val, (int, float)):
-            avg[sid] = round(val / gp, 3)
-    return avg
+        try:
+            stats[str(sid)] = float(val)
+        except (TypeError, ValueError):
+            stats[str(sid)] = val
+    return stats
 
 def fetch_stats(stat_type):
     raw = league.yhandler.get(
@@ -80,30 +68,55 @@ def fetch_stats(stat_type):
 
     return output
 
-# ---- FETCH WINDOWS (SUPPORTED ONLY) ----
+# ---- AVG + DELTA LOGIC ----
+def compute_avg(stats):
+    gp = stats.get("31") or stats.get("32")
+    if not gp or gp == 0:
+        return {}
+
+    avg = {}
+    for sid, val in stats.items():
+        if sid in ("31", "32"):
+            continue
+        try:
+            avg[sid] = round(val / gp, 3)
+        except Exception:
+            pass
+    return avg
+
+def compute_delta(recent_avg, season_avg):
+    delta = {}
+    for sid, val in recent_avg.items():
+        if sid in season_avg:
+            delta[sid] = round(val - season_avg[sid], 3)
+    return delta
+
+# ---- FETCH WINDOWS ----
 today_str = date.today().isoformat()
 
-windows = {
+stat_windows = {
     "season": "season",
     "last_week": "lastweek",
     "last_month": "lastmonth",
     "today": f"date;date={today_str}"
 }
 
-window_stats = {k: fetch_stats(v) for k, v in windows.items()}
+window_stats = {k: fetch_stats(v) for k, v in stat_windows.items()}
 
-# ---- DERIVE LAST TWO WEEKS ----
+# ---- DERIVE LAST TWO WEEKS (Yahoo does NOT expose this) ----
 last_two_weeks = {}
 for pid, lw in window_stats["last_week"].items():
     combined = {}
     for sid, val in lw.items():
-        if isinstance(val, (int, float)):
+        try:
             combined[sid] = val * 2
+        except Exception:
+            pass
     last_two_weeks[pid] = combined
 
 window_stats["last_two_weeks"] = last_two_weeks
 
-# ---- BASE ROSTER ----
+# ---- BASE ROSTER METADATA ----
 raw = league.yhandler.get(
     f"team/{team_key}/roster/players/stats;type=season"
 )
@@ -122,23 +135,38 @@ for _, pdata in players.items():
     selected_pos = player[1]["selected_position"][1]["position"]
 
     pid = int(extract_value(meta, "player_id"))
-    name = extract_value(meta, "name")["full"]
+    name_block = extract_value(meta, "name")
+    name = name_block.get("full") if name_block else None
     team_abbr = extract_value(meta, "editorial_team_abbr")
 
     season = window_stats["season"].get(pid, {})
+    season_avg = compute_avg(season)
+
     last_week = window_stats["last_week"].get(pid, {})
+    last_week_avg = compute_avg(last_week)
+
     last_two_weeks = window_stats["last_two_weeks"].get(pid, {})
+    last_two_weeks_avg = compute_avg(last_two_weeks)
+
     last_month = window_stats["last_month"].get(pid, {})
+    last_month_avg = compute_avg(last_month)
 
     stats_bundle = {
         "season": season,
-        "season_avg": compute_avg(season),
+        "season_avg": season_avg,
+
         "last_week": last_week,
-        "last_week_avg": compute_avg(last_week),
+        "last_week_avg": last_week_avg,
+        "last_week_delta": compute_delta(last_week_avg, season_avg),
+
         "last_two_weeks": last_two_weeks,
-        "last_two_weeks_avg": compute_avg(last_two_weeks),
+        "last_two_weeks_avg": last_two_weeks_avg,
+        "last_two_weeks_delta": compute_delta(last_two_weeks_avg, season_avg),
+
         "last_month": last_month,
-        "last_month_avg": compute_avg(last_month),
+        "last_month_avg": last_month_avg,
+        "last_month_delta": compute_delta(last_month_avg, season_avg),
+
         "today": window_stats["today"].get(pid, {})
     }
 
@@ -162,4 +190,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json written with Yahoo-accurate averages")
+print("✅ docs/roster.json written with averages + deltas")
