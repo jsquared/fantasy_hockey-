@@ -83,13 +83,17 @@ window_stats = {
     key: fetch_stats(val)
     for key, val in stat_windows.items()
 }
-# ---- DERIVE LAST TWO WEEKS ----
+
+# ---- DERIVE LAST TWO WEEKS (Yahoo-style approximation) ----
 last_two_weeks = {}
 
 for pid, lw_stats in window_stats["last_week"].items():
     combined = {}
     for stat_id, val in lw_stats.items():
-        combined[stat_id] = val * 2  # Yahoo UI approximation
+        try:
+            combined[stat_id] = float(val) * 2
+        except (TypeError, ValueError):
+            combined[stat_id] = val
     last_two_weeks[pid] = combined
 
 window_stats["last_two_weeks"] = last_two_weeks
@@ -117,9 +121,13 @@ for _, pdata in players.items():
     name = name_block.get("full") if name_block else None
     team_abbr = extract_value(meta, "editorial_team_abbr")
 
+    # ✅ INCLUDE ALL WINDOWS EXPLICITLY
     stats_bundle = {
-        window: window_stats.get(window, {}).get(pid, {})
-        for window in stat_windows
+        "season": window_stats["season"].get(pid, {}),
+        "last_week": window_stats["last_week"].get(pid, {}),
+        "last_two_weeks": window_stats["last_two_weeks"].get(pid, {}),
+        "last_month": window_stats["last_month"].get(pid, {}),
+        "today": window_stats["today"].get(pid, {}),
     }
 
     roster_output.append({
