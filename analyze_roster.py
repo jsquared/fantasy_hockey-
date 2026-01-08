@@ -83,6 +83,16 @@ window_stats = {
     key: fetch_stats(val)
     for key, val in stat_windows.items()
 }
+# ---- DERIVE LAST TWO WEEKS ----
+last_two_weeks = {}
+
+for pid, lw_stats in window_stats["last_week"].items():
+    combined = {}
+    for stat_id, val in lw_stats.items():
+        combined[stat_id] = val * 2  # Yahoo UI approximation
+    last_two_weeks[pid] = combined
+
+window_stats["last_two_weeks"] = last_two_weeks
 
 # ---- BASE ROSTER (season call for metadata) ----
 raw = league.yhandler.get(
