@@ -69,6 +69,26 @@ def fetch_stats(stat_type):
 
     return output
 
+def compute_avg(stats):
+    """
+    Yahoo-style per-game averages.
+    Skaters: GP = stat_id 31
+    Goalies: GP = stat_id 27
+    """
+    gp = stats.get("31") or stats.get("27")
+    if not gp or gp == 0:
+        return {}
+
+    avg = {}
+    for sid, val in stats.items():
+        if sid in ("31", "27"):  # don't avg games played
+            continue
+        try:
+            avg[sid] = round(val / gp, 3)
+        except Exception:
+            pass
+    return avg
+
 # ---- FETCH ALL WINDOWS ----
 today_str = date.today().isoformat()
 
@@ -84,21 +104,21 @@ window_stats = {
     for key, val in stat_windows.items()
 }
 
-# ---- DERIVE LAST TWO WEEKS (Yahoo-style approximation) ----
+# ---- DERIVE LAST TWO WEEKS ----
 last_two_weeks = {}
 
 for pid, lw_stats in window_stats["last_week"].items():
     combined = {}
-    for stat_id, val in lw_stats.items():
+    for sid, val in lw_stats.items():
         try:
-            combined[stat_id] = float(val) * 2
-        except (TypeError, ValueError):
-            combined[stat_id] = val
+            combined[sid] = val * 2
+        except Exception:
+            combined[sid] = val
     last_two_weeks[pid] = combined
 
 window_stats["last_two_weeks"] = last_two_weeks
 
-# ---- BASE ROSTER (season call for metadata) ----
+# ---- BASE ROSTER (metadata) ----
 raw = league.yhandler.get(
     f"team/{team_key}/roster/players/stats;type=season"
 )
@@ -121,13 +141,22 @@ for _, pdata in players.items():
     name = name_block.get("full") if name_block else None
     team_abbr = extract_value(meta, "editorial_team_abbr")
 
-    # ✅ INCLUDE ALL WINDOWS EXPLICITLY
+    season = window_stats["season"].get(pid, {})
+    last_week = window_stats["last_week"].get(pid, {})
+    last_two = window_stats["last_two_weeks"].get(pid, {})
+    last_month = window_stats["last_month"].get(pid, {})
+    today = window_stats["today"].get(pid, {})
+
     stats_bundle = {
-        "season": window_stats["season"].get(pid, {}),
-        "last_week": window_stats["last_week"].get(pid, {}),
-        "last_two_weeks": window_stats["last_two_weeks"].get(pid, {}),
-        "last_month": window_stats["last_month"].get(pid, {}),
-        "today": window_stats["today"].get(pid, {}),
+        "season": season,
+        "season_avg": compute_avg(season),
+        "last_week": last_week,
+        "last_week_avg": compute_avg(last_week),
+        "last_two_weeks": last_two,
+        "last_two_weeks_avg": compute_avg(last_two),
+        "last_month": last_month,
+        "last_month_avg": compute_avg(last_month),
+        "today": today
     }
 
     roster_output.append({
@@ -150,4 +179,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json written with full stat windows")
+print("✅ docs/roster.json written with totals + averages")
