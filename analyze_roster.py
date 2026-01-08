@@ -31,29 +31,28 @@ def extract_stats(stat_block):
         stat = s.get("stat")
         if not stat:
             continue
-        sid = stat.get("stat_id")
+        sid = str(stat.get("stat_id"))
         val = stat.get("value")
-        if sid is None:
-            continue
         try:
-            stats[str(sid)] = float(val)
+            stats[sid] = float(val)
         except (TypeError, ValueError):
-            stats[str(sid)] = val
+            stats[sid] = val
     return stats
 
-# ---- DELTA ENGINE ----
-def compute_delta(recent_avg, season_avg):
-    delta = {}
-    for stat_id, season_val in season_avg.items():
-        recent_val = recent_avg.get(stat_id)
-        if not isinstance(season_val, (int, float)):
-            continue
-        if not isinstance(recent_val, (int, float)):
-            continue
-        delta[stat_id] = round(recent_val - season_val, 3)
-    return delta
+def compute_avg(stats):
+    """Yahoo-style average using games played (stat_id 31)"""
+    gp = stats.get("31")
+    if not isinstance(gp, (int, float)) or gp == 0:
+        return {}
 
-# ---- FETCH WINDOW STATS (already working logic) ----
+    avg = {}
+    for sid, val in stats.items():
+        if sid == "31":
+            continue
+        if isinstance(val, (int, float)):
+            avg[sid] = round(val / gp, 3)
+    return avg
+
 def fetch_stats(stat_type):
     raw = league.yhandler.get(
         f"team/{team_key}/roster/players/stats;type={stat_type}"
@@ -70,10 +69,9 @@ def fetch_stats(stat_type):
 
         player = pdata["player"]
         meta = player[0]
-
         pid = int(extract_value(meta, "player_id"))
-        stats = {}
 
+        stats = {}
         for block in player:
             if isinstance(block, dict) and "player_stats" in block:
                 stats = extract_stats(block["player_stats"]["stats"])
@@ -82,40 +80,28 @@ def fetch_stats(stat_type):
 
     return output
 
-# ---- STAT WINDOWS ----
+# ---- FETCH WINDOWS (SUPPORTED ONLY) ----
 today_str = date.today().isoformat()
 
-stat_windows = {
+windows = {
     "season": "season",
-    "season_avg": "seasonavg",
     "last_week": "lastweek",
-    "last_week_avg": "lastweekavg",
     "last_month": "lastmonth",
-    "last_month_avg": "lastmonthavg",
     "today": f"date;date={today_str}"
 }
 
-window_stats = {
-    key: fetch_stats(val)
-    for key, val in stat_windows.items()
-}
+window_stats = {k: fetch_stats(v) for k, v in windows.items()}
 
-# ---- DERIVE LAST TWO WEEKS (Yahoo-style) ----
+# ---- DERIVE LAST TWO WEEKS ----
 last_two_weeks = {}
-last_two_weeks_avg = {}
-
 for pid, lw in window_stats["last_week"].items():
     combined = {}
-    for stat_id, val in lw.items():
+    for sid, val in lw.items():
         if isinstance(val, (int, float)):
-            combined[stat_id] = val * 2
+            combined[sid] = val * 2
     last_two_weeks[pid] = combined
 
-for pid, lw_avg in window_stats["last_week_avg"].items():
-    last_two_weeks_avg[pid] = lw_avg.copy()
-
 window_stats["last_two_weeks"] = last_two_weeks
-window_stats["last_two_weeks_avg"] = last_two_weeks_avg
 
 # ---- BASE ROSTER ----
 raw = league.yhandler.get(
@@ -136,29 +122,24 @@ for _, pdata in players.items():
     selected_pos = player[1]["selected_position"][1]["position"]
 
     pid = int(extract_value(meta, "player_id"))
-    name_block = extract_value(meta, "name")
-    name = name_block.get("full") if name_block else None
+    name = extract_value(meta, "name")["full"]
     team_abbr = extract_value(meta, "editorial_team_abbr")
 
-    stats_bundle = {
-        window: window_stats.get(window, {}).get(pid, {})
-        for window in window_stats
-    }
+    season = window_stats["season"].get(pid, {})
+    last_week = window_stats["last_week"].get(pid, {})
+    last_two_weeks = window_stats["last_two_weeks"].get(pid, {})
+    last_month = window_stats["last_month"].get(pid, {})
 
-    # ---- STEP 1: DELTAS ----
-    deltas = {
-        "last_week_vs_season": compute_delta(
-            stats_bundle.get("last_week_avg", {}),
-            stats_bundle.get("season_avg", {})
-        ),
-        "last_two_weeks_vs_season": compute_delta(
-            stats_bundle.get("last_two_weeks_avg", {}),
-            stats_bundle.get("season_avg", {})
-        ),
-        "last_month_vs_season": compute_delta(
-            stats_bundle.get("last_month_avg", {}),
-            stats_bundle.get("season_avg", {})
-        )
+    stats_bundle = {
+        "season": season,
+        "season_avg": compute_avg(season),
+        "last_week": last_week,
+        "last_week_avg": compute_avg(last_week),
+        "last_two_weeks": last_two_weeks,
+        "last_two_weeks_avg": compute_avg(last_two_weeks),
+        "last_month": last_month,
+        "last_month_avg": compute_avg(last_month),
+        "today": window_stats["today"].get(pid, {})
     }
 
     roster_output.append({
@@ -166,8 +147,7 @@ for _, pdata in players.items():
         "name": name,
         "selected_position": selected_pos,
         "editorial_team": team_abbr,
-        "stats": stats_bundle,
-        "deltas": deltas
+        "stats": stats_bundle
     })
 
 # ---- WRITE OUTPUT ----
@@ -182,4 +162,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json written with delta stats (Step 1)")
+print("✅ docs/roster.json written with Yahoo-accurate averages")
