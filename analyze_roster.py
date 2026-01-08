@@ -75,7 +75,6 @@ today_str = date.today().isoformat()
 stat_windows = {
     "season": "season",
     "last_week": "lastweek",
-    "last_two_weeks": "lasttwoweeks",
     "last_month": "lastmonth",
     "today": f"date;date={today_str}"
 }
