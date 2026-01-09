@@ -68,7 +68,7 @@ def fetch_stats(stat_type):
 
     return output
 
-# ---- AVG + DELTA LOGIC ----
+# ---- AVG + DELTA ----
 def compute_avg(stats):
     gp = stats.get("31") or stats.get("32")
     if not gp or gp == 0:
@@ -91,6 +91,30 @@ def compute_delta(recent_avg, season_avg):
             delta[sid] = round(val - season_avg[sid], 3)
     return delta
 
+# ---- STEP TWO: TREND SCORE ----
+WEIGHTS = {
+    "last_week": 0.5,
+    "last_two_weeks": 0.3,
+    "last_month": 0.2
+}
+
+EXCLUDE_STATS = {"31", "32"}
+
+def compute_trend_score(stats):
+    score = 0.0
+    breakdown = {}
+
+    for window, weight in WEIGHTS.items():
+        deltas = stats.get(f"{window}_delta", {})
+        for sid, delta in deltas.items():
+            if sid in EXCLUDE_STATS:
+                continue
+            breakdown.setdefault(sid, 0.0)
+            breakdown[sid] += delta * weight
+            score += delta * weight
+
+    return round(score, 3), {k: round(v, 3) for k, v in breakdown.items()}
+
 # ---- FETCH WINDOWS ----
 today_str = date.today().isoformat()
 
@@ -103,7 +127,7 @@ stat_windows = {
 
 window_stats = {k: fetch_stats(v) for k, v in stat_windows.items()}
 
-# ---- DERIVE LAST TWO WEEKS (Yahoo does NOT expose this) ----
+# ---- DERIVE LAST TWO WEEKS ----
 last_two_weeks = {}
 for pid, lw in window_stats["last_week"].items():
     combined = {}
@@ -116,7 +140,7 @@ for pid, lw in window_stats["last_week"].items():
 
 window_stats["last_two_weeks"] = last_two_weeks
 
-# ---- BASE ROSTER METADATA ----
+# ---- BASE ROSTER ----
 raw = league.yhandler.get(
     f"team/{team_key}/roster/players/stats;type=season"
 )
@@ -132,49 +156,52 @@ for _, pdata in players.items():
 
     player = pdata["player"]
     meta = player[0]
-    selected_pos = player[1]["selected_position"][1]["position"]
 
     pid = int(extract_value(meta, "player_id"))
-    name_block = extract_value(meta, "name")
-    name = name_block.get("full") if name_block else None
+    name = extract_value(meta, "name").get("full")
+    pos = player[1]["selected_position"][1]["position"]
     team_abbr = extract_value(meta, "editorial_team_abbr")
 
     season = window_stats["season"].get(pid, {})
     season_avg = compute_avg(season)
 
-    last_week = window_stats["last_week"].get(pid, {})
-    last_week_avg = compute_avg(last_week)
+    lw = window_stats["last_week"].get(pid, {})
+    lw_avg = compute_avg(lw)
 
-    last_two_weeks = window_stats["last_two_weeks"].get(pid, {})
-    last_two_weeks_avg = compute_avg(last_two_weeks)
+    l2w = window_stats["last_two_weeks"].get(pid, {})
+    l2w_avg = compute_avg(l2w)
 
-    last_month = window_stats["last_month"].get(pid, {})
-    last_month_avg = compute_avg(last_month)
+    lm = window_stats["last_month"].get(pid, {})
+    lm_avg = compute_avg(lm)
 
     stats_bundle = {
         "season": season,
         "season_avg": season_avg,
 
-        "last_week": last_week,
-        "last_week_avg": last_week_avg,
-        "last_week_delta": compute_delta(last_week_avg, season_avg),
+        "last_week": lw,
+        "last_week_avg": lw_avg,
+        "last_week_delta": compute_delta(lw_avg, season_avg),
 
-        "last_two_weeks": last_two_weeks,
-        "last_two_weeks_avg": last_two_weeks_avg,
-        "last_two_weeks_delta": compute_delta(last_two_weeks_avg, season_avg),
+        "last_two_weeks": l2w,
+        "last_two_weeks_avg": l2w_avg,
+        "last_two_weeks_delta": compute_delta(l2w_avg, season_avg),
 
-        "last_month": last_month,
-        "last_month_avg": last_month_avg,
-        "last_month_delta": compute_delta(last_month_avg, season_avg),
+        "last_month": lm,
+        "last_month_avg": lm_avg,
+        "last_month_delta": compute_delta(lm_avg, season_avg),
 
         "today": window_stats["today"].get(pid, {})
     }
 
+    trend_score, trend_breakdown = compute_trend_score(stats_bundle)
+
     roster_output.append({
         "player_id": pid,
         "name": name,
-        "selected_position": selected_pos,
+        "selected_position": pos,
         "editorial_team": team_abbr,
+        "trend_score": trend_score,
+        "trend_breakdown": trend_breakdown,
         "stats": stats_bundle
     })
 
@@ -190,4 +217,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json written with averages + deltas")
+print("✅ docs/roster.json written with trend scores")
