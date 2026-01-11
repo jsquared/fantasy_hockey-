@@ -1,5 +1,6 @@
 import json
 import os
+import math
 from datetime import datetime, timezone, date
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
@@ -37,7 +38,7 @@ def extract_stats(stat_block):
             continue
         try:
             stats[str(sid)] = float(val)
-        except (TypeError, ValueError):
+        except Exception:
             stats[str(sid)] = val
     return stats
 
@@ -50,7 +51,6 @@ def fetch_stats(stat_type):
     players = team_block["roster"]["0"]["players"]
 
     output = {}
-
     for _, pdata in players.items():
         if not isinstance(pdata, dict) or "player" not in pdata:
             continue
@@ -68,7 +68,7 @@ def fetch_stats(stat_type):
 
     return output
 
-# ---- AVG + DELTA ----
+# ---- AVERAGES & DELTAS ----
 def compute_avg(stats):
     gp = stats.get("31") or stats.get("32")
     if not gp or gp == 0:
@@ -85,13 +85,13 @@ def compute_avg(stats):
     return avg
 
 def compute_delta(recent_avg, season_avg):
-    delta = {}
-    for sid, val in recent_avg.items():
-        if sid in season_avg:
-            delta[sid] = round(val - season_avg[sid], 3)
-    return delta
+    return {
+        sid: round(recent_avg[sid] - season_avg[sid], 3)
+        for sid in recent_avg
+        if sid in season_avg
+    }
 
-# ---- STEP TWO: TREND SCORE ----
+# ---- STEP 2: TREND SCORE ----
 WEIGHTS = {
     "last_week": 0.5,
     "last_two_weeks": 0.3,
@@ -130,13 +130,9 @@ window_stats = {k: fetch_stats(v) for k, v in stat_windows.items()}
 # ---- DERIVE LAST TWO WEEKS ----
 last_two_weeks = {}
 for pid, lw in window_stats["last_week"].items():
-    combined = {}
-    for sid, val in lw.items():
-        try:
-            combined[sid] = val * 2
-        except Exception:
-            pass
-    last_two_weeks[pid] = combined
+    last_two_weeks[pid] = {
+        sid: val * 2 for sid, val in lw.items() if isinstance(val, (int, float))
+    }
 
 window_stats["last_two_weeks"] = last_two_weeks
 
@@ -205,6 +201,28 @@ for _, pdata in players.items():
         "stats": stats_bundle
     })
 
+# ---- STEP 3: POSITION NORMALIZATION ----
+positions = {}
+for p in roster_output:
+    positions.setdefault(p["selected_position"], []).append(p)
+
+for pos, players in positions.items():
+    scores = [p["trend_score"] for p in players]
+    mean = sum(scores) / len(scores)
+    std = math.sqrt(sum((s - mean) ** 2 for s in scores) / len(scores)) or 1.0
+
+    players.sort(key=lambda x: x["trend_score"], reverse=True)
+
+    for rank, p in enumerate(players, start=1):
+        z = (p["trend_score"] - mean) / std
+        percentile = round(
+            100 * (len(players) - rank) / (len(players) - 1), 1
+        ) if len(players) > 1 else 100.0
+
+        p["trend_rank_pos"] = rank
+        p["trend_z_pos"] = round(z, 3)
+        p["trend_percentile_pos"] = percentile
+
 # ---- WRITE OUTPUT ----
 payload = {
     "league": league.settings().get("name"),
@@ -217,4 +235,4 @@ os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json written with trend scores")
+print("✅ docs/roster.json written with position-normalized trends")
