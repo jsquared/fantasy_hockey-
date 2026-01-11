@@ -1,14 +1,14 @@
 import json
 import os
-import math
 from datetime import datetime, timezone, date
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
+import math
 
 GAME_CODE = "nhl"
 LEAGUE_ID = "465.l.33140"
 
-# ---- OAuth bootstrap (UNCHANGED) ----
+# ---- OAuth bootstrap (UNCHANGED, VERIFIED) ----
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
         json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
@@ -19,7 +19,9 @@ game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
 team_key = league.team_key()
 
-# ---- HELPERS ----
+# ------------------------------------------------
+# HELPERS
+# ------------------------------------------------
 def extract_value(block, key):
     for item in block:
         if isinstance(item, dict) and key in item:
@@ -38,7 +40,7 @@ def extract_stats(stat_block):
             continue
         try:
             stats[str(sid)] = float(val)
-        except Exception:
+        except (TypeError, ValueError):
             stats[str(sid)] = val
     return stats
 
@@ -51,6 +53,7 @@ def fetch_stats(stat_type):
     players = team_block["roster"]["0"]["players"]
 
     output = {}
+
     for _, pdata in players.items():
         if not isinstance(pdata, dict) or "player" not in pdata:
             continue
@@ -59,63 +62,33 @@ def fetch_stats(stat_type):
         meta = player[0]
         pid = int(extract_value(meta, "player_id"))
 
-        stats = {}
         for block in player:
             if isinstance(block, dict) and "player_stats" in block:
-                stats = extract_stats(block["player_stats"]["stats"])
-
-        output[pid] = stats
+                output[pid] = extract_stats(block["player_stats"]["stats"])
 
     return output
 
-# ---- AVERAGES & DELTAS ----
-def compute_avg(stats):
-    gp = stats.get("31") or stats.get("32")
-    if not gp or gp == 0:
-        return {}
+def games_played_from_hits(stats):
+    return max(1, int(stats.get("16", 1)))  # TOI proxy fallback
 
+def calc_avg(stats, games):
     avg = {}
-    for sid, val in stats.items():
-        if sid in ("31", "32"):
-            continue
-        try:
-            avg[sid] = round(val / gp, 3)
-        except Exception:
-            pass
+    for k, v in stats.items():
+        if isinstance(v, (int, float)):
+            avg[k] = round(v / games, 3)
     return avg
 
-def compute_delta(recent_avg, season_avg):
-    return {
-        sid: round(recent_avg[sid] - season_avg[sid], 3)
-        for sid in recent_avg
-        if sid in season_avg
-    }
+def calc_delta(avg, season_avg):
+    delta = {}
+    for k, v in avg.items():
+        base = season_avg.get(k)
+        if base is not None:
+            delta[k] = round(v - base, 3)
+    return delta
 
-# ---- STEP 2: TREND SCORE ----
-WEIGHTS = {
-    "last_week": 0.5,
-    "last_two_weeks": 0.3,
-    "last_month": 0.2
-}
-
-EXCLUDE_STATS = {"31", "32"}
-
-def compute_trend_score(stats):
-    score = 0.0
-    breakdown = {}
-
-    for window, weight in WEIGHTS.items():
-        deltas = stats.get(f"{window}_delta", {})
-        for sid, delta in deltas.items():
-            if sid in EXCLUDE_STATS:
-                continue
-            breakdown.setdefault(sid, 0.0)
-            breakdown[sid] += delta * weight
-            score += delta * weight
-
-    return round(score, 3), {k: round(v, 3) for k, v in breakdown.items()}
-
-# ---- FETCH WINDOWS ----
+# ------------------------------------------------
+# FETCH WINDOWS
+# ------------------------------------------------
 today_str = date.today().isoformat()
 
 stat_windows = {
@@ -127,16 +100,17 @@ stat_windows = {
 
 window_stats = {k: fetch_stats(v) for k, v in stat_windows.items()}
 
-# ---- DERIVE LAST TWO WEEKS ----
-last_two_weeks = {}
+# ---- DERIVE LAST TWO WEEKS (Yahoo limitation) ----
+window_stats["last_two_weeks"] = {}
 for pid, lw in window_stats["last_week"].items():
-    last_two_weeks[pid] = {
-        sid: val * 2 for sid, val in lw.items() if isinstance(val, (int, float))
+    window_stats["last_two_weeks"][pid] = {
+        k: v * 2 if isinstance(v, (int, float)) else v
+        for k, v in lw.items()
     }
 
-window_stats["last_two_weeks"] = last_two_weeks
-
-# ---- BASE ROSTER ----
+# ------------------------------------------------
+# BASE ROSTER + METADATA
+# ------------------------------------------------
 raw = league.yhandler.get(
     f"team/{team_key}/roster/players/stats;type=season"
 )
@@ -146,93 +120,129 @@ players = team_block["roster"]["0"]["players"]
 
 roster_output = []
 
+# ------------------------------------------------
+# BUILD PLAYER OBJECTS
+# ------------------------------------------------
 for _, pdata in players.items():
     if not isinstance(pdata, dict) or "player" not in pdata:
         continue
 
     player = pdata["player"]
     meta = player[0]
+    selected_pos = player[1]["selected_position"][1]["position"]
 
     pid = int(extract_value(meta, "player_id"))
     name = extract_value(meta, "name").get("full")
-    pos = player[1]["selected_position"][1]["position"]
     team_abbr = extract_value(meta, "editorial_team_abbr")
 
     season = window_stats["season"].get(pid, {})
-    season_avg = compute_avg(season)
+    season_games = games_played_from_hits(season)
+    season_avg = calc_avg(season, season_games)
 
-    lw = window_stats["last_week"].get(pid, {})
-    lw_avg = compute_avg(lw)
+    stats_bundle = {"season": season, "season_avg": season_avg}
 
-    l2w = window_stats["last_two_weeks"].get(pid, {})
-    l2w_avg = compute_avg(l2w)
+    for window in ["last_week", "last_two_weeks", "last_month"]:
+        wstats = window_stats.get(window, {}).get(pid, {})
+        games = max(1, len(wstats))
+        avg = calc_avg(wstats, games)
+        delta = calc_delta(avg, season_avg)
 
-    lm = window_stats["last_month"].get(pid, {})
-    lm_avg = compute_avg(lm)
+        stats_bundle[window] = wstats
+        stats_bundle[f"{window}_avg"] = avg
+        stats_bundle[f"{window}_delta"] = delta
 
-    stats_bundle = {
-        "season": season,
-        "season_avg": season_avg,
-
-        "last_week": lw,
-        "last_week_avg": lw_avg,
-        "last_week_delta": compute_delta(lw_avg, season_avg),
-
-        "last_two_weeks": l2w,
-        "last_two_weeks_avg": l2w_avg,
-        "last_two_weeks_delta": compute_delta(l2w_avg, season_avg),
-
-        "last_month": lm,
-        "last_month_avg": lm_avg,
-        "last_month_delta": compute_delta(lm_avg, season_avg),
-
-        "today": window_stats["today"].get(pid, {})
-    }
-
-    trend_score, trend_breakdown = compute_trend_score(stats_bundle)
+    stats_bundle["today"] = window_stats["today"].get(pid, {})
 
     roster_output.append({
         "player_id": pid,
         "name": name,
-        "selected_position": pos,
+        "selected_position": selected_pos,
         "editorial_team": team_abbr,
-        "trend_score": trend_score,
-        "trend_breakdown": trend_breakdown,
         "stats": stats_bundle
     })
 
-# ---- STEP 3: POSITION NORMALIZATION ----
-positions = {}
+# ------------------------------------------------
+# STEP 3 — TREND NORMALIZATION
+# ------------------------------------------------
+def trend_score(p):
+    d = p["stats"].get("last_two_weeks_delta", {})
+    return sum(v for v in d.values() if isinstance(v, (int, float)))
+
+scores = [trend_score(p) for p in roster_output]
+mean = sum(scores) / len(scores)
+std = math.sqrt(sum((s - mean) ** 2 for s in scores) / len(scores)) or 1
+
 for p in roster_output:
-    positions.setdefault(p["selected_position"], []).append(p)
+    z = (trend_score(p) - mean) / std
+    p["trend_z"] = round(z, 3)
 
-for pos, players in positions.items():
-    scores = [p["trend_score"] for p in players]
-    mean = sum(scores) / len(scores)
-    std = math.sqrt(sum((s - mean) ** 2 for s in scores) / len(scores)) or 1.0
+# ------------------------------------------------
+# STEP 4 — TRADE VALUE ENGINE
+# ------------------------------------------------
+POSITION_SCARCITY = {
+    "C": 0.9,
+    "LW": 1.1,
+    "RW": 1.1,
+    "D": 1.25,
+    "G": 1.4
+}
 
-    players.sort(key=lambda x: x["trend_score"], reverse=True)
+ROLE_MULTIPLIER = {
+    "C": 1.0,
+    "LW": 1.0,
+    "RW": 1.0,
+    "D": 1.0,
+    "Util": 0.95,
+    "BN": 0.85,
+    "IR": 0.5,
+    "IR+": 0.6
+}
 
-    for rank, p in enumerate(players, start=1):
-        z = (p["trend_score"] - mean) / std
-        percentile = round(
-            100 * (len(players) - rank) / (len(players) - 1), 1
-        ) if len(players) > 1 else 100.0
+for p in roster_output:
+    pos = p["selected_position"]
+    p["trade_value"] = round(
+        p["trend_z"]
+        * POSITION_SCARCITY.get(pos, 1.0)
+        * ROLE_MULTIPLIER.get(pos, 1.0),
+        3
+    )
 
-        p["trend_rank_pos"] = rank
-        p["trend_z_pos"] = round(z, 3)
-        p["trend_percentile_pos"] = percentile
+# ---- 1-for-1 TRADE MATRIX ----
+trades = []
 
-# ---- WRITE OUTPUT ----
+for a in roster_output:
+    for b in roster_output:
+        if a["player_id"] == b["player_id"]:
+            continue
+
+        delta = round(a["trade_value"] - b["trade_value"], 3)
+
+        verdict = (
+            "WIN" if delta > 0.35 else
+            "LOSS" if delta < -0.35 else
+            "FAIR"
+        )
+
+        trades.append({
+            "give": a["name"],
+            "get": b["name"],
+            "delta": delta,
+            "verdict": verdict
+        })
+
+# ------------------------------------------------
+# WRITE OUTPUT
+# ------------------------------------------------
 payload = {
     "league": league.settings().get("name"),
     "team_key": team_key,
     "generated": datetime.now(timezone.utc).isoformat(),
-    "roster": roster_output
+    "roster": roster_output,
+    "trade_analysis": trades
 }
 
 os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json written with position-normalized trends")
+print("✅ docs/roster.json written with full analysis")
