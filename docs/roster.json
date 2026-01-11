@@ -1,7 +1,7 @@
 {
   "league": "The Liberties Invitational",
   "team_key": "465.l.33140.t.13",
-  "generated": "2026-01-11T04:38:45.328284+00:00",
+  "generated": "2026-01-11T04:43:40.799509+00:00",
   "roster": [
     {
       "player_id": 6370,
@@ -163,7 +163,10 @@
           "31": "-",
           "32": "-"
         }
-      }
+      },
+      "trend_rank_pos": 2,
+      "trend_z_pos": -1.0,
+      "trend_percentile_pos": 0.0
     },
     {
       "player_id": 8652,
@@ -325,7 +328,10 @@
           "31": "-",
           "32": "-"
         }
-      }
+      },
+      "trend_rank_pos": 1,
+      "trend_z_pos": 1.0,
+      "trend_percentile_pos": 100.0
     },
     {
       "player_id": 4471,
@@ -487,7 +493,10 @@
           "31": "-",
           "32": "-"
         }
-      }
+      },
+      "trend_rank_pos": 2,
+      "trend_z_pos": -1.0,
+      "trend_percentile_pos": 0.0
     },
     {
       "player_id": 8293,
@@ -649,7 +658,10 @@
           "31": "-",
           "32": "-"
         }
-      }
+      },
+      "trend_rank_pos": 1,
+      "trend_z_pos": 1.0,
+      "trend_percentile_pos": 100.0
     },
     {
       "player_id": 7832,
@@ -811,7 +823,10 @@
           "31": "-",
           "32": "-"
         }
-      }
+      },
+      "trend_rank_pos": 1,
+      "trend_z_pos": 1.0,
+      "trend_percentile_pos": 100.0
     },
     {
       "player_id": 8357,
@@ -973,7 +988,10 @@
           "31": "-",
           "32": "-"
         }
-      }
+      },
+      "trend_rank_pos": 2,
+      "trend_z_pos": -1.0,
+      "trend_percentile_pos": 0.0
     },
     {
       "player_id": 7124,
@@ -1135,7 +1153,10 @@
           "31": "-",
           "32": "-"
         }
-      }
+      },
+      "trend_rank_pos": 4,
+      "trend_z_pos": -1.463,
+      "trend_percentile_pos": 0.0
     },
     {
       "player_id": 7117,
@@ -1297,7 +1318,10 @@
           "31": "-",
           "32": "-"
         }
-      }
+      },
+      "trend_rank_pos": 2,
+      "trend_z_pos": 0.399,
+      "trend_percentile_pos": 66.7
     },
     {
       "player_id": 5689,
@@ -1459,7 +1483,10 @@
           "31": "-",
           "32": "-"
         }
-      }
+      },
+      "trend_rank_pos": 3,
+      "trend_z_pos": -0.221,
+      "trend_percentile_pos": 33.3
     },
     {
       "player_id": 5992,
@@ -1621,7 +1648,10 @@
           "31": "-",
           "32": "-"
         }
-      }
+      },
+      "trend_rank_pos": 1,
+      "trend_z_pos": 1.285,
+      "trend_percentile_pos": 100.0
     },
     {
       "player_id": 5391,
@@ -1783,7 +1813,10 @@
           "31": "-",
           "32": "-"
         }
-      }
+      },
+      "trend_rank_pos": 1,
+      "trend_z_pos": 0.0,
+      "trend_percentile_pos": 100.0
     },
     {
       "player_id": 5985,
@@ -1945,7 +1978,10 @@
           "31": "-",
           "32": "-"
         }
-      }
+      },
+      "trend_rank_pos": 1,
+      "trend_z_pos": 1.394,
+      "trend_percentile_pos": 100.0
     },
     {
       "player_id": 5928,
@@ -2107,7 +2143,10 @@
           "31": "-",
           "32": "-"
         }
-      }
+      },
+      "trend_rank_pos": 3,
+      "trend_z_pos": -0.903,
+      "trend_percentile_pos": 0.0
     },
     {
       "player_id": 32779,
@@ -2269,7 +2308,10 @@
           "31": "-",
           "32": "-"
         }
-      }
+      },
+      "trend_rank_pos": 2,
+      "trend_z_pos": -0.491,
+      "trend_percentile_pos": 50.0
     },
     {
       "player_id": 5820,
@@ -2331,7 +2373,10 @@
           "26": "-",
           "27": "-"
         }
-      }
+      },
+      "trend_rank_pos": 1,
+      "trend_z_pos": 0.0,
+      "trend_percentile_pos": 100.0
     },
     {
       "player_id": 4901,
@@ -2393,7 +2438,10 @@
           "26": "-",
           "27": "-"
         }
-      }
+      },
+      "trend_rank_pos": 2,
+      "trend_z_pos": 0.0,
+      "trend_percentile_pos": 0.0
     },
     {
       "player_id": 7156,
@@ -2455,7 +2503,10 @@
           "26": "-",
           "27": "-"
         }
-      }
+      },
+      "trend_rank_pos": 1,
+      "trend_z_pos": 0.0,
+      "trend_percentile_pos": 100.0
     }
   ]
 }
