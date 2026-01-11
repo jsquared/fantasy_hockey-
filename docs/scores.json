@@ -5,7 +5,7 @@
   "myTeam": {
     "team_key": "465.l.33140.t.13",
     "name": "Strange Brew",
-    "score": 4.0,
+    "score": 5.0,
     "team_logo": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/829eefc79fdfe7de6dc699a1451049819b386702107751b140c73bd8d87a5b86.png"
   },
   "opponent": {
@@ -14,5 +14,5 @@
     "score": 8.0,
     "team_logo": "https://s.yimg.com/ep/cx/blendr/v2/image-dirty-png_1721256043528.png"
   },
-  "lastUpdated": "2026-01-11T22:53:39.242884+00:00"
+  "lastUpdated": "2026-01-11T23:09:22.238643+00:00"
 }
