@@ -3,12 +3,13 @@ import os
 from datetime import datetime, timezone, date
 from yahoo_oauth import OAuth2
 import yahoo_fantasy_api as yfa
-import math
 
 GAME_CODE = "nhl"
 LEAGUE_ID = "465.l.33140"
 
-# ---- OAuth bootstrap (UNCHANGED, VERIFIED) ----
+# -------------------------------------------------
+# OAuth bootstrap (UNCHANGED — WORKING)
+# -------------------------------------------------
 if "YAHOO_OAUTH_JSON" in os.environ:
     with open("oauth2.json", "w") as f:
         json.dump(json.loads(os.environ["YAHOO_OAUTH_JSON"]), f)
@@ -19,9 +20,9 @@ game = yfa.Game(oauth, GAME_CODE)
 league = game.to_league(LEAGUE_ID)
 team_key = league.team_key()
 
-# ------------------------------------------------
-# HELPERS
-# ------------------------------------------------
+# -------------------------------------------------
+# Helpers
+# -------------------------------------------------
 def extract_value(block, key):
     for item in block:
         if isinstance(item, dict) and key in item:
@@ -44,15 +45,15 @@ def extract_stats(stat_block):
             stats[str(sid)] = val
     return stats
 
-def fetch_stats(stat_type):
+def fetch_window(stat_type):
     raw = league.yhandler.get(
         f"team/{team_key}/roster/players/stats;type={stat_type}"
     )
-
     team_block = raw["fantasy_content"]["team"][1]
     players = team_block["roster"]["0"]["players"]
 
-    output = {}
+    out = {}
+    games = {}
 
     for _, pdata in players.items():
         if not isinstance(pdata, dict) or "player" not in pdata:
@@ -62,55 +63,72 @@ def fetch_stats(stat_type):
         meta = player[0]
         pid = int(extract_value(meta, "player_id"))
 
+        stats = {}
+        gp = None
+
         for block in player:
             if isinstance(block, dict) and "player_stats" in block:
-                output[pid] = extract_stats(block["player_stats"]["stats"])
+                stats = extract_stats(block["player_stats"]["stats"])
+            if isinstance(block, dict) and "games_played" in block:
+                gp = block["games_played"]
 
-    return output
+        out[pid] = stats
+        if gp:
+            games[pid] = int(gp)
 
-def games_played_from_hits(stats):
-    return max(1, int(stats.get("16", 1)))  # TOI proxy fallback
+    return out, games
 
-def calc_avg(stats, games):
+def per_game(stats, games):
     avg = {}
+    if not games or games == 0:
+        return avg
     for k, v in stats.items():
         if isinstance(v, (int, float)):
             avg[k] = round(v / games, 3)
     return avg
 
-def calc_delta(avg, season_avg):
-    delta = {}
-    for k, v in avg.items():
-        base = season_avg.get(k)
-        if base is not None:
-            delta[k] = round(v - base, 3)
-    return delta
-
-# ------------------------------------------------
-# FETCH WINDOWS
-# ------------------------------------------------
+# -------------------------------------------------
+# Fetch stat windows Yahoo actually supports
+# -------------------------------------------------
 today_str = date.today().isoformat()
 
-stat_windows = {
+windows = {
     "season": "season",
     "last_week": "lastweek",
     "last_month": "lastmonth",
     "today": f"date;date={today_str}"
 }
 
-window_stats = {k: fetch_stats(v) for k, v in stat_windows.items()}
+window_stats = {}
+window_games = {}
 
-# ---- DERIVE LAST TWO WEEKS (Yahoo limitation) ----
-window_stats["last_two_weeks"] = {}
+for name, wtype in windows.items():
+    s, g = fetch_window(wtype)
+    window_stats[name] = s
+    window_games[name] = g
+
+# -------------------------------------------------
+# Derive last two weeks (Yahoo has no endpoint)
+# -------------------------------------------------
+last_two_weeks = {}
+last_two_games = {}
+
 for pid, lw in window_stats["last_week"].items():
-    window_stats["last_two_weeks"][pid] = {
-        k: v * 2 if isinstance(v, (int, float)) else v
-        for k, v in lw.items()
-    }
+    combined = {}
+    for stat, val in lw.items():
+        if isinstance(val, (int, float)):
+            combined[stat] = val * 2
+    last_two_weeks[pid] = combined
 
-# ------------------------------------------------
-# BASE ROSTER + METADATA
-# ------------------------------------------------
+    gp = window_games["last_week"].get(pid, 0)
+    last_two_games[pid] = gp * 2
+
+window_stats["last_two_weeks"] = last_two_weeks
+window_games["last_two_weeks"] = last_two_games
+
+# -------------------------------------------------
+# Build roster metadata (season call)
+# -------------------------------------------------
 raw = league.yhandler.get(
     f"team/{team_key}/roster/players/stats;type=season"
 )
@@ -120,9 +138,6 @@ players = team_block["roster"]["0"]["players"]
 
 roster_output = []
 
-# ------------------------------------------------
-# BUILD PLAYER OBJECTS
-# ------------------------------------------------
 for _, pdata in players.items():
     if not isinstance(pdata, dict) or "player" not in pdata:
         continue
@@ -132,117 +147,87 @@ for _, pdata in players.items():
     selected_pos = player[1]["selected_position"][1]["position"]
 
     pid = int(extract_value(meta, "player_id"))
-    name = extract_value(meta, "name").get("full")
+    name_block = extract_value(meta, "name")
+    name = name_block.get("full") if name_block else None
     team_abbr = extract_value(meta, "editorial_team_abbr")
 
-    season = window_stats["season"].get(pid, {})
-    season_games = games_played_from_hits(season)
-    season_avg = calc_avg(season, season_games)
+    stats_bundle = {}
 
-    stats_bundle = {"season": season, "season_avg": season_avg}
+    # ---- raw totals ----
+    for w in window_stats:
+        stats_bundle[w] = window_stats[w].get(pid, {})
 
-    for window in ["last_week", "last_two_weeks", "last_month"]:
-        wstats = window_stats.get(window, {}).get(pid, {})
-        games = max(1, len(wstats))
-        avg = calc_avg(wstats, games)
-        delta = calc_delta(avg, season_avg)
+    # ---- averages (TRUE Yahoo math) ----
+    for w in ["season", "last_week", "last_two_weeks", "last_month"]:
+        stats_bundle[f"{w}_avg"] = per_game(
+            stats_bundle[w],
+            window_games[w].get(pid, 0)
+        )
 
-        stats_bundle[window] = wstats
-        stats_bundle[f"{window}_avg"] = avg
-        stats_bundle[f"{window}_delta"] = delta
+    # ---- deltas vs season avg ----
+    for w in ["last_week", "last_two_weeks", "last_month"]:
+        delta = {}
+        base = stats_bundle["season_avg"]
+        cur = stats_bundle[f"{w}_avg"]
+        for stat in base:
+            if stat in cur:
+                delta[stat] = round(cur[stat] - base[stat], 3)
+        stats_bundle[f"{w}_delta"] = delta
 
-    stats_bundle["today"] = window_stats["today"].get(pid, {})
+    # ---- trend score (weighted momentum) ----
+    trend = 0.0
+    for w, weight in [
+        ("last_week_delta", 0.5),
+        ("last_two_weeks_delta", 0.3),
+        ("last_month_delta", 0.2),
+    ]:
+        for v in stats_bundle[w].values():
+            if isinstance(v, (int, float)):
+                trend += v * weight
+
+    trade_value = round(
+        sum(stats_bundle["season_avg"].values()) + trend, 3
+    )
 
     roster_output.append({
         "player_id": pid,
         "name": name,
         "selected_position": selected_pos,
         "editorial_team": team_abbr,
+        "trend_z": round(trend, 3),
+        "trade_value": trade_value,
         "stats": stats_bundle
     })
 
-# ------------------------------------------------
-# STEP 3 — TREND NORMALIZATION
-# ------------------------------------------------
-def trend_score(p):
-    d = p["stats"].get("last_two_weeks_delta", {})
-    return sum(v for v in d.values() if isinstance(v, (int, float)))
-
-scores = [trend_score(p) for p in roster_output]
-mean = sum(scores) / len(scores)
-std = math.sqrt(sum((s - mean) ** 2 for s in scores) / len(scores)) or 1
+# -------------------------------------------------
+# STEP 5 — ACTIONABLE INSIGHTS
+# -------------------------------------------------
+sell_high = []
+buy_low = []
 
 for p in roster_output:
-    z = (trend_score(p) - mean) / std
-    p["trend_z"] = round(z, 3)
+    if p["trade_value"] > 0.3 and p["trend_z"] < -0.25:
+        sell_high.append(p)
+    if p["trade_value"] < 0.2 and p["trend_z"] > 0.4:
+        buy_low.append(p)
 
-# ------------------------------------------------
-# STEP 4 — TRADE VALUE ENGINE
-# ------------------------------------------------
-POSITION_SCARCITY = {
-    "C": 0.9,
-    "LW": 1.1,
-    "RW": 1.1,
-    "D": 1.25,
-    "G": 1.4
-}
+sell_high = sorted(sell_high, key=lambda x: x["trend_z"])
+buy_low = sorted(buy_low, key=lambda x: x["trend_z"], reverse=True)
 
-ROLE_MULTIPLIER = {
-    "C": 1.0,
-    "LW": 1.0,
-    "RW": 1.0,
-    "D": 1.0,
-    "Util": 0.95,
-    "BN": 0.85,
-    "IR": 0.5,
-    "IR+": 0.6
-}
-
-for p in roster_output:
-    pos = p["selected_position"]
-    p["trade_value"] = round(
-        p["trend_z"]
-        * POSITION_SCARCITY.get(pos, 1.0)
-        * ROLE_MULTIPLIER.get(pos, 1.0),
-        3
-    )
-
-# ---- 1-for-1 TRADE MATRIX ----
-trades = []
-
-for a in roster_output:
-    for b in roster_output:
-        if a["player_id"] == b["player_id"]:
-            continue
-
-        delta = round(a["trade_value"] - b["trade_value"], 3)
-
-        verdict = (
-            "WIN" if delta > 0.35 else
-            "LOSS" if delta < -0.35 else
-            "FAIR"
-        )
-
-        trades.append({
-            "give": a["name"],
-            "get": b["name"],
-            "delta": delta,
-            "verdict": verdict
-        })
-
-# ------------------------------------------------
-# WRITE OUTPUT
-# ------------------------------------------------
+# -------------------------------------------------
+# Write output
+# -------------------------------------------------
 payload = {
     "league": league.settings().get("name"),
     "team_key": team_key,
     "generated": datetime.now(timezone.utc).isoformat(),
     "roster": roster_output,
-    "trade_analysis": trades
+    "sell_high": sell_high,
+    "buy_low": buy_low
 }
 
 os.makedirs("docs", exist_ok=True)
 with open("docs/roster.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print("✅ docs/roster.json written with full analysis")
+print("✅ docs/roster.json written (full analytics)")
