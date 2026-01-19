@@ -5,14 +5,14 @@
   "myTeam": {
     "team_key": "465.l.33140.t.13",
     "name": "Strange Brew",
-    "score": 6.0,
+    "score": 8.0,
     "team_logo": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/829eefc79fdfe7de6dc699a1451049819b386702107751b140c73bd8d87a5b86.png"
   },
   "opponent": {
     "team_key": "465.l.33140.t.4",
     "name": "Hugs not drugs!",
-    "score": 5.0,
+    "score": 3.0,
     "team_logo": "https://s.yimg.com/ep/cx/blendr/v2/image-lion-1-png_1721175794452.png"
   },
-  "lastUpdated": "2026-01-19T23:09:57.250060+00:00"
+  "lastUpdated": "2026-01-19T23:31:10.235318+00:00"
 }
