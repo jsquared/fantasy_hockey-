@@ -1,18 +1,18 @@
 {
   "league": "The Liberties Invitational",
-  "week": 17,
+  "week": 18,
   "status": "MIDEVENT",
   "myTeam": {
     "team_key": "465.l.33140.t.13",
     "name": "Strange Brew",
-    "score": 8.0,
+    "score": 0.0,
     "team_logo": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/829eefc79fdfe7de6dc699a1451049819b386702107751b140c73bd8d87a5b86.png"
   },
   "opponent": {
-    "team_key": "465.l.33140.t.2",
-    "name": "Pasha 13",
-    "score": 6.0,
-    "team_logo": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/59599235842_5065e2.png"
+    "team_key": "465.l.33140.t.8",
+    "name": "The ZibaneCHADs",
+    "score": 0.0,
+    "team_logo": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/1f3b59659a35b34d1ab3b00a19306aeccb6c13e84dc4b91a0a8f7b25d97fdfc5.png"
   },
-  "lastUpdated": "2026-02-02T07:38:04.770301+00:00"
+  "lastUpdated": "2026-02-02T08:04:25.484793+00:00"
 }
