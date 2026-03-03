@@ -5,14 +5,14 @@
   "myTeam": {
     "team_key": "465.l.33140.t.13",
     "name": "Strange Brew",
-    "score": 1.0,
+    "score": 2.0,
     "team_logo": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/829eefc79fdfe7de6dc699a1451049819b386702107751b140c73bd8d87a5b86.png"
   },
   "opponent": {
     "team_key": "465.l.33140.t.6",
     "name": "Top Chedda",
-    "score": 6.0,
+    "score": 10.0,
     "team_logo": "https://s.yimg.com/ep/cx/blendr/v2/image-zamboni-png_1721256433917.png"
   },
-  "lastUpdated": "2026-03-03T02:53:25.076050+00:00"
+  "lastUpdated": "2026-03-03T04:29:13.236719+00:00"
 }
