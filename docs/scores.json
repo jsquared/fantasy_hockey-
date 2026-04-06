@@ -1,18 +1,18 @@
 {
   "league": "The Liberties Invitational",
-  "week": 23,
+  "week": 24,
   "status": "MIDEVENT",
   "myTeam": {
     "team_key": "465.l.33140.t.13",
     "name": "Strange Brew",
-    "score": 5.0,
+    "score": 0.0,
     "team_logo": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/829eefc79fdfe7de6dc699a1451049819b386702107751b140c73bd8d87a5b86.png"
   },
   "opponent": {
-    "team_key": "465.l.33140.t.12",
-    "name": "Puck Rogerz",
-    "score": 9.0,
-    "team_logo": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/32167dcb6147a7be2409f8ae67b8bf26ae0ad0ec251241d43600935bd6803557.png"
+    "team_key": "465.l.33140.t.14",
+    "name": "Grambling",
+    "score": 0.0,
+    "team_logo": "https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/b2102ed6f5c92cb2388c3ca6e41c70a3bdc1773061908fd503ca3215544e57a2.jpg"
   },
-  "lastUpdated": "2026-04-06T05:39:06.888714+00:00"
+  "lastUpdated": "2026-04-06T08:46:14.014080+00:00"
 }
